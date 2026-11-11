@@ -90,7 +90,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español.
 
-Pasaron TypeScript, ESLint, 33 pruebas unitarias, dos pruebas E2E y la compilación de producción. El build se probó en Chrome a 1440 × 900 y 390 × 844 con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI.
+Pasaron TypeScript, ESLint, 33 pruebas unitarias, dos pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI.
 
 ## 3. Uso de inteligencia artificial
 

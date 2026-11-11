@@ -33,6 +33,9 @@ function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   if (window.matchMedia("(min-width: 900px)").matches) {
     return { top: 40, right: 75, bottom: 120, left: 420 };
   }
+  if (window.matchMedia("(min-width: 650px) and (max-height: 550px)").matches) {
+    return { top: 75, right: 58, bottom: 33, left: 320 };
+  }
   const height = container.clientHeight;
   const viewportHeight = window.innerHeight;
   const sheetHeight = detailOpen
@@ -40,7 +43,7 @@ function cameraPadding(container: HTMLElement, detailOpen: boolean) {
     : Math.max(178, Math.min(viewportHeight * 0.38, 335));
   return {
     top: Math.min(155, height * 0.31),
-    right: 51,
+    right: 63,
     bottom: Math.min(sheetHeight + 18, height * (detailOpen ? 0.71 : 0.52)),
     left: 40,
   };

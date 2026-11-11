@@ -247,3 +247,16 @@ button:disabled { cursor: default; }
   .field-panel .panel-body { padding-top: 11px; }
   .detail-dialog .detail-toolbar { padding-top: 11px; padding-bottom: 10px; }
 }
+@media (min-width: 650px) and (max-width: 899px) and (max-height: 550px) {
+  :root { --header: 53px; --footer: 0px; --panel-width: 280px; }
+  .expedition-app { min-height: 0; }
+  .main-nav { position: static; min-height: auto; padding: 3px; border-radius: 10px; border: 0; background: #efefe7; }
+  .main-nav button { flex-direction: row; min-height: 37px; padding: 0 8px; }
+  .main-nav .active { background: var(--surface); }
+  .field-panel, .field-panel.is-expanded { inset: 8px auto 8px 8px; width: var(--panel-width); height: auto; }
+  .sheet-handle { display: none; }
+  .detail-dialog { inset: calc(var(--header) + 8px) auto 8px 8px; width: var(--panel-width); height: auto; }
+  .map-topline, .weather-glance, .map-error { left: calc(var(--panel-width) + 16px); }
+  .map-toolbar { top: 141px; }
+  .expedition-app .map-canvas .maplibregl-ctrl-top-right { top: 4px; }
+}
