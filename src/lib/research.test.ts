@@ -61,7 +61,7 @@ describe('stored progress recovery', () => {
       team: [1, 1, 999999, 25, ...valid.records.map(record => record.pokemonId)],
     });
     const recovered = parseProgress(raw);
-    expect(recovered.records).toHaveLength(29);
+    expect(recovered.records).toEqual([first, ...valid.records.slice(2)]);
     expect(recovered.team).toHaveLength(6);
     expect(new Set(recovered.team).size).toBe(6);
     expect(recovered.team).not.toContain(999999);

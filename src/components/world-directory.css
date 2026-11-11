@@ -171,7 +171,7 @@
 
 .world-quick-destinations {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   margin: 9px 0 0;
   padding: 0;
@@ -209,7 +209,7 @@
     inset: auto 9px 31px;
     width: auto;
     height: auto;
-    max-height: min(56%, 300px);
+    max-height: min(61%, 350px);
   }
 
   .world-directory-heading {

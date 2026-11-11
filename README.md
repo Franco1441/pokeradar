@@ -1,10 +1,10 @@
 # PokéRadar · Diario de expedición
 
-Explorá cinco hábitats del mundo, investigá Pokémon y construí tu propio diario de campo. Proyecto realizado para el desafío técnico Frontend Engineer Junior de DataInt.
+Explorá siete hábitats del mundo, investigá Pokémon y construí tu propio diario de campo. Proyecto realizado para el desafío técnico Frontend Engineer Junior de DataInt.
 
 ## 1. Concepto y narrativa
 
-PokéRadar propone un recorrido de investigación con seis avistamientos por expedición. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt o el arrecife de Heron. Cada destino relaciona su paisaje con las características de las especies elegidas.
+PokéRadar propone un recorrido de investigación con diez especies por expedición. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en la vista Explorar y cuatro especies adicionales en el radar Safari.
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
@@ -17,14 +17,18 @@ Cada expedición tiene un punto de entrada georreferenciado a una vista panorám
 | Namib | Paso de las dunas | Sandshrew, Cacnea y Sandile |
 | Zermatt | Mirador del glaciar | Sneasel, Swinub y Delibird |
 | Heron | Jardín de coral | Squirtle, Corsola y Horsea |
+| Iguazú | Sendero de las cataratas | Aipom, Lotad y Tropius |
+| Everglades | Canal de los cipreses | Totodile, Croagunk y Ducklett |
 
-El observatorio muestra las condiciones actuales del destino y resalta los tipos favorecidos por una regla de simulación. La actividad destacada cambia según el clima y todos los avistamientos siguen disponibles. Cada ficha explica la relación propuesta entre especie y hábitat.
+El observatorio muestra las condiciones actuales del destino y resalta los tipos favorecidos por una regla de simulación. Cada ficha explica la relación propuesta entre especie y hábitat.
+
+Safari usa el bioma, la fase local y el clima para dibujar cuatro señales en el mapa. El barrido rota una vez por minuto. Dos lugares dan prioridad a especies de la fase activa y, cuando hay un candidato disponible, al menos una señal corresponde a un tipo favorecido por el clima. **En vivo** usa el dato de luz de Open-Meteo y estima la fase mediante la hora local si el servicio falla. **Día** y **Noche** permiten probar ambas fases conservando la lectura meteorológica del lugar. Al elegir una señal podés inspeccionar sus estadísticas y sumar el hallazgo al mismo atlas.
 
 ### Datos reales y simulación
 
 Los nombres, tipos, estadísticas, medidas, imágenes, descripciones y sonidos provienen de PokéAPI. Las condiciones meteorológicas provienen de Open-Meteo. Las coordenadas de los avistamientos y sus asociaciones con los destinos son una curaduría ficticia del proyecto, identificada en la interfaz.
 
-Los 30 identificadores y tipos del catálogo fueron contrastados con PokéAPI. El catálogo local permite dibujar el mapa y ofrecer filtros inmediatamente. Al abrir una ficha, la aplicación consulta los datos detallados de la especie en la API.
+Los 70 identificadores y tipos del catálogo fueron contrastados con PokéAPI. El catálogo local permite dibujar el mapa y ofrecer filtros inmediatamente. Al abrir una ficha, la aplicación consulta los datos detallados de la especie en la API.
 
 ### Referencias de experiencia
 
@@ -67,7 +71,7 @@ Las fichas y descripciones se consultan de manera independiente. Una descripció
 
 El progreso se guarda en `localStorage` bajo `pokeradar.research.v1`. Su lectura valida la versión, los IDs del catálogo, las fechas y el límite del equipo. Los registros duplicados y las referencias inválidas se descartan. Si el almacenamiento falla, la experiencia puede continuar en memoria durante la sesión.
 
-La URL conserva el destino, la vista y el avistamiento seleccionado. `/?region=nikko&view=field` abre el claro de los cedros. Por ejemplo, `/?region=nikko&encounter=nikko-pikachu` permite compartir una ficha con su contexto geográfico.
+La URL conserva el destino, la vista y el avistamiento seleccionado. `/?region=nikko&view=field` abre el claro de los cedros y `/?region=iguazu&view=safari` abre el radar de Iguazú en vivo. `/?region=nikko&encounter=nikko-pikachu` permite compartir una ficha con su contexto geográfico.
 
 ### Ejecutar localmente
 
@@ -99,9 +103,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español.
+Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además de la rotación por minuto.
 
-Pasaron TypeScript, ESLint, 33 pruebas unitarias, ocho pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. Las pruebas E2E recorren las 15 pistas y el descenso directo a Heron. También se verificó en Chrome, en escritorio y celular, el recorrido con servicios reales desde el globo hasta el panorama y el registro de un hallazgo en cada destino.
+Pasaron TypeScript, ESLint, 39 pruebas unitarias, 12 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, el descenso directo a Heron y un registro desde Safari que se conserva al cambiar de expedición y abrir el atlas. Safari y los dos destinos nuevos se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
 
 ## 3. Uso de inteligencia artificial
 
@@ -116,7 +120,7 @@ Una primera propuesta se centraba en Argentina. Franco pidió explorar otras dir
 - Al definir la expedición de Heron se detectó que cinco especies comparten únicamente el tipo Agua. Corsola aporta Agua y Roca, por lo que el segundo objetivo depende de descubrirla. Se añadió una prueba que verifica que registrar tres especies de Agua deja la expedición en progreso y que registrar Corsola satisface la diversidad requerida.
 - Los datos guardados se trataron como entrada externa. Las pruebas comprobaron JSON inválido, registros duplicados, especies ajenas al catálogo, fechas inválidas y equipos con más de seis miembros. Esto concretó una validación más completa que asumir que cada lectura de `localStorage` contendría el estado esperado.
 
-Los cinco panoramas se generaron con ImageGen a la altura de los ojos y se optimizaron a WebP. Cada escena usa sus propios elementos del bioma para ubicar las pistas. Se revisaron la composición, el encuadre en pantallas chicas y el contraste de los controles. Los paisajes son recreaciones ilustrativas de los biomas. La revisión técnica del código y de la experiencia forma parte del trabajo de entrega.
+Los siete panoramas se generaron con ImageGen a la altura de los ojos y se optimizaron a WebP. Cada escena usa sus propios elementos del bioma para ubicar las pistas. Se revisaron la composición, el encuadre en pantallas chicas y el contraste de los controles. Los paisajes son recreaciones ilustrativas de los biomas.
 
 ## 4. Próximos pasos
 

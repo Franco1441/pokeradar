@@ -187,6 +187,72 @@ const FIELD_SITES = new Map<string, FieldSite>([
       ],
     },
   ],
+  [
+    "iguazu",
+    {
+      name: "Sendero de las cataratas",
+      action: "Explorar a pie",
+      coordinates: [-54.4445, -25.6881],
+      image: "/expeditions/iguazu-field.webp",
+      accent: "#c8efaa",
+      clues: [
+        {
+          encounterId: "iguazu-aipom",
+          label: "Una cola sobre el tronco",
+          observation: "Aipom trepa por un tronco cubierto de musgo.",
+          x: 0.23,
+          y: 0.6,
+        },
+        {
+          encounterId: "iguazu-lotad",
+          label: "Una hoja que flota",
+          observation: "Lotad sale del remanso entre las gotas del salto.",
+          x: 0.53,
+          y: 0.55,
+        },
+        {
+          encounterId: "iguazu-tropius",
+          label: "Hojas que se inclinan",
+          observation: "Tropius asoma la cabeza entre la vegetación.",
+          x: 0.8,
+          y: 0.58,
+        },
+      ],
+    },
+  ],
+  [
+    "everglades",
+    {
+      name: "Canal de los cipreses",
+      action: "Explorar a pie",
+      coordinates: [-80.6092, 25.3801],
+      image: "/expeditions/everglades-field.webp",
+      accent: "#d8eca7",
+      clues: [
+        {
+          encounterId: "everglades-totodile",
+          label: "Juncos que se abren",
+          observation: "Totodile asoma el hocico entre los juncos.",
+          x: 0.23,
+          y: 0.6,
+        },
+        {
+          encounterId: "everglades-croagunk",
+          label: "Un croar entre las raíces",
+          observation: "Croagunk se agacha junto a un ciprés inundado.",
+          x: 0.53,
+          y: 0.55,
+        },
+        {
+          encounterId: "everglades-ducklett",
+          label: "Ondas junto a la orilla",
+          observation: "Ducklett cruza el canal en dirección a la orilla.",
+          x: 0.8,
+          y: 0.58,
+        },
+      ],
+    },
+  ],
 ]);
 
 export function getFieldSite(expeditionId: string): FieldSite | undefined {

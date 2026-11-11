@@ -93,6 +93,11 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
 
 for (const destination of [
   {
+    id: "nikko",
+    title: "Bosques de Nikkō",
+    species: ["Bulbasaur", "Caterpie", "Hoothoot"],
+  },
+  {
     id: "reykjanes",
     title: "Tierras de fuego",
     species: ["Charmander", "Geodude", "Vulpix"],
@@ -111,6 +116,16 @@ for (const destination of [
     id: "heron",
     title: "Arrecife de Heron",
     species: ["Squirtle", "Corsola", "Horsea"],
+  },
+  {
+    id: "iguazu",
+    title: "Selva de Iguazú",
+    species: ["Aipom", "Lotad", "Tropius"],
+  },
+  {
+    id: "everglades",
+    title: "Humedales de Everglades",
+    species: ["Totodile", "Croagunk", "Ducklett"],
   },
 ]) {
   test(`opens the panorama and all three sightings in ${destination.title}`, async ({

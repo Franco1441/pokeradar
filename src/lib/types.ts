@@ -7,12 +7,15 @@ export interface Encounter {
   types: PokemonType[];
   coordinates: [number, number];
   rationale: string;
+  activity?: 'day' | 'night' | 'any';
+  safariOnly?: boolean;
 }
 
 export interface Expedition {
   id: string;
   name: string;
   country: string;
+  timeZone: string;
   biome: string;
   description: string;
   coordinates: [number, number];

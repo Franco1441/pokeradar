@@ -54,6 +54,11 @@ import { getFieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
+  getSafariSnapshot,
+  SAFARI_INTERVAL_MS,
+  type SafariMode,
+} from "@/lib/safari";
+import {
   expeditionProgress,
   registerEncounter,
   toggleTeam,
@@ -63,6 +68,7 @@ import { useLocation } from "@/lib/use-location";
 import type { Encounter, PokemonType } from "@/lib/types";
 import PokemonDetailPanel from "./pokemon-detail";
 import WeatherPanel from "./weather-panel";
+import SafariPanel from "./safari-panel";
 import WorldDirectory from "./world-directory";
 import "./journey.css";
 
@@ -105,9 +111,18 @@ const veilMotion: Variants = {
   },
 };
 
-type Tab = "explore" | "atlas" | "weather";
+type Tab = "explore" | "atlas" | "weather" | "safari";
+
+function getSafariWindow() {
+  return Math.floor(Date.now() / SAFARI_INTERVAL_MS) * SAFARI_INTERVAL_MS;
+}
+const CATALOG_SIZE = EXPEDITIONS.reduce(
+  (total, region) => total + region.encounters.length,
+  0,
+);
 const NAV = [
   { id: "explore" as const, label: "Explorar", icon: Compass },
+  { id: "safari" as const, label: "Safari", icon: Radar },
   { id: "atlas" as const, label: "Mi atlas", icon: BookOpen },
   { id: "weather" as const, label: "Observatorio", icon: CloudSun },
 ];
@@ -143,7 +158,10 @@ function ExpeditionApp() {
     expedition.encounters.find((item) => item.id === params.get("encounter")) ??
     null;
   const { progress, update, storageError } = useResearch();
-  const [tab, setTab] = useState<Tab>("explore");
+  const [activeTab, setTab] = useState<Exclude<Tab, "safari">>("explore");
+  const tab = params.get("view") === "safari" ? "safari" : activeTab;
+  const [safariMode, setSafariMode] = useState<SafariMode>("live");
+  const [safariWindow, setSafariWindow] = useState(getSafariWindow);
   const [search, setSearch] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
   const [atlasRegion, setAtlasRegion] = useState("all");
@@ -217,13 +235,34 @@ function ExpeditionApp() {
     }
     fieldWasOpen.current = fieldOpen;
   }, [fieldOpen]);
+  useEffect(() => {
+    if (tab !== "safari") return;
+    const timer = window.setInterval(
+      () => setSafariWindow(getSafariWindow()),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [tab]);
+
   const weather = useQuery({
     queryKey: ["weather", expedition.id],
     queryFn: ({ signal }) => fetchWeather(expedition, signal),
     staleTime: 15 * 60 * 1000,
+    refetchInterval:
+      tab === "safari" && safariMode === "live" ? SAFARI_INTERVAL_MS : false,
     retry: 1,
   });
-  const weatherSummary = weather.data ? weatherInfo(weather.data) : null;
+  const currentWeather = weather.isError ? undefined : weather.data;
+  const weatherSummary = currentWeather ? weatherInfo(currentWeather) : null;
+  const safariSnapshot = useMemo(
+    () =>
+      getSafariSnapshot(expedition, {
+        weather: currentWeather,
+        mode: safariMode,
+        now: safariWindow,
+      }),
+    [expedition, currentWeather, safariMode, safariWindow],
+  );
   const boostedTypes = weatherSummary?.types ?? [];
   const registeredIds = useMemo(
     () => progress.records.map((record) => record.pokemonId),
@@ -238,17 +277,35 @@ function ExpeditionApp() {
     [],
   );
   const availableTypes = [
-    ...new Set(expedition.encounters.flatMap((encounter) => encounter.types)),
+    ...new Set(
+      expedition.encounters
+        .filter((encounter) => !encounter.safariOnly)
+        .flatMap((encounter) => encounter.types),
+    ),
   ];
   const visibleEncounters = useMemo(
     () =>
       expedition.encounters.filter(
         (encounter) =>
+          !encounter.safariOnly &&
           encounter.name.toLowerCase().includes(search.toLowerCase().trim()) &&
           (!type || encounter.types.includes(type)),
       ),
     [expedition, search, type],
   );
+  const safariEncounters = useMemo(() => {
+    const signals = safariSnapshot.signals.map(({ encounter }) => encounter);
+    return selected && !signals.some(({ id }) => id === selected.id)
+      ? [...signals, selected]
+      : signals;
+  }, [safariSnapshot, selected]);
+  const mapEncounters =
+    tab === "safari"
+      ? safariEncounters
+      : tab === "explore"
+        ? visibleEncounters
+        : expedition.encounters;
+
   const atlasEntries = allEncounters.filter(
     ({ encounter, region }) =>
       (atlasRegion === "all" || region.id === atlasRegion) &&
@@ -263,15 +320,29 @@ function ExpeditionApp() {
     noticeTimer.current = setTimeout(() => setNotice(""), 4500);
   }
   function changeTab(next: Tab) {
-    if (selected) navigate(expedition.id, undefined, true);
-    setTab(next);
+    if (next === "safari") {
+      if (tab === "safari" && !selected) return;
+      const regionId = worldView
+        ? (focusedDestinationId ?? expedition.id)
+        : expedition.id;
+      setSafariWindow(getSafariWindow());
+      navigate(regionId, undefined, tab === "safari", "safari");
+    } else {
+      if (selected || tab === "safari")
+        navigate(expedition.id, undefined, Boolean(selected));
+      setTab(next);
+    }
     setSearch("");
     setType("");
     setExpanded(false);
   }
-  function changeExpedition(id: string) {
+  function changeExpedition(
+    id: string,
+    next: "explore" | "safari" = "explore",
+  ) {
     setFocusedDestinationId(id);
-    navigate(id);
+    navigate(id, undefined, false, next === "safari" ? "safari" : undefined);
+    if (next === "safari") setSafariWindow(getSafariWindow());
     setNotice("");
     setSearch("");
     setType("");
@@ -334,7 +405,12 @@ function ExpeditionApp() {
     );
   }
   function closeDetail() {
-    navigate(expedition.id, undefined, true, fieldOpen ? "field" : undefined);
+    navigate(
+      expedition.id,
+      undefined,
+      true,
+      fieldOpen ? "field" : tab === "safari" ? "safari" : undefined,
+    );
   }
   function selectEncounter(encounter: Encounter, region = expedition) {
     originFocus.current =
@@ -345,7 +421,7 @@ function ExpeditionApp() {
       region.id,
       encounter.id,
       !!selected && region.id === expedition.id,
-      fieldOpen ? "field" : undefined,
+      fieldOpen ? "field" : tab === "safari" ? "safari" : undefined,
     );
     setTeamOpen(false);
   }
@@ -441,8 +517,13 @@ function ExpeditionApp() {
           <MapView
             recenterKey={mapAttempt}
             expedition={expedition}
-            encounters={
-              tab === "explore" ? visibleEncounters : expedition.encounters
+            encounters={mapEncounters}
+            safariPeriod={
+              tab === "safari"
+                ? safariSnapshot.isDay
+                  ? "day"
+                  : "night"
+                : undefined
             }
             selectedId={fieldOpen ? null : (selected?.id ?? null)}
             registeredIds={registeredIds}
@@ -456,7 +537,9 @@ function ExpeditionApp() {
             }
             landingDuration={LANDING_DURATION}
             onMapError={setMapError}
-            onEnterField={fieldSite ? () => enterField() : undefined}
+            onEnterField={
+              fieldSite && tab !== "safari" ? () => enterField() : undefined
+            }
           />
           {!worldView && (
             <div className="map-topline">
@@ -515,13 +598,15 @@ function ExpeditionApp() {
           <aside
             tabIndex={-1}
             id="expedition-panel"
-            className={`field-panel ${expanded ? "is-expanded" : ""} ${selected ? "panel-behind-detail" : ""}`}
+            className={`field-panel ${tab === "safari" ? "safari-sheet" : ""} ${expanded ? "is-expanded" : ""} ${selected ? "panel-behind-detail" : ""}`}
             aria-label={
               tab === "explore"
                 ? "Expedición y avistamientos"
                 : tab === "atlas"
                   ? "Atlas de descubrimientos"
-                  : "Observatorio meteorológico"
+                  : tab === "safari"
+                    ? "Radar Safari"
+                    : "Observatorio meteorológico"
             }
           >
             <button
@@ -724,7 +809,7 @@ function ExpeditionApp() {
                   <BookOpen size={24} />
                   <strong>
                     {progress.records.length}
-                    <small>/ 30</small>
+                    <small>/ {CATALOG_SIZE}</small>
                   </strong>
                   <span>
                     especies
@@ -849,6 +934,20 @@ function ExpeditionApp() {
                 )}
               </div>
             )}
+            {tab === "safari" && (
+              <SafariPanel
+                expedition={expedition}
+                snapshot={safariSnapshot}
+                mode={safariMode}
+                registeredIds={registeredIds}
+                onModeChange={(mode) => {
+                  setSafariWindow(getSafariWindow());
+                  setSafariMode(mode);
+                }}
+                onSelect={selectEncounter}
+                onChangeDestination={() => setDestinationOpen(true)}
+              />
+            )}
             {tab === "weather" && (
               <WeatherPanel
                 expedition={expedition}
@@ -936,7 +1035,7 @@ function ExpeditionApp() {
         <footer className="app-footer">
           <span>
             <span className="status-dot" />
-            Cinco expediciones · 30 especies
+            {EXPEDITIONS.length} expediciones · {CATALOG_SIZE} especies
           </span>
           <button onClick={() => setAboutOpen(true)}>
             <Info size={12} />
@@ -998,9 +1097,7 @@ function ExpeditionApp() {
               >
                 <X size={20} />
               </Dialog.Close>
-              <span className="eyebrow">
-                CINCO HÁBITATS, UN MUNDO POR DESCUBRIR
-              </span>
+              <span className="eyebrow">{EXPEDITIONS.length} expediciones</span>
               <Dialog.Title>¿Dónde empieza tu próxima historia?</Dialog.Title>
               <Dialog.Description>
                 Elegí una expedición. Cada paisaje guarda sus propios
@@ -1011,7 +1108,12 @@ function ExpeditionApp() {
                   <button
                     className={`destination-card ${region.id === expedition.id ? "current" : ""}`}
                     key={region.id}
-                    onClick={() => changeExpedition(region.id)}
+                    onClick={() =>
+                      changeExpedition(
+                        region.id,
+                        tab === "safari" ? "safari" : "explore",
+                      )
+                    }
                   >
                     <div className="destination-image">
                       <Image
@@ -1029,7 +1131,7 @@ function ExpeditionApp() {
                       <span>{region.country}</span>
                       <h3>{region.name}</h3>
                       <p>
-                        6 especies ·{" "}
+                        {region.encounters.length} especies ·{" "}
                         {expeditionProgress(region, progress).registered}{" "}
                         registradas
                         <ArrowUpRight size={18} />

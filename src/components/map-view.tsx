@@ -24,6 +24,7 @@ interface MapViewProps {
   registeredIds: number[];
   boostedTypes: PokemonType[];
   worldView: boolean;
+  safariPeriod?: "day" | "night";
   recenterKey?: number;
   focusedDestinationId?: string;
   landingSite?: FieldSite;
@@ -34,7 +35,11 @@ interface MapViewProps {
   onMapError: (message: string | null) => void;
 }
 
-function cameraPadding(container: HTMLElement, detailOpen: boolean) {
+function cameraPadding(
+  container: HTMLElement,
+  detailOpen: boolean,
+  safariOpen: boolean,
+) {
   if (window.matchMedia("(min-width: 900px)").matches) {
     return { top: 40, right: 75, bottom: 120, left: 420 };
   }
@@ -45,7 +50,9 @@ function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   const viewportHeight = window.innerHeight;
   const sheetHeight = detailOpen
     ? Math.min(viewportHeight * 0.6, viewportHeight - 146)
-    : Math.max(178, Math.min(viewportHeight * 0.38, 335));
+    : safariOpen
+      ? Math.max(220, Math.min(viewportHeight * 0.44, 370))
+      : Math.max(178, Math.min(viewportHeight * 0.38, 335));
   return {
     top: Math.min(155, height * 0.31),
     right: 63,
@@ -341,6 +348,7 @@ export default function MapView(props: MapViewProps) {
     };
   }, [attempt]);
 
+  const safariOpen = Boolean(props.safariPeriod);
   const fieldSite = props.onEnterField
     ? getFieldSite(props.expedition.id)
     : undefined;
@@ -475,7 +483,11 @@ export default function MapView(props: MapViewProps) {
           ? "Globo interactivo de expediciones Pokémon. Podés usar las flechas para girar."
           : "Mapa de avistamientos Pokémon. También podés explorar con la lista de especies.",
       );
-    const padding = cameraPadding(element, Boolean(props.selectedId));
+    const padding = cameraPadding(
+      element,
+      Boolean(props.selectedId),
+      safariOpen,
+    );
     map.stop();
     if (props.worldView) {
       const destination = EXPEDITIONS.find(
@@ -544,11 +556,12 @@ export default function MapView(props: MapViewProps) {
     props.landingDuration,
     fieldSite,
     reducedMotion,
+    safariOpen,
   ]);
 
   return (
     <div
-      className={`map-surface${props.worldView ? " is-globe" : ""}${props.landingSite ? " is-descending" : ""}`}
+      className={`map-surface${props.worldView ? " is-globe" : ""}${props.landingSite ? " is-descending" : ""}${props.safariPeriod ? ` is-safari is-safari-${props.safariPeriod}` : ""}`}
     >
       <div ref={container} className="map-canvas" />
       {!ready && !error && (

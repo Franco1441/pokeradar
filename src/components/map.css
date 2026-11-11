@@ -104,3 +104,32 @@
   .pokemon-marker .marker-inner { transition: none; }
   .map-loading-ring { animation: none; }
 }
+
+.is-safari .maplibregl-canvas { transition: filter .48s ease; }
+.is-safari-night .maplibregl-canvas { filter: brightness(.52) saturate(.68) hue-rotate(28deg); }
+.is-safari .pokemon-marker .marker-inner { border-color: #83d39d; box-shadow: 0 0 0 5px #59b87c2b, 0 5px 18px #172e2875; }
+.is-safari .pokemon-marker .marker-label { background: #173b2e; color: #f0fbec; }
+.is-safari .pokemon-marker .marker-inner::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid #9eeeb0;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: safari-signal-pulse 2.8s ease-out infinite;
+}
+@keyframes safari-signal-pulse {
+  from { scale: .92; opacity: .88; }
+  to { scale: 1.35; opacity: 0; }
+}
+@media (max-width: 899px) {
+  .is-safari .pokemon-marker .marker-inner { width: 48px; height: 48px; }
+  .is-safari .pokemon-marker .marker-sprite { width: 50px; height: 50px; }
+  .is-safari .pokemon-marker .marker-label { padding-inline: 6px; }
+  .is-safari .pokemon-marker .marker-activity,
+  .is-safari .pokemon-marker .marker-registration { width: 17px; height: 17px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-safari .pokemon-marker .marker-inner::after { animation: none; }
+  .is-safari .maplibregl-canvas { transition: none; }
+}
