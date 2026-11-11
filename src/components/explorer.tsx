@@ -17,7 +17,13 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
-import { AnimatePresence, motion, MotionConfig } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  MotionConfig,
+  useReducedMotion,
+  type Variants,
+} from "motion/react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -78,6 +84,27 @@ const FieldScene = dynamic(() => import("./field-scene"), {
   ),
 });
 
+const LANDING_DURATION = 1520;
+type LandingPhase = "approach" | "covered" | "reveal" | "complete";
+type Landing = { expeditionId: string; origin: string; phase: LandingPhase };
+const veilMotion: Variants = {
+  approach: {
+    opacity: [0, 0, 0.38, 1],
+    scale: [1, 1, 1.05, 1.2],
+    transition: {
+      duration: LANDING_DURATION / 1000,
+      times: [0, 0.32, 0.66, 1],
+      ease: "easeIn",
+    },
+  },
+  covered: { opacity: 1, scale: 1.2, transition: { duration: 0 } },
+  reveal: {
+    opacity: 0,
+    scale: 1.42,
+    transition: { duration: 0.8, ease: [0.2, 0.68, 0.3, 1] },
+  },
+};
+
 type Tab = "explore" | "atlas" | "weather";
 const NAV = [
   { id: "explore" as const, label: "Explorar", icon: Compass },
@@ -127,6 +154,22 @@ function ExpeditionApp() {
   const worldView = params.get("view") === "world" || !params.has("region");
   const fieldSite = getFieldSite(expedition.id);
   const fieldOpen = Boolean(fieldSite) && params.get("view") === "field";
+  const reducedMotion = useReducedMotion();
+  const [focusedDestinationId, setFocusedDestinationId] = useState<string>();
+  const [landing, setLanding] = useState<Landing | null>(null);
+  const currentLocation = params.toString();
+  const currentLanding =
+    landing &&
+    (landing.phase === "approach"
+      ? landing.origin === currentLocation
+      : fieldOpen && landing.expeditionId === expedition.id)
+      ? landing
+      : null;
+  const landingSite = currentLanding
+    ? getFieldSite(currentLanding.expeditionId)
+    : undefined;
+  const landingBusy =
+    currentLanding !== null && currentLanding.phase !== "complete";
   const [expanded, setExpanded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
@@ -135,6 +178,35 @@ function ExpeditionApp() {
   const originFocus = useRef<HTMLElement | null>(null);
   const fieldOrigin = useRef<HTMLElement | null>(null);
   const fieldWasOpen = useRef(false);
+  const preparedImage = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const cancelLanding = () => setLanding(null);
+    window.addEventListener("popstate", cancelLanding);
+    return () => window.removeEventListener("popstate", cancelLanding);
+  }, []);
+
+  useEffect(() => {
+    if (currentLanding?.phase !== "covered") return;
+    const timeout = window.setTimeout(() => {
+      setLanding((value) =>
+        value === currentLanding ? { ...value, phase: "reveal" } : value,
+      );
+    }, 1800);
+    return () => window.clearTimeout(timeout);
+  }, [currentLanding]);
+
+  useEffect(() => {
+    if (currentLanding?.phase !== "approach") return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setLanding(null);
+      requestAnimationFrame(() => fieldOrigin.current?.focus());
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [currentLanding]);
 
   useEffect(() => {
     if (!fieldOpen && fieldWasOpen.current) {
@@ -198,6 +270,7 @@ function ExpeditionApp() {
     setExpanded(false);
   }
   function changeExpedition(id: string) {
+    setFocusedDestinationId(id);
     navigate(id);
     setNotice("");
     setSearch("");
@@ -207,18 +280,58 @@ function ExpeditionApp() {
     setTab("explore");
   }
   function showWorld() {
+    setFocusedDestinationId(expedition.id);
     navigate(expedition.id, undefined, false, "world");
     setNotice("");
     setDestinationOpen(false);
     setExpanded(false);
     setTab("explore");
   }
-  function enterField() {
+  function prepareField(id: string) {
+    const site = getFieldSite(id);
+    if (!site) return;
+    if (!preparedImage.current?.src.endsWith(site.image)) {
+      const image = new window.Image();
+      image.src = site.image;
+      preparedImage.current = image;
+    }
+    void import("./field-scene").catch(() => undefined);
+  }
+  function focusDestination(id: string) {
+    if (focusedDestinationId === id) setMapAttempt((value) => value + 1);
+    setFocusedDestinationId(id);
+    prepareField(id);
+  }
+  function enterField(id = expedition.id) {
+    if (!getFieldSite(id) || landingBusy) return;
     fieldOrigin.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    navigate(expedition.id, undefined, false, "field");
+    if (reducedMotion || mapError) {
+      navigate(id, undefined, false, "field");
+      return;
+    }
+    prepareField(id);
+    setLanding({
+      expeditionId: id,
+      origin: currentLocation,
+      phase: "approach",
+    });
+  }
+  function advanceLanding(phase: string) {
+    if (!currentLanding || phase !== currentLanding.phase) return;
+    if (phase === "approach") {
+      setLanding({ ...currentLanding, phase: "covered" });
+      navigate(currentLanding.expeditionId, undefined, false, "field");
+    } else if (phase === "reveal") {
+      setLanding({ ...currentLanding, phase: "complete" });
+    }
+  }
+  function revealLanding() {
+    setLanding((value) =>
+      value?.phase === "covered" ? { ...value, phase: "reveal" } : value,
+    );
   }
   function closeDetail() {
     navigate(expedition.id, undefined, true, fieldOpen ? "field" : undefined);
@@ -271,7 +384,11 @@ function ExpeditionApp() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="expedition-app" inert={fieldOpen}>
+      <div
+        className="expedition-app"
+        inert={fieldOpen || landingBusy}
+        data-landing={currentLanding?.phase === "approach"}
+      >
         <a className="skip-link" href="#expedition-panel">
           Ir a los avistamientos
         </a>
@@ -332,9 +449,14 @@ function ExpeditionApp() {
             boostedTypes={boostedTypes}
             worldView={worldView}
             onSelect={selectEncounter}
-            onExpedition={changeExpedition}
+            onExpedition={worldView ? focusDestination : changeExpedition}
+            focusedDestinationId={focusedDestinationId}
+            landingSite={
+              currentLanding?.phase === "approach" ? landingSite : undefined
+            }
+            landingDuration={LANDING_DURATION}
             onMapError={setMapError}
-            onEnterField={fieldSite ? enterField : undefined}
+            onEnterField={fieldSite ? () => enterField() : undefined}
           />
           {!worldView && (
             <div className="map-topline">
@@ -365,7 +487,10 @@ function ExpeditionApp() {
               }
               aria-pressed={worldView}
               onClick={
-                worldView ? () => changeExpedition(expedition.id) : showWorld
+                worldView
+                  ? () =>
+                      changeExpedition(focusedDestinationId ?? expedition.id)
+                  : showWorld
               }
               className={worldView ? "selected" : ""}
             >
@@ -408,7 +533,12 @@ function ExpeditionApp() {
               <span />
             </button>
             {tab === "explore" && worldView && (
-              <WorldDirectory onChoose={changeExpedition} />
+              <WorldDirectory
+                activeId={focusedDestinationId ?? expedition.id}
+                onFocusDestination={focusDestination}
+                onChoose={changeExpedition}
+                onLand={enterField}
+              />
             )}
             {tab === "explore" && !worldView && (
               <>
@@ -439,7 +569,10 @@ function ExpeditionApp() {
                 </div>
                 <div className="panel-body">
                   {fieldSite && (
-                    <button className="field-enter" onClick={enterField}>
+                    <button
+                      className="field-enter"
+                      onClick={() => enterField()}
+                    >
                       <span className="field-enter-icon">
                         <Binoculars size={22} />
                       </span>
@@ -1087,6 +1220,8 @@ function ExpeditionApp() {
             key={expedition.id}
             expedition={expedition}
             site={fieldSite}
+            cinematicArrival={Boolean(currentLanding)}
+            onPanoramaReady={revealLanding}
             registeredIds={registeredIds}
             detailOpen={Boolean(selected)}
             onObserve={(encounterId) => {
@@ -1095,9 +1230,44 @@ function ExpeditionApp() {
               );
               if (encounter) selectEncounter(encounter);
             }}
-            onExit={() => navigate(expedition.id, undefined, true)}
+            onExit={() => {
+              setLanding(null);
+              navigate(expedition.id, undefined, true);
+            }}
           />
         </main>
+      )}
+      {landingBusy && landingSite && (
+        <div className="landing-overlay" data-phase={currentLanding.phase}>
+          <span className="sr-only" role="status">
+            Viajando a {landingSite.name}
+          </span>
+          <motion.div
+            className="landing-veil"
+            aria-hidden="true"
+            style={{ "--arrival-accent": landingSite.accent } as CSSProperties}
+            initial={{ opacity: 0, scale: 1 }}
+            animate={currentLanding.phase}
+            variants={veilMotion}
+            onAnimationComplete={(phase) => {
+              if (typeof phase === "string") advanceLanding(phase);
+            }}
+          />
+          {currentLanding.phase === "approach" && (
+            <motion.p
+              className="landing-destination"
+              aria-hidden="true"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -8] }}
+              transition={{
+                duration: LANDING_DURATION / 1000,
+                times: [0, 0.21, 0.55, 0.86],
+              }}
+            >
+              <MapPin size={17} /> {landingSite.name}
+            </motion.p>
+          )}
+        </div>
       )}
     </MotionConfig>
   );

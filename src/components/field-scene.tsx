@@ -29,6 +29,8 @@ interface FieldSceneProps {
   onObserve: (encounterId: string) => void;
   onExit: () => void;
   detailOpen: boolean;
+  cinematicArrival?: boolean;
+  onPanoramaReady?: () => void;
 }
 
 function FieldPokemon({ pokemonId }: { pokemonId: number }) {
@@ -64,6 +66,8 @@ export default function FieldScene({
   onObserve,
   onExit,
   detailOpen,
+  cinematicArrival = false,
+  onPanoramaReady,
 }: FieldSceneProps) {
   const viewport = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
@@ -120,6 +124,7 @@ export default function FieldScene({
     registeredIds.includes(clue.pokemonId),
   ).length;
   const revealed = revealedIndex === null ? null : clues[revealedIndex];
+  const hasTableCoral = expedition.id === "heron";
 
   function lookAt(index: number) {
     if (!clues.length) return;
@@ -212,6 +217,8 @@ export default function FieldScene({
       className="field-scene"
       aria-label={`Exploración en ${site.name}`}
       style={{ "--field-accent": site.accent } as CSSProperties}
+      data-arrival={cinematicArrival ? "cinematic" : undefined}
+      data-panorama={imageStatus}
       onKeyDown={lookWithKeyboard}
       inert={detailOpen}
     >
@@ -227,12 +234,15 @@ export default function FieldScene({
       >
         <div
           className="field-panorama"
-          style={{
-            width: sceneWidth,
-            height: sceneHeight,
-            top: (size.height - sceneHeight) / 2,
-            transform: `translate3d(${-pan}px, 0, 0)`,
-          }}
+          style={
+            {
+              width: sceneWidth,
+              height: sceneHeight,
+              top: (size.height - sceneHeight) / 2,
+              transform: `translate3d(${-pan}px, 0, 0)`,
+              "--reef-creature-size": `${sceneHeight * 0.17}px`,
+            } as CSSProperties
+          }
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- The panorama needs its exact intrinsic aspect ratio. */}
           <img
@@ -245,10 +255,24 @@ export default function FieldScene({
                 currentTarget.naturalWidth / currentTarget.naturalHeight,
               );
               setImageStatus("ready");
+              onPanoramaReady?.();
             }}
-            onError={() => setImageStatus("failed")}
+            onError={() => {
+              setImageStatus("failed");
+              onPanoramaReady?.();
+            }}
             data-failed={imageStatus === "failed"}
           />
+          {hasTableCoral && imageStatus === "ready" && (
+            // The foreground uses the same pixels and coordinate system as the panorama.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="field-table-coral"
+              src={site.image}
+              alt=""
+              draggable={false}
+            />
+          )}
           {clues.map((clue, index) => {
             const registered = registeredIds.includes(clue.pokemonId);
             const found = registered || index === revealedIndex;
@@ -257,6 +281,9 @@ export default function FieldScene({
                 key={clue.id}
                 className="field-clue-point"
                 data-found={found}
+                data-habitat={
+                  clue.id === "heron-squirtle" ? "table-coral" : undefined
+                }
                 style={{ left: `${clue.x * 100}%`, top: `${clue.y * 100}%` }}
               >
                 <FieldPokemon pokemonId={clue.pokemonId} />
@@ -284,7 +311,7 @@ export default function FieldScene({
       </div>
 
       <div className="field-shade" aria-hidden="true" />
-      {imageStatus === "ready" && (
+      {!cinematicArrival && imageStatus === "ready" && (
         <div className="field-fog" aria-hidden="true" />
       )}
 

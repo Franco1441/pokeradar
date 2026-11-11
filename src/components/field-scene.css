@@ -12,6 +12,7 @@
 
 .field-viewport {
   position: absolute;
+  isolation: isolate;
   inset: 0;
   overflow: clip;
   touch-action: none;
@@ -45,6 +46,39 @@
 
 .field-backdrop[data-failed="true"] {
   visibility: hidden;
+}
+
+.field-table-coral {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  clip-path: polygon(
+    12% 55%,
+    13.3% 52.1%,
+    15.2% 50.3%,
+    17.3% 48.8%,
+    19.4% 48.2%,
+    21.6% 48%,
+    23.7% 48.1%,
+    25.5% 48.2%,
+    27.6% 48.6%,
+    29.5% 49.4%,
+    31.2% 50.6%,
+    32.4% 52%,
+    33.5% 54.3%,
+    33.3% 57.4%,
+    31.6% 59.4%,
+    28.5% 63.5%,
+    25% 71%,
+    21% 72%,
+    18.2% 63.4%,
+    14.1% 59.2%,
+    12.4% 57.2%
+  );
 }
 
 .field-shade,
@@ -86,6 +120,39 @@
   100% {
     opacity: 0;
     transform: scale(1.22);
+  }
+}
+
+.field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-viewport {
+  transform-origin: 50% 44%;
+  animation: field-camera-settle 1.15s cubic-bezier(0.18, 0.73, 0.23, 1) both;
+}
+
+.field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-heading {
+  animation: field-chrome-in 0.52s 0.26s ease-out both;
+}
+
+.field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-controls {
+  animation: field-chrome-in 0.48s 0.43s ease-out both;
+}
+
+@keyframes field-camera-settle {
+  from {
+    scale: 1.15;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes field-chrome-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
@@ -180,11 +247,90 @@
   clip-path: inset(0);
 }
 
+.field-scene[data-panorama="ready"]
+  [data-habitat="table-coral"]
+  .field-pokemon {
+  width: clamp(68px, var(--reef-creature-size), 168px);
+  transform: translate(-63%, -54%) rotate(-12deg) scale(0.92);
+  opacity: 0.91;
+  filter: saturate(0.76) brightness(0.83) contrast(0.95);
+  /* The brown shell is the first clue. The coral covers its lower edge. */
+  clip-path: polygon(
+    60% 34%,
+    65% 35%,
+    71% 46%,
+    73% 54%,
+    72% 65%,
+    65% 75%,
+    60% 68%,
+    61% 52%
+  );
+}
+
+.field-scene[data-panorama="ready"]
+  [data-habitat="table-coral"][data-found="true"]
+  .field-pokemon {
+  transform: translate(-54%, -74%) scale(1);
+  opacity: 1;
+  filter: saturate(0.86) brightness(0.92) contrast(0.96)
+    drop-shadow(4px 8px 6px #0d4e55b8);
+  clip-path: polygon(
+    0% 0%,
+    38% 0%,
+    73% 0%,
+    100% 0%,
+    100% 100%,
+    65% 100%,
+    30% 100%,
+    0% 100%
+  );
+}
+
+.field-scene[data-panorama="ready"]
+  [data-habitat="table-coral"][data-found="false"]::before,
+.field-scene[data-panorama="ready"]
+  [data-habitat="table-coral"][data-found="false"]::after {
+  content: "";
+  position: absolute;
+  bottom: calc(var(--reef-creature-size) * 1.08);
+  left: 13px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #dcfff1b8;
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 3px #e1fff2b8;
+  pointer-events: none;
+  animation: field-reef-bubble 2.6s ease-out infinite;
+}
+
+.field-scene[data-panorama="ready"]
+  [data-habitat="table-coral"][data-found="false"]::after {
+  left: 6px;
+  width: 4px;
+  height: 4px;
+  animation-delay: 0.65s;
+}
+
+@keyframes field-reef-bubble {
+  0% {
+    opacity: 0;
+    transform: translate(0, 6px) scale(0.8);
+  }
+  30% {
+    opacity: 0.85;
+  }
+  85%,
+  100% {
+    opacity: 0;
+    transform: translate(6px, -30px) scale(1.12);
+  }
+}
+
 .field-clue {
   display: grid;
   place-items: center;
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   width: 46px;
   height: 46px;
   transform: translate(-50%, -50%);
@@ -193,6 +339,10 @@
   color: var(--field-accent);
   background: #152a1cbb;
   box-shadow: 0 0 20px #142b20b3;
+}
+
+.field-scene[data-panorama="ready"] [data-habitat="table-coral"] .field-clue {
+  top: calc(var(--reef-creature-size) * -0.66);
 }
 
 .field-clue::before {
@@ -442,10 +592,18 @@
     transition: none;
   }
   .field-clue::before,
-  .field-discovery {
+  .field-discovery,
+  .field-scene[data-panorama="ready"]
+    [data-habitat="table-coral"][data-found="false"]::before,
+  .field-scene[data-panorama="ready"]
+    [data-habitat="table-coral"][data-found="false"]::after {
     animation: none;
   }
   .field-fog {
     display: none;
+  }
+  .field-scene[data-arrival="cinematic"][data-panorama="ready"]
+    :is(.field-viewport, .field-heading, .field-controls) {
+    animation: none;
   }
 }

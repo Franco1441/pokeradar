@@ -168,3 +168,41 @@
   .world-destinations button:hover .world-destination-action,
   .field-enter:hover > svg { translate: none; }
 }
+
+/* The veil reaches full opacity before the map hands off to the panorama. */
+.landing-overlay {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.landing-veil {
+  position: absolute;
+  inset: -7%;
+  background: radial-gradient(ellipse at 52% 46%, #f1fff9 2%, var(--arrival-accent, #dce9bd) 57%, color-mix(in srgb, var(--arrival-accent, #dce9bd) 67%, #55766f));
+}
+.landing-destination {
+  position: absolute;
+  left: 50%;
+  bottom: max(11vh, 72px);
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 11px 17px;
+  border: 1px solid #e7f3e543;
+  border-radius: 999px;
+  color: #f5f9ec;
+  background: #142f28e8;
+  font-size: 14px;
+  font-weight: 700;
+}
+.expedition-app[data-landing="true"] :is(.field-panel, .app-header, .app-footer, .map-toolbar, .map-topline, .weather-glance, .map-bottom, .detail-dialog) {
+  animation: hide-flight-chrome 330ms ease-out both;
+}
+@keyframes hide-flight-chrome { to { opacity: 0; } }
+.landing-overlay[data-phase="covered"] { pointer-events: auto; }
+.expedition-app[data-landing="true"] { background: #142f28; }

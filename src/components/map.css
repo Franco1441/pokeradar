@@ -8,6 +8,8 @@
 .is-globe .maplibregl-ctrl-compass { display: none; }
 .is-globe .maplibregl-canvas-container.maplibregl-interactive { cursor: grab; }
 .is-globe .maplibregl-canvas-container.maplibregl-interactive:active { cursor: grabbing; }
+.map-surface.is-descending .maplibregl-marker,
+.map-surface.is-descending .maplibregl-ctrl-group { visibility: hidden; }
 .map-canvas .maplibregl-ctrl-top-right { top: 22px; right: 22px; }
 .map-canvas .maplibregl-ctrl-bottom-right { right: 12px; bottom: 8px; }
 .map-canvas .maplibregl-ctrl-group { border: 1px solid #d5dacf; border-radius: 12px; overflow: hidden; box-shadow: 0 3px 15px #243b2812; }
@@ -59,6 +61,8 @@
 .expedition-marker strong { font: 700 12px var(--font-body, sans-serif); white-space: nowrap; }
 .expedition-marker span { font: 500 10px var(--font-body, sans-serif); color: #cbddca; white-space: nowrap; }
 .expedition-marker:hover, .expedition-marker:focus-visible { border-color: #dfedbc; background: #284c3e; outline: 2px solid #dfedbc; outline-offset: 3px; z-index: 2; }
+.expedition-marker.is-focused { border-color: #e2eec8; background: #305548; z-index: 2; }
+.expedition-marker.is-focused::before { background: #e7f3ce; box-shadow: 0 0 0 5px #e7f3ce39; }
 .expedition-marker.maplibregl-marker-covered { visibility: hidden; pointer-events: none; }
 .trailhead-marker {
   display: flex;

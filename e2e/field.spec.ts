@@ -42,7 +42,9 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
   const directory = page.getByRole("region", {
     name: "El mundo por explorar.",
   });
-  await directory.getByRole("button", { name: /Bosques de Nikkō/ }).click();
+  await directory
+    .getByRole("button", { name: "Ver mapa", exact: true })
+    .click();
   await expect(page).toHaveURL(/[?&]region=nikko/);
 
   const expedition = page.getByRole("complementary", {
@@ -120,6 +122,7 @@ for (const destination of [
       .getByRole("region", { name: "El mundo por explorar." })
       .getByRole("button", { name: new RegExp(destination.title) })
       .click();
+    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
     const expedition = page.getByRole("complementary", {
       name: "Expedición y avistamientos",
     });
@@ -161,3 +164,38 @@ for (const destination of [
     await expect(page).toHaveURL(new RegExp(`\\?region=${destination.id}$`));
   });
 }
+
+test("lands from the globe with a continuous transition and returns to the correct map", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const directory = page.getByRole("region", {
+    name: "El mundo por explorar.",
+  });
+  await directory
+    .getByRole("button", { name: "Enfocar Arrecife de Heron, Australia" })
+    .click();
+  await directory
+    .getByRole("button", { name: "Explorar bajo el agua" })
+    .click();
+  await expect(page.locator(".landing-overlay")).toHaveAttribute(
+    "data-phase",
+    "approach",
+  );
+  const field = page.getByRole("main", {
+    name: "Exploración en primera persona",
+  });
+  await expect(
+    field.getByRole("heading", { name: "Jardín de coral" }),
+  ).toBeVisible();
+  await expect(page.locator(".landing-overlay")).toHaveCount(0);
+  await field.getByRole("button", { name: /Examinar pista enfocada/ }).click();
+  await expect(field.getByRole("heading", { name: "Squirtle" })).toBeVisible();
+  await expect(field.locator(".field-backdrop")).toBeVisible();
+  await field.getByRole("button", { name: "Volver al mapa" }).click();
+  await expect(page).toHaveURL(/\?region=heron$/);
+  await expect(
+    page.getByRole("heading", { name: "Arrecife de Heron", exact: true }),
+  ).toBeVisible();
+});

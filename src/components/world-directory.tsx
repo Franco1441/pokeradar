@@ -1,59 +1,91 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import { ArrowUpRight, Compass } from "lucide-react";
+import { ArrowUpRight, Binoculars, Map, MapPin } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite } from "@/lib/field-sites";
+import "./world-directory.css";
+
+interface WorldDirectoryProps {
+  activeId: string;
+  onFocusDestination: (id: string) => void;
+  onChoose: (id: string) => void;
+  onLand: (id: string) => void;
+}
 
 export default function WorldDirectory({
+  activeId,
+  onFocusDestination,
   onChoose,
-}: {
-  onChoose: (id: string) => void;
-}) {
+  onLand,
+}: WorldDirectoryProps) {
+  const expedition =
+    EXPEDITIONS.find((item) => item.id === activeId) ?? EXPEDITIONS[0];
+  const site = getFieldSite(expedition.id);
+
   return (
     <section className="world-directory" aria-labelledby="world-title">
-      <div className="world-intro">
-        <p className="world-kicker">
-          <Compass size={16} aria-hidden="true" />
-          {EXPEDITIONS.length} expediciones
-        </p>
+      <div className="world-directory-heading">
         <h1 id="world-title">El mundo por explorar.</h1>
-        <p>Girá el globo o elegí un destino para seguir sus pistas.</p>
+        <p>Girá el globo o elegí un destino.</p>
       </div>
 
-      <ul className="world-destinations">
-        {EXPEDITIONS.map((expedition) => {
-          const site = getFieldSite(expedition.id);
-          return (
-            <li key={expedition.id}>
-              <button
-                type="button"
-                onClick={() => onChoose(expedition.id)}
-                style={
-                  { "--destination-accent": expedition.color } as CSSProperties
-                }
-              >
-                <span className="world-destination-photo" aria-hidden="true">
-                  <Image
-                    src={site?.image ?? expedition.image}
-                    alt=""
-                    fill
-                    sizes="92px"
-                  />
-                </span>
-                <span className="world-destination-text">
-                  <span className="world-destination-country">
-                    {expedition.country}
-                  </span>
-                  <strong>{expedition.name}</strong>
-                  <small>{site?.name ?? expedition.biome}</small>
-                </span>
-                <span className="world-destination-action" aria-hidden="true">
-                  <ArrowUpRight size={16} />
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      <article
+        key={expedition.id}
+        className="world-preview"
+        aria-label={expedition.name}
+        style={
+          { "--preview-accent": site?.accent ?? "#dce9bd" } as CSSProperties
+        }
+      >
+        <div className="world-preview-hero">
+          <Image
+            src={site?.image ?? expedition.image}
+            alt=""
+            fill
+            loading="eager"
+            sizes="(max-width: 899px) calc(100vw - 24px), 340px"
+          />
+          <div className="world-preview-caption">
+            <p>
+              <MapPin size={13} aria-hidden="true" /> {expedition.country}
+            </p>
+            <h2>{expedition.name}</h2>
+            {site && <span>{site.name}</span>}
+          </div>
+        </div>
+        <div className="world-preview-actions">
+          <button type="button" onClick={() => onChoose(expedition.id)}>
+            <Map size={15} aria-hidden="true" />
+            Ver mapa
+          </button>
+          {site && (
+            <button
+              type="button"
+              className="world-preview-land"
+              onClick={() => onLand(expedition.id)}
+            >
+              <Binoculars size={15} aria-hidden="true" />
+              {site.action}
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </article>
+
+      <ul className="world-quick-destinations" aria-label="Destinos">
+        {EXPEDITIONS.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              aria-label={`Enfocar ${item.name}, ${item.country}`}
+              aria-pressed={item.id === expedition.id}
+              onClick={() => onFocusDestination(item.id)}
+              style={{ "--destination-accent": item.color } as CSSProperties}
+            >
+              {item.country}
+            </button>
+          </li>
+        ))}
       </ul>
     </section>
   );

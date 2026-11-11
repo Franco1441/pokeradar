@@ -8,7 +8,7 @@ PokéRadar propone un recorrido de investigación con seis avistamientos por exp
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
-Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador o desde el panel del destino. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Las fichas comparten el catálogo y el progreso del mapa. Al volver, el descubrimiento queda marcado en la zona.
+Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Las fichas comparten el catálogo y el progreso del mapa. Al volver, el descubrimiento queda marcado en la zona.
 
 | Destino | Escena | Avistamientos |
 | --- | --- | --- |
@@ -101,7 +101,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español.
 
-Pasaron TypeScript, ESLint, 33 pruebas unitarias, siete pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. Las pruebas E2E recorren las 15 pistas. También se verificó en Chrome, en escritorio y celular, el recorrido con servicios reales desde el globo hasta el panorama y el registro de un hallazgo en cada destino.
+Pasaron TypeScript, ESLint, 33 pruebas unitarias, ocho pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. Las pruebas E2E recorren las 15 pistas y el descenso directo a Heron. También se verificó en Chrome, en escritorio y celular, el recorrido con servicios reales desde el globo hasta el panorama y el registro de un hallazgo en cada destino.
 
 ## 3. Uso de inteligencia artificial
 

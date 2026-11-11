@@ -25,6 +25,9 @@ interface MapViewProps {
   boostedTypes: PokemonType[];
   worldView: boolean;
   recenterKey?: number;
+  focusedDestinationId?: string;
+  landingSite?: FieldSite;
+  landingDuration?: number;
   onSelect: (encounter: Encounter) => void;
   onExpedition: (id: string) => void;
   onEnterField?: () => void;
@@ -51,16 +54,20 @@ function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   };
 }
 
-function globeCamera(container: HTMLElement, expedition: Expedition) {
+function globeCamera(
+  container: HTMLElement,
+  expedition: Expedition,
+  centered = false,
+) {
   const [longitude, latitude] =
-    expedition.id === "nikko" ? [104, 25] : expedition.coordinates;
+    expedition.id === "nikko" && !centered ? [104, 25] : expedition.coordinates;
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
   const desktop = window.matchMedia("(min-width: 900px)").matches;
   const landscape = window.matchMedia(
     "(min-width: 650px) and (max-height: 550px)",
   ).matches;
   const padding = desktop
-    ? { left: 410, right: 50, top: 30, bottom: 65 }
+    ? { left: 350, right: 42, top: 30, bottom: 65 }
     : landscape
       ? { left: 300, right: 32, top: 12, bottom: 24 }
       : {
@@ -223,6 +230,10 @@ export default function MapView(props: MapViewProps) {
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
   const previousWorldView = useRef(props.worldView);
+  const previousFocusedDestinationId = useRef(props.focusedDestinationId);
+  const activeLanding = useRef<{ map: MapLibreMap; site: FieldSite } | null>(
+    null,
+  );
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -346,6 +357,7 @@ export default function MapView(props: MapViewProps) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "expedition-marker";
+        button.dataset.expeditionId = expedition.id;
         button.setAttribute(
           "aria-label",
           `Explorar ${expedition.name}, ${expedition.country}`,
@@ -387,6 +399,13 @@ export default function MapView(props: MapViewProps) {
     const boosted = new Set(props.boostedTypes);
     for (const marker of markers.current) {
       const element = marker.getElement();
+      if (element.dataset.expeditionId) {
+        const focused =
+          element.dataset.expeditionId === props.focusedDestinationId;
+        element.classList.toggle("is-focused", focused);
+        element.setAttribute("aria-pressed", String(focused));
+        continue;
+      }
       const encounter = props.encounters.find(
         (item) => item.id === element.dataset.encounterId,
       );
@@ -411,6 +430,7 @@ export default function MapView(props: MapViewProps) {
     props.registeredIds,
     props.boostedTypes,
     props.worldView,
+    props.focusedDestinationId,
   ]);
 
   useEffect(() => {
@@ -418,8 +438,35 @@ export default function MapView(props: MapViewProps) {
     const element = container.current;
     if (!ready || !map || !element) return;
 
+    if (props.landingSite) {
+      if (
+        activeLanding.current?.map === map &&
+        activeLanding.current.site === props.landingSite
+      )
+        return;
+
+      activeLanding.current = { map, site: props.landingSite };
+      map.stop();
+      map.flyTo({
+        center: props.landingSite.coordinates,
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        zoom: props.worldView ? 13.6 : 16.4,
+        pitch: reducedMotion ? 0 : 32,
+        bearing: reducedMotion ? 0 : -10,
+        curve: 1.55,
+        duration: reducedMotion ? 0 : (props.landingDuration ?? 1300),
+        easing: (t) => t * t * (3 - 2 * t),
+      });
+      return;
+    }
+    activeLanding.current = null;
+
     const arrivingFromGlobe = previousWorldView.current && !props.worldView;
+    const focusingDestination =
+      previousWorldView.current &&
+      previousFocusedDestinationId.current !== props.focusedDestinationId;
     previousWorldView.current = props.worldView;
+    previousFocusedDestinationId.current = props.focusedDestinationId;
     map
       .getCanvas()
       .setAttribute(
@@ -430,12 +477,23 @@ export default function MapView(props: MapViewProps) {
       );
     const padding = cameraPadding(element, Boolean(props.selectedId));
     map.stop();
-    map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
     if (props.worldView) {
-      const camera = globeCamera(element, props.expedition);
-      map.flyTo({ ...camera, duration: reducedMotion ? 0 : 1450 });
+      const destination = EXPEDITIONS.find(
+        ({ id }) => id === props.focusedDestinationId,
+      );
+      const camera = globeCamera(
+        element,
+        destination ?? props.expedition,
+        Boolean(destination),
+      );
+      if (focusingDestination) {
+        map.easeTo({ ...camera, duration: reducedMotion ? 0 : 620 });
+      } else {
+        map.flyTo({ ...camera, duration: reducedMotion ? 0 : 1450 });
+      }
       return;
     }
+    map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
 
     const recenterRequested = lastRecenterKey.current !== props.recenterKey;
     lastRecenterKey.current = props.recenterKey;
@@ -481,12 +539,17 @@ export default function MapView(props: MapViewProps) {
     props.selectedId,
     props.worldView,
     props.recenterKey,
+    props.focusedDestinationId,
+    props.landingSite,
+    props.landingDuration,
     fieldSite,
     reducedMotion,
   ]);
 
   return (
-    <div className={`map-surface${props.worldView ? " is-globe" : ""}`}>
+    <div
+      className={`map-surface${props.worldView ? " is-globe" : ""}${props.landingSite ? " is-descending" : ""}`}
+    >
       <div ref={container} className="map-canvas" />
       {!ready && !error && (
         <div className="map-loading" role="status">
