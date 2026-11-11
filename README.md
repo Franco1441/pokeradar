@@ -4,9 +4,11 @@ Explorá cinco hábitats del mundo, investigá Pokémon y construí tu propio di
 
 ## 1. Concepto y narrativa
 
-PokéRadar propone un recorrido de investigación con seis avistamientos por expedición. El mapa abre en los bosques de Nikkō y permite viajar a Reykjanes, el Namib, Zermatt y el arrecife de Heron. Cada destino relaciona su paisaje con las características de las especies elegidas.
+PokéRadar propone un recorrido de investigación con seis avistamientos por expedición. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt o el arrecife de Heron. Cada destino relaciona su paisaje con las características de las especies elegidas.
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
+
+En Nikkō, el **Claro de los cedros** abre una vista panorámica en primera persona. Arrastrá el paisaje, usá las flechas o recorré las pistas para encontrar tres Pokémon ocultos. Al abrir una ficha se reutilizan los mismos datos, ubicaciones y registros de la expedición. Volvé al mapa para ver tu descubrimiento marcado en la zona.
 
 El observatorio muestra las condiciones actuales del destino y resalta los tipos favorecidos por una regla de simulación. La actividad destacada cambia según el clima y todos los avistamientos siguen disponibles. Cada ficha explica la relación propuesta entre especie y hábitat.
 
@@ -21,6 +23,7 @@ Los 30 identificadores y tipos del catálogo fueron contrastados con PokéAPI. E
 - Pokémon GO inspiró el mapa protagonista, los avistamientos y la relación visible entre clima y tipos. [Mapa](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1084-what-is-the-map-view/) · [Clima](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1099-what-are-weather-boosts/)
 - Cobblemon sirvió como referencia para la jerarquía de las fichas y la identidad visual de un instrumento de exploración Pokémon. [Galería](https://modrinth.com/mod/cobblemon/gallery)
 - Alba aportó una referencia de exploración tranquila, observación de fauna y descubrimiento. [Proceso de diseño](https://ustwogames.co.uk/news/the-environment-art-of-alba-a-wildlife-adventure/)
+- Redline, el prompt de MotionSites compartido por Franco, inspiró la secuencia continua de globo, descenso y paisaje. PokéRadar usa esa estructura para cambiar de escala en un mapa real. [Referencia](https://motionsites.ai/?prompt=redline-mars-hero)
 - Merlin sirvió como referencia para organizar una guía de especies y una colección personal. [Merlin Bird ID](https://www.merlinbirds.org/)
 
 ## 2. Arquitectura y stack
@@ -48,7 +51,7 @@ public/
   destinations/  Imágenes de los destinos
 ```
 
-La página y el layout son Server Components. El explorador es el límite cliente que contiene el estado interactivo. La importación dinámica del mapa usa `ssr: false` desde ese componente cliente, porque MapLibre necesita las APIs del navegador. La instancia del mapa conserva el contexto durante los cambios de selección.
+La página y el layout son Server Components. El explorador es el límite cliente que contiene el estado interactivo. La importación dinámica del mapa usa `ssr: false` desde ese componente cliente, porque MapLibre necesita las APIs del navegador. Una sola instancia del mapa conserva el contexto durante los cambios de escala y permanece montada al entrar al claro. La escena panorámica se importa y carga al abrir el modo de campo. Los puntos interactivos se vinculan por ID a los avistamientos existentes.
 
 El modelo distingue `Expedition`, `Encounter`, `PokemonDetail`, `WeatherSnapshot` y `ResearchProgress`. El ID del avistamiento identifica el lugar del encuentro y el ID del Pokémon identifica la especie consultada en PokéAPI.
 
@@ -56,7 +59,7 @@ Las fichas y descripciones se consultan de manera independiente. Una descripció
 
 El progreso se guarda en `localStorage` bajo `pokeradar.research.v1`. Su lectura valida la versión, los IDs del catálogo, las fechas y el límite del equipo. Los registros duplicados y las referencias inválidas se descartan. Si el almacenamiento falla, la experiencia puede continuar en memoria durante la sesión.
 
-La URL conserva el destino y el avistamiento seleccionado. Por ejemplo, `/?region=nikko&encounter=nikko-pikachu` permite compartir una ficha con su contexto geográfico.
+La URL conserva el destino, la vista y el avistamiento seleccionado. `/?region=nikko&view=field` abre el claro de los cedros. Por ejemplo, `/?region=nikko&encounter=nikko-pikachu` permite compartir una ficha con su contexto geográfico.
 
 ### Ejecutar localmente
 
@@ -90,7 +93,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español.
 
-Pasaron TypeScript, ESLint, 33 pruebas unitarias, dos pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI.
+Pasaron TypeScript, ESLint, 33 pruebas unitarias, tres pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. En escritorio y celular se verificó el recorrido desde el globo hasta el claro, las tres pistas y el registro de Bulbasaur desde su ficha real.
 
 ## 3. Uso de inteligencia artificial
 
@@ -105,7 +108,7 @@ Una primera propuesta se centraba en Argentina. Franco pidió explorar otras dir
 - Al definir la expedición de Heron se detectó que cinco especies comparten únicamente el tipo Agua. Corsola aporta Agua y Roca, por lo que el segundo objetivo depende de descubrirla. Se añadió una prueba que verifica que registrar tres especies de Agua deja la expedición en progreso y que registrar Corsola satisface la diversidad requerida.
 - Los datos guardados se trataron como entrada externa. Las pruebas comprobaron JSON inválido, registros duplicados, especies ajenas al catálogo, fechas inválidas y equipos con más de seis miembros. Esto concretó una validación más completa que asumir que cada lectura de `localStorage` contendría el estado esperado.
 
-Los ejemplos describen acciones verificadas durante el desarrollo. La revisión técnica del código y de la experiencia forma parte del trabajo de entrega.
+El panorama de Nikkō se generó con ImageGen a partir de un encuadre a la altura de los ojos. Se definieron helechos, arbustos y una rama como referencias para ubicar las pistas, y se optimizó el recurso a WebP para cargarlo al entrar al claro. La imagen representa el bioma de la expedición. La revisión técnica del código y de la experiencia forma parte del trabajo de entrega.
 
 ## 4. Próximos pasos
 

@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- Small remote pixel sprites need unmodified rendering. */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import {
   ArrowRight,
   ArrowUpRight,
+  Binoculars,
   BookOpen,
   Check,
   CheckCircle2,
@@ -49,6 +50,8 @@ import { useLocation } from "@/lib/use-location";
 import type { Encounter, PokemonType } from "@/lib/types";
 import PokemonDetailPanel from "./pokemon-detail";
 import WeatherPanel from "./weather-panel";
+import WorldDirectory from "./world-directory";
+import "./journey.css";
 
 const MapView = dynamic(() => import("./map-view"), {
   ssr: false,
@@ -59,6 +62,15 @@ const MapView = dynamic(() => import("./map-view"), {
     </div>
   ),
 });
+const FieldScene = dynamic(() => import("./field-scene"), {
+  ssr: false,
+  loading: () => (
+    <div className="field-loading" role="status">
+      Entrando al claro de los cedros…
+    </div>
+  ),
+});
+
 type Tab = "explore" | "atlas" | "weather";
 const NAV = [
   { id: "explore" as const, label: "Explorar", icon: Compass },
@@ -105,13 +117,26 @@ function ExpeditionApp() {
   const [destinationOpen, setDestinationOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [worldView, setWorldView] = useState(false);
+  const worldView = params.get("view") === "world" || !params.has("region");
+  const fieldOpen = expedition.id === "nikko" && params.get("view") === "field";
   const [expanded, setExpanded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const originFocus = useRef<HTMLElement | null>(null);
+  const fieldOrigin = useRef<HTMLElement | null>(null);
+  const fieldWasOpen = useRef(false);
+
+  useEffect(() => {
+    if (!fieldOpen && fieldWasOpen.current) {
+      const target = fieldOrigin.current?.isConnected
+        ? fieldOrigin.current
+        : document.getElementById("expedition-panel");
+      target?.focus();
+    }
+    fieldWasOpen.current = fieldOpen;
+  }, [fieldOpen]);
   const weather = useQuery({
     queryKey: ["weather", expedition.id],
     queryFn: ({ signal }) => fetchWeather(expedition, signal),
@@ -168,10 +193,25 @@ function ExpeditionApp() {
     navigate(id);
     setSearch("");
     setType("");
-    setWorldView(false);
     setDestinationOpen(false);
     setExpanded(false);
     setTab("explore");
+  }
+  function showWorld() {
+    navigate(expedition.id, undefined, false, "world");
+    setDestinationOpen(false);
+    setExpanded(false);
+    setTab("explore");
+  }
+  function enterField() {
+    fieldOrigin.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    navigate("nikko", undefined, false, "field");
+  }
+  function closeDetail() {
+    navigate(expedition.id, undefined, true, fieldOpen ? "field" : undefined);
   }
   function selectEncounter(encounter: Encounter, region = expedition) {
     originFocus.current =
@@ -182,8 +222,8 @@ function ExpeditionApp() {
       region.id,
       encounter.id,
       !!selected && region.id === expedition.id,
+      fieldOpen ? "field" : undefined,
     );
-    setWorldView(false);
     setTeamOpen(false);
   }
   function registerSelected() {
@@ -221,7 +261,7 @@ function ExpeditionApp() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="expedition-app">
+      <div className="expedition-app" inert={fieldOpen}>
         <a className="skip-link" href="#expedition-panel">
           Ir a los avistamientos
         </a>
@@ -262,54 +302,66 @@ function ExpeditionApp() {
           </div>
         </header>
 
-        <main className="map-stage">
+        <main className={`map-stage ${worldView ? "map-stage-world" : ""}`}>
           <MapView
             recenterKey={mapAttempt}
             expedition={expedition}
             encounters={
               tab === "explore" ? visibleEncounters : expedition.encounters
             }
-            selectedId={selected?.id ?? null}
+            selectedId={fieldOpen ? null : selected?.id ?? null}
             registeredIds={registeredIds}
             boostedTypes={boostedTypes}
             worldView={worldView}
             onSelect={selectEncounter}
             onExpedition={changeExpedition}
             onMapError={setMapError}
+            onEnterField={enterField}
           />
-          <div className="map-topline">
-            <span className="simulation-label">
-              <span /> Avistamientos simulados
-            </span>
-            <button
-              className="map-location"
-              onClick={() => setDestinationOpen(true)}
-            >
-              <MapPin size={14} />
-              {expedition.country}
-              <ChevronDown size={13} />
-            </button>
-          </div>
+          {!worldView && (
+            <div className="map-topline">
+              <span className="simulation-label">
+                <span /> Avistamientos simulados
+              </span>
+              <button
+                className="map-location"
+                onClick={() => setDestinationOpen(true)}
+              >
+                <MapPin size={14} />
+                {expedition.country}
+                <ChevronDown size={13} />
+              </button>
+            </div>
+          )}
           <div className="map-toolbar">
             <button
-              title="Ver todas las expediciones"
-              aria-label="Ver todas las expediciones"
+              title={
+                worldView
+                  ? "Volver a la expedición"
+                  : "Ver todas las expediciones"
+              }
+              aria-label={
+                worldView
+                  ? "Volver a la expedición"
+                  : "Ver todas las expediciones"
+              }
               aria-pressed={worldView}
-              onClick={() => setWorldView(!worldView)}
+              onClick={
+                worldView ? () => changeExpedition(expedition.id) : showWorld
+              }
               className={worldView ? "selected" : ""}
             >
               <Globe2 size={20} />
             </button>
-            <button
-              title="Centrar expedición"
-              aria-label="Centrar expedición"
-              onClick={() => {
-                setWorldView(false);
-                setMapAttempt((value) => value + 1);
-              }}
-            >
-              <LocateFixed size={19} />
-            </button>
+            {!worldView && (
+              <button
+                title="Centrar expedición"
+                aria-label="Centrar expedición"
+                onClick={() => setMapAttempt((value) => value + 1)}
+              >
+                <LocateFixed size={19} />
+              </button>
+            )}
           </div>
           {mapError && (
             <div className="map-error" role="status">
@@ -337,7 +389,10 @@ function ExpeditionApp() {
             >
               <span />
             </button>
-            {tab === "explore" && (
+            {tab === "explore" && worldView && (
+              <WorldDirectory onChoose={changeExpedition} />
+            )}
+            {tab === "explore" && !worldView && (
               <>
                 <div className="expedition-cover">
                   <Image
@@ -365,6 +420,18 @@ function ExpeditionApp() {
                   </div>
                 </div>
                 <div className="panel-body">
+                  {expedition.id === "nikko" && (
+                    <button className="field-enter" onClick={enterField}>
+                      <span className="field-enter-icon">
+                        <Binoculars size={22} />
+                      </span>
+                      <span>
+                        <strong>Explorar a pie</strong>
+                        <small>Claro de los cedros · 3 pistas</small>
+                      </span>
+                      <ArrowRight size={17} />
+                    </button>
+                  )}
                   <p className="expedition-intro">{expedition.description}</p>
                   <div
                     className={`mission-card ${goal.complete ? "mission-complete" : ""}`}
@@ -642,72 +709,76 @@ function ExpeditionApp() {
             )}
           </aside>
 
-          <button
-            className="weather-glance"
-            onClick={() => changeTab("weather")}
-          >
-            <span className="weather-glance-icon">
-              <CloudSun size={25} strokeWidth={1.5} />
-            </span>
-            <span>
-              <span className="eyebrow">
-                EN {expedition.country.toUpperCase()}
+          {!worldView && (
+            <button
+              className="weather-glance"
+              onClick={() => changeTab("weather")}
+            >
+              <span className="weather-glance-icon">
+                <CloudSun size={25} strokeWidth={1.5} />
               </span>
-              <strong>
-                {weather.data
-                  ? `${Math.round(weather.data.temperature)}°`
-                  : "—"}{" "}
-                <small>
-                  {weatherSummary?.label ??
-                    (weather.isPending
-                      ? "Consultando clima"
-                      : "Clima no disponible")}
-                </small>
-              </strong>
-            </span>
-            <ArrowUpRight size={15} />
-          </button>
-          <div className="map-bottom">
-            <div className="team-dock">
-              <div className="dock-label">
-                <span>Tu equipo de expedición</span>
-                <button onClick={() => setTeamOpen(true)}>
-                  {progress.team.length}/6
-                  <ArrowUpRight size={13} />
-                </button>
-              </div>
-              <div className="team-slots">
-                {Array.from({ length: 6 }, (_, index) => {
-                  const id = progress.team[index];
-                  const found = allEncounters.find(
-                    ({ encounter }) => encounter.pokemonId === id,
-                  );
-                  return (
-                    <button
-                      key={index}
-                      className={id ? "occupied" : ""}
-                      aria-label={
-                        found
-                          ? `Ver ${found.encounter.name} de tu equipo`
-                          : `Lugar ${index + 1} disponible en tu equipo`
-                      }
-                      onClick={() =>
-                        found
-                          ? selectEncounter(found.encounter, found.region)
-                          : setTeamOpen(true)
-                      }
-                    >
-                      {found ? (
-                        <PokemonSprite id={id} name={found.encounter.name} />
-                      ) : (
-                        <Plus size={17} />
-                      )}
-                    </button>
-                  );
-                })}
+              <span>
+                <span className="eyebrow">
+                  EN {expedition.country.toUpperCase()}
+                </span>
+                <strong>
+                  {weather.data
+                    ? `${Math.round(weather.data.temperature)}°`
+                    : "—"}{" "}
+                  <small>
+                    {weatherSummary?.label ??
+                      (weather.isPending
+                        ? "Consultando clima"
+                        : "Clima no disponible")}
+                  </small>
+                </strong>
+              </span>
+              <ArrowUpRight size={15} />
+            </button>
+          )}
+          {!worldView && (
+            <div className="map-bottom">
+              <div className="team-dock">
+                <div className="dock-label">
+                  <span>Tu equipo de expedición</span>
+                  <button onClick={() => setTeamOpen(true)}>
+                    {progress.team.length}/6
+                    <ArrowUpRight size={13} />
+                  </button>
+                </div>
+                <div className="team-slots">
+                  {Array.from({ length: 6 }, (_, index) => {
+                    const id = progress.team[index];
+                    const found = allEncounters.find(
+                      ({ encounter }) => encounter.pokemonId === id,
+                    );
+                    return (
+                      <button
+                        key={index}
+                        className={id ? "occupied" : ""}
+                        aria-label={
+                          found
+                            ? `Ver ${found.encounter.name} de tu equipo`
+                            : `Lugar ${index + 1} disponible en tu equipo`
+                        }
+                        onClick={() =>
+                          found
+                            ? selectEncounter(found.encounter, found.region)
+                            : setTeamOpen(true)
+                        }
+                      >
+                        {found ? (
+                          <PokemonSprite id={id} name={found.encounter.name} />
+                        ) : (
+                          <Plus size={17} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </main>
         <footer className="app-footer">
           <span>
@@ -722,40 +793,17 @@ function ExpeditionApp() {
             PokéAPI · OpenFreeMap · Open-Meteo
           </span>
         </footer>
-        {storageError && (
-          <div className="storage-warning" role="status">
-            El navegador no permite guardar. Tu progreso dura esta sesión.
-          </div>
-        )}
-        <AnimatePresence>
-          {notice && (
-            <motion.div
-              className="toast"
-              role="status"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-            >
-              <CheckCircle2 size={18} />
-              {notice}
-              <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <Dialog.Root
           open={!!selected}
           onOpenChange={(open) => {
-            if (!open) navigate(expedition.id, undefined, true);
+            if (!open) closeDetail();
           }}
           modal={false}
         >
           <Dialog.Portal>
             {selected && (
               <Dialog.Content
-                className="detail-dialog"
+                className={`detail-dialog ${fieldOpen ? "detail-dialog-field" : ""}`}
                 aria-describedby={undefined}
                 onInteractOutside={(event) => event.preventDefault()}
                 onCloseAutoFocus={(event) => {
@@ -775,7 +823,7 @@ function ExpeditionApp() {
                   teamFull={progress.team.length >= 6}
                   onRegister={registerSelected}
                   onToggleTeam={toggleSelectedTeam}
-                  onClose={() => navigate(expedition.id, undefined, true)}
+                  onClose={closeDetail}
                   boostedTypes={boostedTypes}
                 />
                 <button className="share-detail" onClick={share}>
@@ -837,13 +885,7 @@ function ExpeditionApp() {
                   </button>
                 ))}
               </div>
-              <button
-                className="world-button"
-                onClick={() => {
-                  setDestinationOpen(false);
-                  setWorldView(true);
-                }}
-              >
+              <button className="world-button" onClick={showWorld}>
                 <Globe2 size={17} />
                 Ver las expediciones en el mapa
               </button>
@@ -993,6 +1035,47 @@ function ExpeditionApp() {
           </Dialog.Portal>
         </Dialog.Root>
       </div>
+      {storageError && (
+        <div className="storage-warning" role="status">
+          El navegador no permite guardar. Tu progreso dura esta sesión.
+        </div>
+      )}
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            className="toast"
+            role="status"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+          >
+            <CheckCircle2 size={18} />
+            {notice}
+            <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {fieldOpen && (
+        <main
+          className="field-route"
+          aria-label="Exploración en primera persona"
+        >
+          <FieldScene
+            registeredIds={registeredIds}
+            detailOpen={Boolean(selected)}
+            onObserve={(encounterId) => {
+              const encounter = expedition.encounters.find(
+                (item) => item.id === encounterId,
+              );
+              if (encounter) selectEncounter(encounter);
+            }}
+            onExit={() => navigate(expedition.id, undefined, true)}
+          />
+        </main>
+      )}
     </MotionConfig>
   );
 }

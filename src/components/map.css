@@ -1,5 +1,13 @@
 .map-surface, .map-canvas { position: absolute; inset: 0; }
 .map-surface { background: #dce4d3; }
+.map-surface.is-globe {
+  background: radial-gradient(ellipse at 70% 39%, #456962 0, #294a45 33%, #152f2b 62%, #112621 100%);
+}
+.is-globe .map-loading { color: #e3eadc; background: transparent; }
+.is-globe .map-canvas .maplibregl-ctrl-top-right { top: 68px; }
+.is-globe .maplibregl-ctrl-compass { display: none; }
+.is-globe .maplibregl-canvas-container.maplibregl-interactive { cursor: grab; }
+.is-globe .maplibregl-canvas-container.maplibregl-interactive:active { cursor: grabbing; }
 .map-canvas .maplibregl-ctrl-top-right { top: 22px; right: 22px; }
 .map-canvas .maplibregl-ctrl-bottom-right { right: 12px; bottom: 8px; }
 .map-canvas .maplibregl-ctrl-group { border: 1px solid #d5dacf; border-radius: 12px; overflow: hidden; box-shadow: 0 3px 15px #243b2812; }
@@ -22,11 +30,52 @@
 .pokemon-marker:focus-visible { outline: 0; }
 .pokemon-marker:focus-visible .marker-inner { outline: 3px solid #245845; outline-offset: 5px; }
 .marker-fallback { font: 700 23px var(--font-body, sans-serif); text-transform: uppercase; color: #46654d; }
-.expedition-marker { display: grid; gap: 2px; min-width: 115px; padding: 11px 14px; border: 2px solid #fffdf7; border-radius: 12px; background: #fffdf6; color: #294d3b; box-shadow: 0 4px 18px #263e3233; cursor: pointer; text-align: left; }
-.expedition-marker::after { content: ''; position: absolute; bottom: -9px; left: calc(50% - 8px); border: 8px solid transparent; border-bottom: 0; border-top-color: #fffdf6; }
-.expedition-marker strong { font: 700 13px var(--font-body, sans-serif); }
-.expedition-marker span { font: 500 10px var(--font-body, sans-serif); color: #657969; }
-.expedition-marker:hover, .expedition-marker:focus-visible { outline: 3px solid var(--expedition-color, #396648); outline-offset: 4px; }
+.expedition-marker {
+  display: grid;
+  gap: 3px;
+  padding: 8px 11px 9px 28px;
+  color: #fcfcf3;
+  background: #203a32ef;
+  border: 1px solid #d6e2d05c;
+  border-radius: 9px;
+  box-shadow: 0 5px 20px #11262166;
+  cursor: pointer;
+  text-align: left;
+  z-index: 1;
+}
+.expedition-marker::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--expedition-color, #8fba83) 55%, #f2efb7);
+  box-shadow: 0 0 0 4px #e9edd12d;
+}
+.expedition-marker::after { content: ''; position: absolute; bottom: -8px; left: calc(50% - 5px); border: 5px solid transparent; border-bottom: 0; border-top-color: #203a32; }
+.expedition-marker strong { font: 700 12px var(--font-body, sans-serif); white-space: nowrap; }
+.expedition-marker span { font: 500 10px var(--font-body, sans-serif); color: #cbddca; white-space: nowrap; }
+.expedition-marker:hover, .expedition-marker:focus-visible { outline: 2px solid #dfedbc; outline-offset: 4px; z-index: 2; }
+.expedition-marker.maplibregl-marker-covered { visibility: hidden; pointer-events: none; }
+.trailhead-marker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 2px solid #fff9d8;
+  border-radius: 10px;
+  background: #264e3a;
+  color: #fff9d8;
+  font: 700 11px var(--font-body, sans-serif);
+  box-shadow: 0 3px 12px #23382f45;
+  white-space: nowrap;
+  z-index: 2;
+  cursor: pointer;
+}
+.trailhead-marker svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.trailhead-marker:hover, .trailhead-marker:focus-visible { outline: 2px solid #264e3a; outline-offset: 3px; }
 .map-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; color: #46654d; font-size: 13px; background: radial-gradient(circle, #edf0df88, #d6e0c9); pointer-events: none; }
 .map-loading-ring { display: block; width: 42px; height: 42px; border: 2px solid #a6bba2; border-top-color: #2a5c42; border-radius: 50%; animation: map-spin 1.2s linear infinite; }
 .map-retry { position: absolute; top: 30px; right: 82px; max-width: 270px; display: grid; gap: 7px; padding: 12px 16px; border-radius: 12px; background: #fffdf2; color: #6e593d; box-shadow: 0 4px 18px #263e3222; font-size: 12px; }
@@ -39,6 +88,10 @@
   .pokemon-marker .marker-inner { width: 62px; height: 62px; }
   .pokemon-marker .marker-sprite { width: 68px; height: 68px; }
   .pokemon-marker .marker-label { font-size: 10px; }
+  .expedition-marker { gap: 0; min-height: 36px; padding: 7px 9px 7px 24px; }
+  .expedition-marker::before { top: 12px; left: 9px; width: 6px; height: 6px; }
+  .expedition-marker span { display: none; }
+  .trailhead-marker { padding: 5px 7px; font-size: 10px; }
   .map-retry { top: 74px; right: 63px; max-width: 220px; }
 }
 @media (prefers-reduced-motion: reduce) {

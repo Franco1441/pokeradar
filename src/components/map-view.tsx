@@ -26,8 +26,11 @@ interface MapViewProps {
   recenterKey?: number;
   onSelect: (encounter: Encounter) => void;
   onExpedition: (id: string) => void;
+  onEnterField?: () => void;
   onMapError: (message: string | null) => void;
 }
+
+const NIKKO_TRAILHEAD: [number, number] = [139.605, 36.7545];
 
 function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   if (window.matchMedia("(min-width: 900px)").matches) {
@@ -49,6 +52,36 @@ function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   };
 }
 
+function globeCamera(container: HTMLElement, expedition: Expedition) {
+  const [longitude, latitude] =
+    expedition.id === "nikko" ? [104, 25] : expedition.coordinates;
+  const center: [number, number] = [longitude, Math.min(latitude, 45)];
+  const desktop = window.matchMedia("(min-width: 900px)").matches;
+  const landscape = window.matchMedia(
+    "(min-width: 650px) and (max-height: 550px)",
+  ).matches;
+  const padding = desktop
+    ? { left: 410, right: 50, top: 30, bottom: 65 }
+    : landscape
+      ? { left: 300, right: 32, top: 12, bottom: 24 }
+      : {
+          left: 14,
+          right: 14,
+          top: 20,
+          bottom: Math.min(265, container.clientHeight * 0.43),
+        };
+  const available = Math.min(
+    container.clientWidth - padding.left - padding.right,
+    container.clientHeight - padding.top - padding.bottom,
+  );
+  const baseDiameter = 512 / Math.PI / Math.cos((center[1] * Math.PI) / 180);
+  const zoom = Math.min(
+    2.2,
+    Math.max(0, Math.log2((available * 0.9) / baseDiameter)),
+  );
+  return { center, zoom, padding, pitch: 0, bearing: 0 };
+}
+
 function colorMap(map: MapLibreMap) {
   const colors: Record<
     string,
@@ -62,7 +95,6 @@ function colorMap(map: MapLibreMap) {
     landcover_ice: ["fill-color", "#edf3ee"],
     landcover_wetland: ["fill-color", "#c8d9c5"],
     landcover_sand: ["fill-color", "#e8dfc5"],
-    water: ["fill-color", "#a9cdd1"],
     building: ["fill-color", "#d4d2c5"],
     waterway_river: ["line-color", "#a9cdd1"],
     waterway_other: ["line-color", "#a9cdd1"],
@@ -70,6 +102,17 @@ function colorMap(map: MapLibreMap) {
 
   for (const [id, [property, color]] of Object.entries(colors)) {
     if (map.getLayer(id)) map.setPaintProperty(id, property, color);
+  }
+  if (map.getLayer("water")) {
+    map.setPaintProperty("water", "fill-color", [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      0,
+      "#679694",
+      7,
+      "#a9cdd1",
+    ]);
   }
 
   // Keep geographic labels, while removing noisy business and transit overlays.
@@ -139,12 +182,37 @@ function createPokemonElement(encounter: Encounter, select: () => void) {
   return button;
 }
 
+function createTrailheadMarker(onEnter: () => void) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "trailhead-marker";
+  button.setAttribute("aria-label", "Explorar a pie: Claro de los cedros");
+
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  const tree = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  tree.setAttribute("d", "M12 22v-4m0-16-5 7h3l-5 6h14l-5-6h3z");
+  icon.append(tree);
+  const label = document.createElement("span");
+  label.textContent = "Claro de los cedros";
+  button.append(icon, label);
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onEnter();
+  });
+  return new Marker({ element: button, anchor: "bottom" }).setLngLat(
+    NIKKO_TRAILHEAD,
+  );
+}
+
 export default function MapView(props: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markers = useRef<Marker[]>([]);
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
+  const previousWorldView = useRef(props.worldView);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -171,16 +239,36 @@ export default function MapView(props: MapViewProps) {
     try {
       // Resolve the module worker from the same origin in both dev and Turbopack builds.
       setWorkerUrl(`/vendor/maplibre-gl-worker.mjs?v=${getVersion()}`);
+      const { expedition, worldView } = latest.current;
       map = new MapLibreMap({
         container: element,
         style: "https://tiles.openfreemap.org/styles/liberty",
-        center: latest.current.expedition.coordinates,
-        zoom: latest.current.expedition.zoom,
+        transformStyle: (_, style) => ({
+          ...style,
+          projection: { type: "globe" },
+          sky: {
+            "sky-color": "transparent",
+            "horizon-color": "transparent",
+            "fog-color": "transparent",
+            "atmosphere-blend": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              0,
+              0.8,
+              5,
+              0,
+            ],
+          },
+        }),
+        ...(worldView
+          ? globeCamera(element, expedition)
+          : { center: expedition.coordinates, zoom: expedition.zoom }),
         minZoom: 0,
         maxZoom: 18,
         attributionControl: false,
         renderWorldCopies: false,
-        pitch: 0,
+        maxPitch: 55,
         locale: {
           "NavigationControl.ZoomIn": "Acercar mapa",
           "NavigationControl.ZoomOut": "Alejar mapa",
@@ -195,12 +283,6 @@ export default function MapView(props: MapViewProps) {
     }
 
     mapRef.current = map;
-    map
-      .getCanvas()
-      .setAttribute(
-        "aria-label",
-        "Mapa de avistamientos Pokémon. También podés explorar con la lista de especies.",
-      );
     map.addControl(new NavigationControl({ showCompass: true }), "top-right");
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
@@ -238,6 +320,9 @@ export default function MapView(props: MapViewProps) {
     };
   }, [attempt]);
 
+  const hasFieldAccess =
+    props.expedition.id === "nikko" && !!props.onEnterField;
+
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
@@ -255,9 +340,9 @@ export default function MapView(props: MapViewProps) {
           `Explorar ${expedition.name}, ${expedition.country}`,
         );
         const title = document.createElement("strong");
-        title.textContent = expedition.name;
+        title.textContent = expedition.country;
         const country = document.createElement("span");
-        country.textContent = expedition.country;
+        country.textContent = expedition.name;
         button.append(title, country);
         button.style.setProperty("--expedition-color", expedition.color);
         button.addEventListener("click", () =>
@@ -276,8 +361,15 @@ export default function MapView(props: MapViewProps) {
           .setLngLat(encounter.coordinates)
           .addTo(map);
       });
+      if (hasFieldAccess) {
+        markers.current.push(
+          createTrailheadMarker(() => latest.current.onEnterField?.()).addTo(
+            map,
+          ),
+        );
+      }
     }
-  }, [ready, attempt, props.worldView, props.encounters]);
+  }, [ready, attempt, props.worldView, props.encounters, hasFieldAccess]);
 
   useEffect(() => {
     const registered = new Set(props.registeredIds);
@@ -315,21 +407,22 @@ export default function MapView(props: MapViewProps) {
     const element = container.current;
     if (!ready || !map || !element) return;
 
+    const arrivingFromGlobe = previousWorldView.current && !props.worldView;
+    previousWorldView.current = props.worldView;
+    map
+      .getCanvas()
+      .setAttribute(
+        "aria-label",
+        props.worldView
+          ? "Globo interactivo de expediciones Pokémon. Podés usar las flechas para girar."
+          : "Mapa de avistamientos Pokémon. También podés explorar con la lista de especies.",
+      );
     const padding = cameraPadding(element, Boolean(props.selectedId));
     map.stop();
     map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
     if (props.worldView) {
-      map.fitBounds(
-        [
-          [-30, -36],
-          [156, 66],
-        ],
-        {
-          padding,
-          duration: reducedMotion ? 0 : 1400,
-          maxZoom: 2.5,
-        },
-      );
+      const camera = globeCamera(element, props.expedition);
+      map.flyTo({ ...camera, duration: reducedMotion ? 0 : 1450 });
       return;
     }
 
@@ -355,7 +448,9 @@ export default function MapView(props: MapViewProps) {
         {
           padding,
           maxZoom: props.expedition.zoom,
-          duration: reducedMotion ? 0 : 1400,
+          duration: reducedMotion ? 0 : arrivingFromGlobe ? 2150 : 1400,
+          pitch: arrivingFromGlobe && !reducedMotion ? 16 : 0,
+          bearing: 0,
         },
       );
       return;
@@ -364,6 +459,7 @@ export default function MapView(props: MapViewProps) {
       center: selected.coordinates,
       zoom: Math.max(props.expedition.zoom + 0.5, 13),
       padding,
+      pitch: 0,
       duration: reducedMotion ? 0 : 650,
       essential: false,
     });
@@ -378,7 +474,7 @@ export default function MapView(props: MapViewProps) {
   ]);
 
   return (
-    <div className="map-surface">
+    <div className={`map-surface${props.worldView ? " is-globe" : ""}`}>
       <div ref={container} className="map-canvas" />
       {!ready && !error && (
         <div className="map-loading" role="status">

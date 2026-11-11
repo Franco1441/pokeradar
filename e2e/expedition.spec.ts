@@ -32,7 +32,7 @@ test("registers a Pokémon, preserves the team, and shares the encounter", async
       },
     }),
   );
-  await page.goto("/");
+  await page.goto("/?region=nikko");
   await page
     .getByRole("complementary", { name: "Expedición y avistamientos" })
     .getByRole("button", { name: /Pikachu/ })
@@ -65,7 +65,7 @@ test("keeps the latest selection when a previous request is delayed", async ({
   await page.route("https://pokeapi.co/api/v2/pokemon/25/", (route) =>
     route.fulfill({ status: 503 }),
   );
-  await page.goto("/");
+  await page.goto("/?region=nikko");
   const list = page.getByRole("complementary", {
     name: "Expedición y avistamientos",
   });

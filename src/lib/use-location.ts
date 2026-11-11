@@ -17,13 +17,20 @@ export function useLocation() {
     () => window.location.search,
     () => "",
   );
-  function navigate(region: string, encounter?: string, replace = false) {
-    const params = new URLSearchParams({ region });
+  function navigate(
+    region: string | null,
+    encounter?: string,
+    replace = false,
+    view?: "field" | "world",
+  ) {
+    const params = new URLSearchParams();
+    if (region) params.set("region", region);
+    if (view) params.set("view", view);
     if (encounter) params.set("encounter", encounter);
     window.history[replace ? "replaceState" : "pushState"](
       null,
       "",
-      `?${params}`,
+      params.size ? `?${params}` : window.location.pathname,
     );
     window.dispatchEvent(new Event("pokeradar-location"));
   }
