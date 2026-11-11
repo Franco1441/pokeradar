@@ -1,0 +1,47 @@
+.map-surface, .map-canvas { position: absolute; inset: 0; }
+.map-surface { background: #dce4d3; }
+.map-canvas .maplibregl-ctrl-top-right { top: 22px; right: 22px; }
+.map-canvas .maplibregl-ctrl-bottom-right { right: 12px; bottom: 8px; }
+.map-canvas .maplibregl-ctrl-group { border: 1px solid #d5dacf; border-radius: 12px; overflow: hidden; box-shadow: 0 3px 15px #243b2812; }
+.map-canvas .maplibregl-ctrl-group button { width: 42px; height: 42px; background-color: #fdfcf7; }
+.map-canvas .maplibregl-ctrl-attrib { font: 10px var(--font-body, sans-serif); color: #4c6251; background: #fffdf5dc; }
+.map-canvas .maplibregl-ctrl-attrib a { color: #345b4b; }
+.pokemon-marker { display: grid; place-items: center; gap: 3px; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; z-index: 1; }
+.pokemon-marker .marker-inner { position: relative; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: #fffef8ed; border: 2px solid #fffdf8; box-shadow: 0 5px 16px #294b3428, 0 1px 3px #294b341a; transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+.pokemon-marker .marker-sprite { width: 78px; height: 78px; object-fit: contain; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 3px 1px #15392617); }
+.pokemon-marker .marker-label { padding: 3px 9px; border-radius: 6px; background: #fffdf5ed; color: #294d3b; font: 600 11px var(--font-body, sans-serif); box-shadow: 0 2px 4px #23382f12; text-transform: capitalize; white-space: nowrap; }
+.pokemon-marker .marker-type-dot { position: absolute; width: 13px; height: 13px; right: 1px; bottom: 3px; border-radius: 50%; border: 3px solid #fffef7; }
+.pokemon-marker .marker-registration, .pokemon-marker .marker-activity { position: absolute; display: none; place-items: center; width: 21px; height: 21px; border: 2px solid #fffef7; border-radius: 50%; font: 700 12px sans-serif; }
+.pokemon-marker .marker-registration { top: 1px; left: 0; color: white; background: #285e47; }
+.pokemon-marker .marker-activity { top: 1px; right: 0; color: #67521c; background: #f1d17f; }
+.pokemon-marker.is-registered .marker-registration, .pokemon-marker.is-boosted .marker-activity { display: grid; }
+.pokemon-marker.is-selected { z-index: 3; }
+.pokemon-marker.is-selected .marker-inner { border-color: #30664c; box-shadow: 0 0 0 6px #34694d22, 0 8px 25px #244c4133; transform: translateY(-5px); }
+.pokemon-marker.is-selected .marker-label { color: #fffdf4; background: #285e47; }
+.pokemon-marker:hover .marker-inner, .pokemon-marker:focus-visible .marker-inner { transform: translateY(-5px); border-color: #30664c; }
+.pokemon-marker:focus-visible { outline: 0; }
+.pokemon-marker:focus-visible .marker-inner { outline: 3px solid #245845; outline-offset: 5px; }
+.marker-fallback { font: 700 23px var(--font-body, sans-serif); text-transform: uppercase; color: #46654d; }
+.expedition-marker { display: grid; gap: 2px; min-width: 115px; padding: 11px 14px; border: 2px solid #fffdf7; border-radius: 12px; background: #fffdf6; color: #294d3b; box-shadow: 0 4px 18px #263e3233; cursor: pointer; text-align: left; }
+.expedition-marker::after { content: ''; position: absolute; bottom: -9px; left: calc(50% - 8px); border: 8px solid transparent; border-bottom: 0; border-top-color: #fffdf6; }
+.expedition-marker strong { font: 700 13px var(--font-body, sans-serif); }
+.expedition-marker span { font: 500 10px var(--font-body, sans-serif); color: #657969; }
+.expedition-marker:hover, .expedition-marker:focus-visible { outline: 3px solid var(--expedition-color, #396648); outline-offset: 4px; }
+.map-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; color: #46654d; font-size: 13px; background: radial-gradient(circle, #edf0df88, #d6e0c9); pointer-events: none; }
+.map-loading-ring { display: block; width: 42px; height: 42px; border: 2px solid #a6bba2; border-top-color: #2a5c42; border-radius: 50%; animation: map-spin 1.2s linear infinite; }
+.map-retry { position: absolute; top: 30px; right: 82px; max-width: 270px; display: grid; gap: 7px; padding: 12px 16px; border-radius: 12px; background: #fffdf2; color: #6e593d; box-shadow: 0 4px 18px #263e3222; font-size: 12px; }
+.map-retry button { padding: 5px 0; text-align: left; font-weight: 700; color: #245845; background: none; border: none; cursor: pointer; text-decoration: underline; }
+@keyframes map-spin { to { transform: rotate(360deg); } }
+@media (max-width: 899px) {
+  .map-canvas .maplibregl-ctrl-top-right { top: 67px; right: 5px; }
+  .map-canvas .maplibregl-ctrl-bottom-right { bottom: 84px; right: 2px; }
+  .map-canvas .maplibregl-ctrl-group button { width: 40px; height: 40px; }
+  .pokemon-marker .marker-inner { width: 62px; height: 62px; }
+  .pokemon-marker .marker-sprite { width: 68px; height: 68px; }
+  .pokemon-marker .marker-label { font-size: 10px; }
+  .map-retry { top: 74px; right: 63px; max-width: 220px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-marker .marker-inner { transition: none; }
+  .map-loading-ring { animation: none; }
+}
