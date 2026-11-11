@@ -1,7 +1,13 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- Small remote pixel sprites need unmodified rendering. */
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,6 +44,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
+import { getFieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
@@ -66,7 +73,7 @@ const FieldScene = dynamic(() => import("./field-scene"), {
   ssr: false,
   loading: () => (
     <div className="field-loading" role="status">
-      Entrando al claro de los cedros…
+      Preparando la vista del terreno…
     </div>
   ),
 });
@@ -118,7 +125,8 @@ function ExpeditionApp() {
   const [teamOpen, setTeamOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const worldView = params.get("view") === "world" || !params.has("region");
-  const fieldOpen = expedition.id === "nikko" && params.get("view") === "field";
+  const fieldSite = getFieldSite(expedition.id);
+  const fieldOpen = Boolean(fieldSite) && params.get("view") === "field";
   const [expanded, setExpanded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
@@ -191,6 +199,7 @@ function ExpeditionApp() {
   }
   function changeExpedition(id: string) {
     navigate(id);
+    setNotice("");
     setSearch("");
     setType("");
     setDestinationOpen(false);
@@ -199,6 +208,7 @@ function ExpeditionApp() {
   }
   function showWorld() {
     navigate(expedition.id, undefined, false, "world");
+    setNotice("");
     setDestinationOpen(false);
     setExpanded(false);
     setTab("explore");
@@ -208,7 +218,7 @@ function ExpeditionApp() {
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    navigate("nikko", undefined, false, "field");
+    navigate(expedition.id, undefined, false, "field");
   }
   function closeDetail() {
     navigate(expedition.id, undefined, true, fieldOpen ? "field" : undefined);
@@ -302,21 +312,29 @@ function ExpeditionApp() {
           </div>
         </header>
 
-        <main className={`map-stage ${worldView ? "map-stage-world" : ""}`}>
+        <main
+          className={`map-stage ${worldView ? "map-stage-world" : ""}`}
+          style={
+            {
+              "--expedition-color": expedition.color,
+              "--site-accent": fieldSite?.accent,
+            } as CSSProperties
+          }
+        >
           <MapView
             recenterKey={mapAttempt}
             expedition={expedition}
             encounters={
               tab === "explore" ? visibleEncounters : expedition.encounters
             }
-            selectedId={fieldOpen ? null : selected?.id ?? null}
+            selectedId={fieldOpen ? null : (selected?.id ?? null)}
             registeredIds={registeredIds}
             boostedTypes={boostedTypes}
             worldView={worldView}
             onSelect={selectEncounter}
             onExpedition={changeExpedition}
             onMapError={setMapError}
-            onEnterField={enterField}
+            onEnterField={fieldSite ? enterField : undefined}
           />
           {!worldView && (
             <div className="map-topline">
@@ -396,7 +414,7 @@ function ExpeditionApp() {
               <>
                 <div className="expedition-cover">
                   <Image
-                    src={expedition.image}
+                    src={fieldSite?.image ?? expedition.image}
                     alt={`Paisaje ilustrativo de ${expedition.biome.toLowerCase()}`}
                     fill
                     priority
@@ -420,14 +438,16 @@ function ExpeditionApp() {
                   </div>
                 </div>
                 <div className="panel-body">
-                  {expedition.id === "nikko" && (
+                  {fieldSite && (
                     <button className="field-enter" onClick={enterField}>
                       <span className="field-enter-icon">
                         <Binoculars size={22} />
                       </span>
                       <span>
-                        <strong>Explorar a pie</strong>
-                        <small>Claro de los cedros · 3 pistas</small>
+                        <strong>{fieldSite.action}</strong>
+                        <small>
+                          {fieldSite.name} · {fieldSite.clues.length} pistas
+                        </small>
                       </span>
                       <ArrowRight size={17} />
                     </button>
@@ -566,15 +586,7 @@ function ExpeditionApp() {
             )}
             {tab === "atlas" && (
               <div className="panel-body atlas-panel">
-                <span className="eyebrow">TU CUADERNO DE CAMPO</span>
-                <h1>
-                  Pequeños encuentros.
-                  <br />
-                  Grandes descubrimientos.
-                </h1>
-                <p className="muted">
-                  Cada especie, un lugar y una historia para recordar.
-                </p>
+                <h1>Atlas de campo</h1>
                 <div className="atlas-total">
                   <BookOpen size={24} />
                   <strong>
@@ -588,25 +600,33 @@ function ExpeditionApp() {
                   </span>
                 </div>
                 <div className="atlas-stamps">
-                  {EXPEDITIONS.map((region) => (
-                    <button
-                      key={region.id}
-                      onClick={() =>
-                        setAtlasRegion(
-                          atlasRegion === region.id ? "all" : region.id,
-                        )
-                      }
-                      className={`${expeditionProgress(region, progress).complete ? "earned" : ""} ${atlasRegion === region.id ? "chosen" : ""}`}
-                      title={region.name}
-                      aria-label={`Filtrar atlas por ${region.name}`}
-                    >
-                      <Leaf size={18} />
-                      <span>{region.country}</span>
-                      {expeditionProgress(region, progress).complete && (
-                        <Check size={12} />
-                      )}
-                    </button>
-                  ))}
+                  {EXPEDITIONS.map((region) => {
+                    const regionProgress = expeditionProgress(region, progress);
+                    return (
+                      <button
+                        key={region.id}
+                        onClick={() =>
+                          setAtlasRegion(
+                            atlasRegion === region.id ? "all" : region.id,
+                          )
+                        }
+                        className={`${regionProgress.complete ? "earned" : ""} ${atlasRegion === region.id ? "chosen" : ""}`}
+                        title={region.name}
+                        aria-label={`Filtrar atlas por ${region.name}. ${regionProgress.registered} de ${region.encounters.length} registradas`}
+                        aria-pressed={atlasRegion === region.id}
+                        style={
+                          { "--stamp-color": region.color } as CSSProperties
+                        }
+                      >
+                        <Leaf size={18} />
+                        <span>{region.country}</span>
+                        <small>
+                          {regionProgress.registered}/{region.encounters.length}
+                        </small>
+                        {regionProgress.complete && <Check size={12} />}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="search-field">
                   <Search size={16} />
@@ -862,7 +882,7 @@ function ExpeditionApp() {
                   >
                     <div className="destination-image">
                       <Image
-                        src={region.image}
+                        src={getFieldSite(region.id)?.image ?? region.image}
                         alt={`Paisaje ilustrativo de ${region.biome}`}
                         fill
                         sizes="(max-width: 640px) 90vw, 260px"
@@ -1043,7 +1063,7 @@ function ExpeditionApp() {
       <AnimatePresence>
         {notice && (
           <motion.div
-            className="toast"
+            className={`toast ${fieldOpen ? "toast-field" : ""}`}
             role="status"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1058,12 +1078,15 @@ function ExpeditionApp() {
         )}
       </AnimatePresence>
 
-      {fieldOpen && (
+      {fieldOpen && fieldSite && (
         <main
           className="field-route"
           aria-label="Exploración en primera persona"
         >
           <FieldScene
+            key={expedition.id}
+            expedition={expedition}
+            site={fieldSite}
             registeredIds={registeredIds}
             detailOpen={Boolean(selected)}
             onObserve={(encounterId) => {

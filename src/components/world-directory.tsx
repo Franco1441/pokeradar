@@ -1,6 +1,8 @@
 import Image from "next/image";
-import { ArrowUpRight, Binoculars, MapPin } from "lucide-react";
+import type { CSSProperties } from "react";
+import { ArrowUpRight, Compass } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
+import { getFieldSite } from "@/lib/field-sites";
 
 export default function WorldDirectory({
   onChoose,
@@ -11,36 +13,47 @@ export default function WorldDirectory({
     <section className="world-directory" aria-labelledby="world-title">
       <div className="world-intro">
         <p className="world-kicker">
-          <MapPin size={13} /> Destinos de expedición
+          <Compass size={16} aria-hidden="true" />
+          {EXPEDITIONS.length} expediciones
         </p>
         <h1 id="world-title">El mundo por explorar.</h1>
-        <p>
-          Girá el globo o elegí un destino para investigar sus avistamientos.
-        </p>
+        <p>Girá el globo o elegí un destino para seguir sus pistas.</p>
       </div>
 
       <ul className="world-destinations">
-        {EXPEDITIONS.map((expedition) => (
-          <li key={expedition.id}>
-            <button onClick={() => onChoose(expedition.id)}>
-              <span className="world-destination-photo">
-                <Image src={expedition.image} alt="" fill sizes="64px" />
-              </span>
-              <span className="world-destination-text">
-                <strong>{expedition.name}</strong>
-                <span>
-                  {expedition.country} · {expedition.biome}
+        {EXPEDITIONS.map((expedition) => {
+          const site = getFieldSite(expedition.id);
+          return (
+            <li key={expedition.id}>
+              <button
+                type="button"
+                onClick={() => onChoose(expedition.id)}
+                style={
+                  { "--destination-accent": expedition.color } as CSSProperties
+                }
+              >
+                <span className="world-destination-photo" aria-hidden="true">
+                  <Image
+                    src={site?.image ?? expedition.image}
+                    alt=""
+                    fill
+                    sizes="92px"
+                  />
                 </span>
-                {expedition.id === "nikko" && (
-                  <small>
-                    <Binoculars size={13} /> Exploración en primera persona
-                  </small>
-                )}
-              </span>
-              <ArrowUpRight size={17} aria-hidden="true" />
-            </button>
-          </li>
-        ))}
+                <span className="world-destination-text">
+                  <span className="world-destination-country">
+                    {expedition.country}
+                  </span>
+                  <strong>{expedition.name}</strong>
+                  <small>{site?.name ?? expedition.biome}</small>
+                </span>
+                <span className="world-destination-action" aria-hidden="true">
+                  <ArrowUpRight size={16} />
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

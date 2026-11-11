@@ -11,6 +11,7 @@ import {
   getVersion,
 } from "maplibre-gl";
 import { EXPEDITIONS } from "@/lib/expeditions";
+import { getFieldSite, type FieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -29,8 +30,6 @@ interface MapViewProps {
   onEnterField?: () => void;
   onMapError: (message: string | null) => void;
 }
-
-const NIKKO_TRAILHEAD: [number, number] = [139.605, 36.7545];
 
 function cameraPadding(container: HTMLElement, detailOpen: boolean) {
   if (window.matchMedia("(min-width: 900px)").matches) {
@@ -109,11 +108,17 @@ function colorMap(map: MapLibreMap) {
       ["linear"],
       ["zoom"],
       0,
-      "#679694",
+      "#66948d",
       7,
       "#a9cdd1",
     ]);
   }
+  const globeLabelMinZoom = new Map([
+    ["water_name_point_label", 3],
+    ["water_name_line_label", 3],
+    ["label_country_3", 3.4],
+    ["label_country_2", 2.2],
+  ]);
 
   // Keep geographic labels, while removing noisy business and transit overlays.
   for (const layer of map.getStyle().layers) {
@@ -125,8 +130,12 @@ function colorMap(map: MapLibreMap) {
       map.setLayoutProperty(layer.id, "visibility", "none");
     }
     if (layer.type === "symbol" && layer.layout?.["text-field"]) {
-      map.setPaintProperty(layer.id, "text-color", "#617361");
+      map.setPaintProperty(layer.id, "text-color", "#4c6253");
       map.setPaintProperty(layer.id, "text-halo-color", "#f5f4e9");
+      const minZoom = globeLabelMinZoom.get(layer.id);
+      if (minZoom !== undefined) {
+        map.setLayerZoomRange(layer.id, minZoom, layer.maxzoom ?? 24);
+      }
     }
   }
 }
@@ -182,27 +191,28 @@ function createPokemonElement(encounter: Encounter, select: () => void) {
   return button;
 }
 
-function createTrailheadMarker(onEnter: () => void) {
+function createTrailheadMarker(site: FieldSite, onEnter: () => void) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "trailhead-marker";
-  button.setAttribute("aria-label", "Explorar a pie: Claro de los cedros");
+  button.setAttribute("aria-label", `${site.action}: ${site.name}`);
+  button.style.setProperty("--site-accent", site.accent);
 
   const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
   icon.setAttribute("aria-hidden", "true");
-  const tree = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  tree.setAttribute("d", "M12 22v-4m0-16-5 7h3l-5 6h14l-5-6h3z");
-  icon.append(tree);
+  const trail = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  trail.setAttribute("d", "M4 19l5-8 3 4 3-7 5 11M4 19h16M7 6h4m-2-2v4");
+  icon.append(trail);
   const label = document.createElement("span");
-  label.textContent = "Claro de los cedros";
+  label.textContent = site.name;
   button.append(icon, label);
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     onEnter();
   });
   return new Marker({ element: button, anchor: "bottom" }).setLngLat(
-    NIKKO_TRAILHEAD,
+    site.coordinates,
   );
 }
 
@@ -320,8 +330,9 @@ export default function MapView(props: MapViewProps) {
     };
   }, [attempt]);
 
-  const hasFieldAccess =
-    props.expedition.id === "nikko" && !!props.onEnterField;
+  const fieldSite = props.onEnterField
+    ? getFieldSite(props.expedition.id)
+    : undefined;
 
   useEffect(() => {
     const map = mapRef.current;
@@ -361,15 +372,15 @@ export default function MapView(props: MapViewProps) {
           .setLngLat(encounter.coordinates)
           .addTo(map);
       });
-      if (hasFieldAccess) {
+      if (fieldSite) {
         markers.current.push(
-          createTrailheadMarker(() => latest.current.onEnterField?.()).addTo(
-            map,
-          ),
+          createTrailheadMarker(fieldSite, () =>
+            latest.current.onEnterField?.(),
+          ).addTo(map),
         );
       }
     }
-  }, [ready, attempt, props.worldView, props.encounters, hasFieldAccess]);
+  }, [ready, attempt, props.worldView, props.encounters, fieldSite]);
 
   useEffect(() => {
     const registered = new Set(props.registeredIds);
@@ -434,12 +445,12 @@ export default function MapView(props: MapViewProps) {
           (encounter) => encounter.id === props.selectedId,
         );
     if (!selected) {
-      const longitudes = props.expedition.encounters.map(
-        (item) => item.coordinates[0],
+      const coordinates = props.expedition.encounters.map(
+        (item) => item.coordinates,
       );
-      const latitudes = props.expedition.encounters.map(
-        (item) => item.coordinates[1],
-      );
+      if (fieldSite) coordinates.push(fieldSite.coordinates);
+      const longitudes = coordinates.map(([longitude]) => longitude);
+      const latitudes = coordinates.map(([, latitude]) => latitude);
       map.fitBounds(
         [
           [Math.min(...longitudes), Math.min(...latitudes)],
@@ -470,6 +481,7 @@ export default function MapView(props: MapViewProps) {
     props.selectedId,
     props.worldView,
     props.recenterKey,
+    fieldSite,
     reducedMotion,
   ]);
 

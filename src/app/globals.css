@@ -150,7 +150,7 @@ button:disabled { cursor: default; }
 .empty-state svg { margin: 0 auto 7px; }
 .text-button, .share-detail { color: var(--green); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .share-detail { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; font-size: 12px; }
-.toast, .storage-warning { position: fixed; z-index: 20; left: 50%; bottom: 43px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; padding: 10px 13px; border-radius: 11px; background: #245845; color: white; box-shadow: 0 8px 24px #152c2333; font-size: 13px; width: max-content; max-width: calc(100vw - 24px); }
+.toast, .storage-warning { position: fixed; z-index: 20; left: 50%; bottom: 43px; translate: -50% 0; display: flex; gap: 8px; align-items: center; padding: 10px 13px; border-radius: 11px; background: #245845; color: white; box-shadow: 0 8px 24px #152c2333; font-size: 13px; width: max-content; max-width: calc(100vw - 24px); }
 .toast button { margin-left: 3px; padding: 4px; }
 .storage-warning { bottom: 87px; }
 .modal-overlay { position: fixed; inset: 0; z-index: 10; background: #10261e6b; backdrop-filter: blur(3px); }
@@ -259,4 +259,28 @@ button:disabled { cursor: default; }
   .map-topline, .weather-glance, .map-error { left: calc(var(--panel-width) + 16px); }
   .map-toolbar { top: 141px; }
   .expedition-app .map-canvas .maplibregl-ctrl-top-right { top: 4px; }
+}
+
+/* Region colors carry from the destination list into the field notebook. */
+.map-stage:not(.map-stage-world) .field-enter {
+  background: color-mix(in srgb, var(--expedition-color) 27%, #163d30);
+  border-color: color-mix(in srgb, var(--expedition-color) 54%, #264c39);
+}
+.map-stage:not(.map-stage-world) .field-enter:hover {
+  background: color-mix(in srgb, var(--expedition-color) 38%, #102b22);
+}
+.map-stage:not(.map-stage-world) .field-enter-icon { color: var(--site-accent, #dcebc0); }
+.atlas-panel h1 { font-size: clamp(31px, 3vw, 39px); }
+.atlas-total { gap: 12px; margin: 14px 0; padding: 14px; }
+.atlas-stamps button { padding: 8px 1px 6px; }
+.atlas-stamps button svg:first-child { color: color-mix(in srgb, var(--stamp-color) 65%, #23402f); }
+.atlas-stamps button small { font-size: 10px; font-weight: 750; }
+.weather-current {
+  background: radial-gradient(ellipse at 62% 20%, color-mix(in srgb, var(--site-accent, #dfebca) 60%, #f9faf2), #eef0e4);
+}
+
+.toast svg { flex: none; }
+.toast.toast-field { top: 150px; bottom: auto; }
+@media (max-width: 899px) {
+  .toast.toast-field { top: 136px; }
 }

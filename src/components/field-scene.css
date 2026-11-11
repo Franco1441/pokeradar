@@ -6,8 +6,8 @@
   overflow: hidden;
   color: #f8f8ef;
   background: #17291d;
-  --field-border: #f4f6da37;
-  --field-glass: #17271de8;
+  --field-border: color-mix(in srgb, var(--field-accent) 33%, transparent);
+  --field-glass: color-mix(in srgb, var(--field-accent) 10%, #101915f5);
 }
 
 .field-viewport {
@@ -19,16 +19,20 @@
   user-select: none;
 }
 
-.field-viewport[data-dragging="true"] { cursor: grabbing; }
+.field-viewport[data-dragging="true"] {
+  cursor: grabbing;
+}
 
 .field-panorama {
   position: absolute;
   left: 0;
   background: radial-gradient(ellipse at 45% 42%, #57684e, #1a2c1c 68%);
-  transition: transform .65s cubic-bezier(.2, .74, .3, 1);
+  transition: transform 0.65s cubic-bezier(0.2, 0.74, 0.3, 1);
 }
 
-.field-viewport[data-dragging="true"] .field-panorama { transition: none; }
+.field-viewport[data-dragging="true"] .field-panorama {
+  transition: none;
+}
 
 .field-backdrop {
   position: absolute;
@@ -39,7 +43,9 @@
   pointer-events: none;
 }
 
-.field-backdrop[data-failed="true"] { visibility: hidden; }
+.field-backdrop[data-failed="true"] {
+  visibility: hidden;
+}
 
 .field-shade,
 .field-fog {
@@ -49,20 +55,38 @@
 }
 
 .field-shade {
-  background: linear-gradient(180deg, #0a180fc9, transparent 26%, transparent 67%, #07130edb),
+  background:
+    linear-gradient(
+      180deg,
+      #0a180fc9,
+      transparent 26%,
+      transparent 67%,
+      #07130edb
+    ),
     radial-gradient(ellipse at 50% 47%, transparent 43%, #0a160d66 100%);
 }
 
 .field-fog {
   z-index: 3;
-  background: radial-gradient(ellipse at 52% 39%, #e9ebd7, #c2d0ad 62%, #809179);
+  background: radial-gradient(
+    ellipse at 52% 39%,
+    #fbfaf4,
+    var(--field-accent) 62%,
+    #586c62
+  );
   opacity: 0;
-  animation: field-landing 1.15s cubic-bezier(.31, .56, .24, 1) both;
+  animation: field-landing 1.15s cubic-bezier(0.31, 0.56, 0.24, 1) both;
 }
 
 @keyframes field-landing {
-  0% { opacity: .92; transform: scale(1.08); }
-  100% { opacity: 0; transform: scale(1.22); }
+  0% {
+    opacity: 0.92;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
 }
 
 .field-heading {
@@ -81,15 +105,15 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
-  color: #edf1da;
-  font-size: .82rem;
+  color: var(--field-accent);
+  font-size: 0.82rem;
   font-weight: 650;
   text-shadow: 0 1px 12px #0d2015;
 }
 
 .field-heading h2 {
   font: 740 clamp(1.8rem, 5vw, 4.6rem)/1.02 var(--font-heading);
-  letter-spacing: -.047em;
+  letter-spacing: -0.047em;
   text-wrap: balance;
   text-shadow: 0 3px 26px #14291bc9;
 }
@@ -112,7 +136,7 @@
   min-height: 44px;
   padding: 0 13px;
   border-radius: 11px;
-  font-size: .82rem;
+  font-size: 0.82rem;
   font-weight: 650;
   white-space: nowrap;
   pointer-events: auto;
@@ -120,7 +144,9 @@
 
 .field-exit:hover,
 .field-navigation button:hover,
-.field-dismiss:hover { background: #4a5f47; }
+.field-dismiss:hover {
+  background: color-mix(in srgb, var(--field-accent) 20%, #20362b);
+}
 
 .field-clue-point {
   position: absolute;
@@ -136,17 +162,21 @@
   left: 0;
   bottom: 0;
   pointer-events: none;
-  transform: translate(-56%, 48%) scale(.66);
-  opacity: .66;
-  filter: saturate(.72) brightness(.71) drop-shadow(0 9px 9px #102315bb);
+  transform: translate(-56%, 48%) scale(0.66);
+  opacity: 0.66;
+  filter: saturate(0.72) brightness(0.71) drop-shadow(0 9px 9px #102315bb);
   clip-path: inset(0 7% 49% 0 round 10%);
-  transition: transform .36s ease, filter .36s ease, opacity .36s ease, clip-path .36s ease;
+  transition:
+    transform 0.36s ease,
+    filter 0.36s ease,
+    opacity 0.36s ease,
+    clip-path 0.36s ease;
 }
 
 .field-clue-point[data-found="true"] .field-pokemon {
   transform: translate(-54%, 9%) scale(1);
   opacity: 1;
-  filter: saturate(.8) brightness(.94) drop-shadow(0 8px 12px #142018bd);
+  filter: saturate(0.8) brightness(0.94) drop-shadow(0 8px 12px #142018bd);
   clip-path: inset(0);
 }
 
@@ -158,9 +188,9 @@
   width: 46px;
   height: 46px;
   transform: translate(-50%, -50%);
-  border: 1px solid #e6edbbba;
+  border: 1px solid var(--field-accent);
   border-radius: 50%;
-  color: #f1f3d7;
+  color: var(--field-accent);
   background: #152a1cbb;
   box-shadow: 0 0 20px #142b20b3;
 }
@@ -169,24 +199,41 @@
   position: absolute;
   inset: -4px;
   content: "";
-  border: 1px solid #f4f5cbaa;
+  border: 1px solid var(--field-accent);
   border-radius: inherit;
   animation: field-pulse 2.8s ease-out infinite;
 }
 
-.field-clue-point[data-found="true"] .field-clue::before { animation: none; opacity: 0; }
-.field-clue:hover { color: #23382f; background: #e4efc4; }
-.field-scene button:focus-visible { outline-color: #f4f7cc; }
+.field-clue-point[data-found="true"] .field-clue::before {
+  animation: none;
+  opacity: 0;
+}
+.field-clue:hover {
+  color: #23382f;
+  background: var(--field-accent);
+}
+.field-scene button:focus-visible {
+  outline-color: var(--field-accent);
+}
 
 @keyframes field-pulse {
-  0%, 24% { opacity: .8; transform: scale(.9); }
-  90%, 100% { opacity: 0; transform: scale(1.45); }
+  0%,
+  24% {
+    opacity: 0.8;
+    transform: scale(0.9);
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
 }
 
 .field-controls {
   position: absolute;
   z-index: 2;
-  inset: auto clamp(16px, 4.5vw, 60px) max(clamp(16px, 4vw, 42px), env(safe-area-inset-bottom));
+  inset: auto clamp(16px, 4.5vw, 60px)
+    max(clamp(16px, 4vw, 42px), env(safe-area-inset-bottom));
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -215,18 +262,36 @@
   display: inline-flex;
   gap: 8px;
   padding: 0 13px;
-  font-size: .84rem;
+  font-size: 0.84rem;
   font-weight: 650;
 }
 
 .field-progress {
+  display: grid;
+  gap: 6px;
   margin: 0;
   padding: 9px 12px;
   border-radius: 9px;
-  font-size: .8rem;
+  font-size: 0.8rem;
   font-weight: 650;
   white-space: nowrap;
   color: #eef2dd;
+}
+
+.field-progress-segments {
+  display: flex;
+  gap: 4px;
+}
+
+.field-progress-segments span {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--field-accent) 28%, transparent);
+}
+
+.field-progress-segments span[data-registered="true"] {
+  background: var(--field-accent);
 }
 
 .field-status {
@@ -237,7 +302,7 @@
 
 .field-hint {
   color: #eff3df;
-  font-size: .78rem;
+  font-size: 0.78rem;
   text-shadow: 0 2px 9px #07130e;
 }
 
@@ -251,18 +316,18 @@
   width: min(310px, calc(100% - 32px));
   padding: 17px;
   border-radius: 16px;
-  animation: field-discovery-in .25s ease-out;
+  animation: field-discovery-in 0.25s ease-out;
 }
 
 .field-discovery h3 {
   font: 720 1.52rem/1.1 var(--font-heading);
-  letter-spacing: -.025em;
+  letter-spacing: -0.025em;
 }
 
 .field-discovery p {
   margin: 6px 28px 0 0;
   color: #d3decb;
-  font-size: .85rem;
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 
@@ -285,18 +350,32 @@
   min-height: 44px;
   padding: 0 12px;
   color: #1e3425;
-  background: #e4edc9;
+  background: var(--field-accent);
   border-radius: 9px;
   font-weight: 750;
-  font-size: .84rem;
+  font-size: 0.84rem;
 }
 
-.field-detail-button:hover { background: #f3f7e7; }
-.field-failure { position: absolute; inset: 110px auto auto 18px; max-width: calc(100% - 36px); padding: 10px; border-radius: 9px; }
+.field-detail-button:hover {
+  background: color-mix(in srgb, var(--field-accent), white 25%);
+}
+.field-failure {
+  position: absolute;
+  inset: 110px auto auto 18px;
+  max-width: calc(100% - 36px);
+  padding: 10px;
+  border-radius: 9px;
+}
 
 @keyframes field-discovery-in {
-  from { opacity: .3; transform: translateY(7px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0.3;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 630px) {
@@ -305,27 +384,68 @@
     gap: 15px;
   }
 
-  .field-exit { min-height: 44px; }
-  .field-controls { align-items: center; flex-direction: column-reverse; gap: 7px; }
-  .field-navigation { max-width: 100%; }
-  .field-navigation .field-observe { padding-inline: 6px; font-size: .75rem; text-align: left; }
-  .field-navigation .field-observe svg { flex-shrink: 0; }
-  .field-progress { padding: 5px 9px; }
-  .field-hint { font-size: .69rem; }
-  .field-discovery { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 100px); }
+  .field-exit {
+    min-height: 44px;
+  }
+  .field-controls {
+    align-items: center;
+    flex-direction: column-reverse;
+    gap: 7px;
+  }
+  .field-navigation {
+    max-width: 100%;
+  }
+  .field-navigation .field-observe {
+    padding-inline: 6px;
+    font-size: 0.75rem;
+    text-align: left;
+  }
+  .field-navigation .field-observe svg {
+    flex-shrink: 0;
+  }
+  .field-progress {
+    padding: 5px 9px;
+  }
+  .field-status {
+    align-items: center;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field-hint {
+    font-size: 0.69rem;
+    text-align: center;
+  }
+  .field-discovery {
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 122px);
+  }
 }
 
 @media (max-height: 460px) {
-  .field-heading { inset-block-start: 12px; }
-  .field-heading h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); }
-  .field-controls { inset-block-end: 10px; }
-  .field-discovery { padding: 12px; bottom: 60px; }
+  .field-heading {
+    inset-block-start: 12px;
+  }
+  .field-heading h2 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+  }
+  .field-controls {
+    inset-block-end: 10px;
+  }
+  .field-discovery {
+    padding: 12px;
+    bottom: 60px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .field-panorama,
-  .field-pokemon { transition: none; }
+  .field-pokemon {
+    transition: none;
+  }
   .field-clue::before,
-  .field-discovery { animation: none; }
-  .field-fog { display: none; }
+  .field-discovery {
+    animation: none;
+  }
+  .field-fog {
+    display: none;
+  }
 }

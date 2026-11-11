@@ -4,45 +4,27 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import { ArrowLeft, ArrowRight, Binoculars, Check, MapPin, ScanLine, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Binoculars,
+  Check,
+  MapPin,
+  ScanLine,
+  X,
+} from "lucide-react";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
+import type { FieldSite } from "@/lib/field-sites";
+import type { Expedition } from "@/lib/types";
 import "./field-scene.css";
 
-const FIELD_IMAGE = "/expeditions/nikko-field.webp";
-const CLUES = [
-  {
-    id: "nikko-bulbasaur",
-    pokemonId: 1,
-    name: "Bulbasaur",
-    label: "Movimiento entre los helechos",
-    observation: "Un bulbo asoma entre los helechos del claro.",
-    x: 0.24,
-    y: 0.65,
-  },
-  {
-    id: "nikko-caterpie",
-    pokemonId: 10,
-    name: "Caterpie",
-    label: "Hojas que se mueven",
-    observation: "Caterpie se refugia bajo las hojas tiernas.",
-    x: 0.53,
-    y: 0.43,
-  },
-  {
-    id: "nikko-hoothoot",
-    pokemonId: 163,
-    name: "Hoothoot",
-    label: "Una silueta en las ramas",
-    observation: "Hoothoot observa el claro desde una rama.",
-    x: 0.85,
-    y: 0.31,
-  },
-];
-
 interface FieldSceneProps {
+  expedition: Expedition;
+  site: FieldSite;
   registeredIds: number[];
   onObserve: (encounterId: string) => void;
   onExit: () => void;
@@ -76,6 +58,8 @@ function clamp(value: number, max: number) {
 }
 
 export default function FieldScene({
+  expedition,
+  site,
   registeredIds,
   onObserve,
   onExit,
@@ -83,11 +67,15 @@ export default function FieldScene({
 }: FieldSceneProps) {
   const viewport = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
-  const drag = useRef<{ id: number; startX: number; startPan: number } | null>(null);
+  const drag = useRef<{ id: number; startX: number; startPan: number } | null>(
+    null,
+  );
   const openDetail = useRef<HTMLButtonElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [aspect, setAspect] = useState(3);
-  const [imageStatus, setImageStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [imageStatus, setImageStatus] = useState<
+    "loading" | "ready" | "failed"
+  >("loading");
   const [lookingAt, setLookingAt] = useState(0);
   const [manualPan, setManualPan] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -100,30 +88,54 @@ export default function FieldScene({
   useEffect(() => {
     if (!viewport.current) return;
     const observer = new ResizeObserver(([entry]) => {
-      setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
     });
     observer.observe(viewport.current);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
-    if (revealedIndex !== null) openDetail.current?.focus({ preventScroll: true });
+    if (revealedIndex !== null)
+      openDetail.current?.focus({ preventScroll: true });
   }, [revealedIndex]);
 
+  const clues = site.clues.flatMap((clue) => {
+    const encounter = expedition.encounters.find(
+      ({ id }) => id === clue.encounterId,
+    );
+    return encounter ? [{ ...clue, ...encounter }] : [];
+  });
+  const currentClue = clues[lookingAt];
   const sceneWidth = Math.max(size.width * 1.18, size.height * aspect);
   const sceneHeight = sceneWidth / aspect;
   const maxPan = Math.max(0, sceneWidth - size.width);
-  const pan = clamp(manualPan ?? CLUES[lookingAt].x * sceneWidth - size.width / 2, maxPan);
-  const discovered = CLUES.filter((clue) => registeredIds.includes(clue.pokemonId)).length;
-  const revealed = revealedIndex === null ? null : CLUES[revealedIndex];
+  const pan = clamp(
+    manualPan ?? (currentClue?.x ?? 0.5) * sceneWidth - size.width / 2,
+    maxPan,
+  );
+  const discovered = clues.filter((clue) =>
+    registeredIds.includes(clue.pokemonId),
+  ).length;
+  const revealed = revealedIndex === null ? null : clues[revealedIndex];
 
   function lookAt(index: number) {
-    setLookingAt((index + CLUES.length) % CLUES.length);
+    if (!clues.length) return;
+    setLookingAt((index + clues.length) % clues.length);
     setManualPan(null);
   }
 
   function lookWithKeyboard(event: KeyboardEvent<HTMLElement>) {
-    if (detailOpen || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (
+      detailOpen ||
+      event.defaultPrevented ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    )
+      return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -137,8 +149,17 @@ export default function FieldScene({
   }
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
-    drag.current = { id: event.pointerId, startX: event.clientX, startPan: pan };
+    if (
+      !event.isPrimary ||
+      event.button !== 0 ||
+      (event.target as HTMLElement).closest("button")
+    )
+      return;
+    drag.current = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startPan: pan,
+    };
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
   }
@@ -146,14 +167,17 @@ export default function FieldScene({
   function moveDrag(event: PointerEvent<HTMLDivElement>) {
     const active = drag.current;
     if (!active || active.id !== event.pointerId) return;
-    const nextPan = clamp(active.startPan + active.startX - event.clientX, maxPan);
+    const nextPan = clamp(
+      active.startPan + active.startX - event.clientX,
+      maxPan,
+    );
     setManualPan(nextPan);
-    if (!sceneWidth) return;
+    if (!sceneWidth || !clues.length) return;
 
     const center = (nextPan + size.width / 2) / sceneWidth;
-    const nearestIndex = CLUES.reduce(
+    const nearestIndex = clues.reduce(
       (nearest, clue, index) =>
-        Math.abs(clue.x - center) < Math.abs(CLUES[nearest].x - center)
+        Math.abs(clue.x - center) < Math.abs(clues[nearest].x - center)
           ? index
           : nearest,
       0,
@@ -170,19 +194,24 @@ export default function FieldScene({
   function examine(index: number) {
     lookAt(index);
     setRevealedIndex(index);
-    if (revealedIndex === index) openDetail.current?.focus({ preventScroll: true });
+    if (revealedIndex === index)
+      openDetail.current?.focus({ preventScroll: true });
   }
 
   function dismissReveal() {
     const id = revealed?.id;
     setRevealedIndex(null);
-    if (id) viewport.current?.querySelector<HTMLButtonElement>(`[data-clue="${id}"]`)?.focus();
+    if (id)
+      viewport.current
+        ?.querySelector<HTMLButtonElement>(`[data-clue="${id}"]`)
+        ?.focus();
   }
 
   return (
     <section
       className="field-scene"
-      aria-label="Exploración del bosque de Nikkō"
+      aria-label={`Exploración en ${site.name}`}
+      style={{ "--field-accent": site.accent } as CSSProperties}
       onKeyDown={lookWithKeyboard}
       inert={detailOpen}
     >
@@ -208,17 +237,19 @@ export default function FieldScene({
           {/* eslint-disable-next-line @next/next/no-img-element -- The panorama needs its exact intrinsic aspect ratio. */}
           <img
             className="field-backdrop"
-            src={FIELD_IMAGE}
+            src={site.image}
             alt=""
             draggable={false}
             onLoad={({ currentTarget }) => {
-              setAspect(currentTarget.naturalWidth / currentTarget.naturalHeight);
+              setAspect(
+                currentTarget.naturalWidth / currentTarget.naturalHeight,
+              );
               setImageStatus("ready");
             }}
             onError={() => setImageStatus("failed")}
             data-failed={imageStatus === "failed"}
           />
-          {CLUES.map((clue, index) => {
+          {clues.map((clue, index) => {
             const registered = registeredIds.includes(clue.pokemonId);
             const found = registered || index === revealedIndex;
             return (
@@ -233,9 +264,14 @@ export default function FieldScene({
                   className="field-clue"
                   type="button"
                   data-clue={clue.id}
-                  aria-label={registered ? `Volver a observar a ${clue.name}` : `Examinar: ${clue.label}`}
+                  aria-label={
+                    registered
+                      ? `Volver a observar a ${clue.name}`
+                      : `Examinar: ${clue.label}`
+                  }
                   onFocus={(event) => {
-                    if (event.currentTarget.matches(":focus-visible")) lookAt(index);
+                    if (event.currentTarget.matches(":focus-visible"))
+                      lookAt(index);
                   }}
                   onClick={() => examine(index)}
                 >
@@ -248,53 +284,99 @@ export default function FieldScene({
       </div>
 
       <div className="field-shade" aria-hidden="true" />
-      {imageStatus === "ready" && <div className="field-fog" aria-hidden="true" />}
+      {imageStatus === "ready" && (
+        <div className="field-fog" aria-hidden="true" />
+      )}
 
       <header className="field-heading">
         <div>
-          <p><MapPin size={14} /> Japón · Expedición a pie</p>
-          <h2>Bosques de Nikkō</h2>
+          <p>
+            <MapPin size={14} /> {expedition.country} · {expedition.name}
+          </p>
+          <h2>{site.name}</h2>
         </div>
-        <button ref={exit} className="field-exit" type="button" onClick={onExit}>
+        <button
+          ref={exit}
+          className="field-exit"
+          type="button"
+          onClick={onExit}
+        >
           <ArrowLeft size={17} /> Volver al mapa
         </button>
       </header>
 
       {imageStatus === "failed" && (
         <p className="field-failure" role="status">
-          El panorama no se pudo cargar. Podés seguir las pistas con los controles.
+          El panorama no se pudo cargar. Podés seguir las pistas con los
+          controles.
         </p>
       )}
 
       <div className="field-controls">
-        <nav className="field-navigation" aria-label="Mirar alrededor">
-          <button type="button" aria-label="Mirar a la izquierda" onClick={() => lookAt(lookingAt - 1)}>
-            <ArrowLeft size={18} />
-          </button>
-          <button
-            className="field-observe"
-            type="button"
-            onClick={() => examine(lookingAt)}
-            aria-label={`Examinar pista enfocada: ${CLUES[lookingAt].label}`}
-          >
-            <Binoculars size={19} />
-            <span>{CLUES[lookingAt].label}</span>
-          </button>
-          <button type="button" aria-label="Mirar a la derecha" onClick={() => lookAt(lookingAt + 1)}>
-            <ArrowRight size={18} />
-          </button>
-        </nav>
+        {currentClue && (
+          <nav className="field-navigation" aria-label="Mirar alrededor">
+            <button
+              type="button"
+              aria-label="Mirar a la izquierda"
+              onClick={() => lookAt(lookingAt - 1)}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <button
+              className="field-observe"
+              type="button"
+              onClick={() => examine(lookingAt)}
+              aria-label={`Examinar pista enfocada: ${currentClue.label}`}
+            >
+              <Binoculars size={19} />
+              <span>{currentClue.label}</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Mirar a la derecha"
+              onClick={() => lookAt(lookingAt + 1)}
+            >
+              <ArrowRight size={18} />
+            </button>
+          </nav>
+        )}
         <div className="field-status">
-          <p className="field-hint">Arrastrá para mirar alrededor</p>
-          <p className="field-progress" aria-live="polite">
-            {discovered} de {CLUES.length} registrados
+          <p className="field-hint">
+            Arrastrá para mirar alrededor o examiná una pista.
           </p>
+          <div className="field-progress">
+            <div className="field-progress-segments" aria-hidden="true">
+              {clues.map((clue) => (
+                <span
+                  key={clue.id}
+                  data-registered={registeredIds.includes(clue.pokemonId)}
+                />
+              ))}
+            </div>
+            <p aria-live="polite">
+              {discovered} de {clues.length} registrados
+            </p>
+          </div>
         </div>
       </div>
 
       {revealed && (
-        <div className="field-discovery" role="region" aria-label={`Avistamiento de ${revealed.name}`}>
-          <button className="field-dismiss" type="button" aria-label="Seguir explorando el bosque" onClick={dismissReveal}>
+        <div
+          key={revealed.id}
+          className="field-discovery"
+          role="region"
+          aria-label={`Avistamiento de ${revealed.name}`}
+        >
+          <button
+            className="field-dismiss"
+            type="button"
+            aria-label={
+              expedition.id === "nikko"
+                ? "Seguir explorando el bosque"
+                : "Seguir explorando"
+            }
+            onClick={dismissReveal}
+          >
             <X size={17} />
           </button>
           <div>

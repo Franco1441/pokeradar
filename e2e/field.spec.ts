@@ -88,3 +88,76 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
     page.getByRole("button", { name: /Bulbasaur.*Registrado/ }),
   ).toBeVisible();
 });
+
+for (const destination of [
+  {
+    id: "reykjanes",
+    title: "Tierras de fuego",
+    species: ["Charmander", "Geodude", "Vulpix"],
+  },
+  {
+    id: "namib",
+    title: "Dunas del Namib",
+    species: ["Sandshrew", "Cacnea", "Sandile"],
+  },
+  {
+    id: "zermatt",
+    title: "Cumbres de Zermatt",
+    species: ["Sneasel", "Swinub", "Delibird"],
+  },
+  {
+    id: "heron",
+    title: "Arrecife de Heron",
+    species: ["Squirtle", "Corsola", "Horsea"],
+  },
+]) {
+  test(`opens the panorama and all three sightings in ${destination.title}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page
+      .getByRole("region", { name: "El mundo por explorar." })
+      .getByRole("button", { name: new RegExp(destination.title) })
+      .click();
+    const expedition = page.getByRole("complementary", {
+      name: "Expedición y avistamientos",
+    });
+    await expedition
+      .getByRole("button", { name: /Explorar a pie|Explorar bajo el agua/ })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`[?&]region=${destination.id}&view=field`),
+    );
+    const field = page.getByRole("main", {
+      name: "Exploración en primera persona",
+    });
+    const panorama = field.locator(".field-backdrop");
+    await expect(panorama).toHaveAttribute(
+      "src",
+      `/expeditions/${destination.id}-field.webp`,
+    );
+    await expect
+      .poll(() =>
+        panorama.evaluate((image: HTMLImageElement) => image.naturalWidth),
+      )
+      .toBeGreaterThan(0);
+
+    for (const [index, name] of destination.species.entries()) {
+      if (index > 0)
+        await field.getByRole("button", { name: "Mirar a la derecha" }).click();
+      await field
+        .getByRole("button", { name: /Examinar pista enfocada/ })
+        .click();
+      await expect(
+        field.getByRole("heading", { name, exact: true }),
+      ).toBeVisible();
+    }
+
+    await field.getByRole("button", { name: "Volver al mapa" }).click();
+    await expect(
+      expedition.getByRole("heading", { name: destination.title, exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`\\?region=${destination.id}$`));
+  });
+}

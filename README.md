@@ -8,7 +8,15 @@ PokéRadar propone un recorrido de investigación con seis avistamientos por exp
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
-En Nikkō, el **Claro de los cedros** abre una vista panorámica en primera persona. Arrastrá el paisaje, usá las flechas o recorré las pistas para encontrar tres Pokémon ocultos. Al abrir una ficha se reutilizan los mismos datos, ubicaciones y registros de la expedición. Volvé al mapa para ver tu descubrimiento marcado en la zona.
+Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador o desde el panel del destino. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Las fichas comparten el catálogo y el progreso del mapa. Al volver, el descubrimiento queda marcado en la zona.
+
+| Destino | Escena | Avistamientos |
+| --- | --- | --- |
+| Nikkō | Claro de los cedros | Bulbasaur, Caterpie y Hoothoot |
+| Reykjanes | Campo de basalto | Charmander, Geodude y Vulpix |
+| Namib | Paso de las dunas | Sandshrew, Cacnea y Sandile |
+| Zermatt | Mirador del glaciar | Sneasel, Swinub y Delibird |
+| Heron | Jardín de coral | Squirtle, Corsola y Horsea |
 
 El observatorio muestra las condiciones actuales del destino y resalta los tipos favorecidos por una regla de simulación. La actividad destacada cambia según el clima y todos los avistamientos siguen disponibles. Cada ficha explica la relación propuesta entre especie y hábitat.
 
@@ -93,7 +101,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español.
 
-Pasaron TypeScript, ESLint, 33 pruebas unitarias, tres pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. En escritorio y celular se verificó el recorrido desde el globo hasta el claro, las tres pistas y el registro de Bulbasaur desde su ficha real.
+Pasaron TypeScript, ESLint, 33 pruebas unitarias, siete pruebas E2E y la compilación de producción. El build se probó en Chrome en escritorio, tablet y celular, también en horizontal con cartografía, clima y fichas reales. El catálogo de 30 Pokémon se contrastó con PokéAPI. Las pruebas E2E recorren las 15 pistas. También se verificó en Chrome, en escritorio y celular, el recorrido con servicios reales desde el globo hasta el panorama y el registro de un hallazgo en cada destino.
 
 ## 3. Uso de inteligencia artificial
 
@@ -108,7 +116,7 @@ Una primera propuesta se centraba en Argentina. Franco pidió explorar otras dir
 - Al definir la expedición de Heron se detectó que cinco especies comparten únicamente el tipo Agua. Corsola aporta Agua y Roca, por lo que el segundo objetivo depende de descubrirla. Se añadió una prueba que verifica que registrar tres especies de Agua deja la expedición en progreso y que registrar Corsola satisface la diversidad requerida.
 - Los datos guardados se trataron como entrada externa. Las pruebas comprobaron JSON inválido, registros duplicados, especies ajenas al catálogo, fechas inválidas y equipos con más de seis miembros. Esto concretó una validación más completa que asumir que cada lectura de `localStorage` contendría el estado esperado.
 
-El panorama de Nikkō se generó con ImageGen a partir de un encuadre a la altura de los ojos. Se definieron helechos, arbustos y una rama como referencias para ubicar las pistas, y se optimizó el recurso a WebP para cargarlo al entrar al claro. La imagen representa el bioma de la expedición. La revisión técnica del código y de la experiencia forma parte del trabajo de entrega.
+Los cinco panoramas se generaron con ImageGen a la altura de los ojos y se optimizaron a WebP. Cada escena usa sus propios elementos del bioma para ubicar las pistas. Se revisaron la composición, el encuadre en pantallas chicas y el contraste de los controles. Los paisajes son recreaciones ilustrativas de los biomas. La revisión técnica del código y de la experiencia forma parte del trabajo de entrega.
 
 ## 4. Próximos pasos
 
