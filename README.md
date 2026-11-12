@@ -8,6 +8,8 @@ PokéRadar propone un recorrido de investigación con diez especies por expedici
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
+El globo muestra el día, el crepúsculo y la noche según la posición aproximada del sol. El botón **Ver día y noche** centra la cámara en el límite entre ambos. Las luces representan observaciones satelitales de NASA Black Marble de 2016 y se atenúan hacia la zona iluminada. El fondo estrellado enmarca el globo y la vista regional conserva su cartografía de detalle.
+
 Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Después de registrar una especie, podés enfocar la siguiente pista pendiente con un botón. Las fichas comparten el catálogo y el progreso del mapa. El globo muestra clima, hora local y dos especies del destino enfocado. Al consultar una de esas especies, la ficha se abre en el mismo panel y se puede volver al destino con el globo en la misma posición. Si el globo no carga, podés elegir un destino y abrir sus avistamientos o su panorama.
 
 | Destino | Escena | Avistamientos |
@@ -32,6 +34,7 @@ Los 70 identificadores y tipos del catálogo fueron contrastados con PokéAPI. E
 
 ### Referencias de experiencia
 
+- El globo interactivo de Apple Maps inspiró la vista estrellada y el tratamiento visual de la transición solar. [Apple Maps](https://www.apple.com/maps/)
 - Pokémon GO inspiró el mapa protagonista, los avistamientos y la relación visible entre clima y tipos. [Mapa](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1084-what-is-the-map-view/) · [Clima](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1099-what-are-weather-boosts/)
 - Cobblemon sirvió como referencia para la jerarquía de las fichas y la identidad visual de un instrumento de exploración Pokémon. [Galería](https://modrinth.com/mod/cobblemon/gallery)
 - Alba aportó una referencia de exploración tranquila, observación de fauna y descubrimiento. [Proceso de diseño](https://ustwogames.co.uk/news/the-environment-art-of-alba-a-wildlife-adventure/)
@@ -105,7 +108,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además de la rotación por minuto.
 
-Pasaron TypeScript, ESLint, 44 pruebas unitarias, 15 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, verifican el descenso directo a Heron, prueban un registro desde Safari y comprueban el acceso a las fichas sin WebGL. También verifican el contexto de la ficha en el globo y la reapertura de una postal después de recargar. Safari y los dos destinos nuevos se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
+Pasaron TypeScript, ESLint, 55 pruebas unitarias, 15 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, verifican el descenso directo a Heron, prueban un registro desde Safari y comprueban el acceso a las fichas sin WebGL. También verifican el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
 
 ## 3. Uso de inteligencia artificial
 
@@ -136,8 +139,9 @@ Con una semana adicional ampliaría el trabajo en estas direcciones.
 
 - Datos y recursos de Pokémon mediante PokéAPI y su repositorio de sprites. [PokéAPI](https://pokeapi.co/docs/v2) · [Sprites](https://github.com/PokeAPI/sprites)
 - Cartografía vectorial mediante OpenFreeMap y datos de OpenStreetMap. Las atribuciones se conservan en el mapa. [OpenFreeMap](https://openfreemap.org/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
+- Luces nocturnas de NASA Earth Observatory, Black Marble 2016. Imágenes de Joshua Stevens con datos Suomi NPP VIIRS de Miguel Román, NASA Goddard Space Flight Center. El mosaico se agrupa en celdas para mostrar las luces en el globo. [NASA Earth at Night](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/)
 - Datos meteorológicos de Open-Meteo. [Open-Meteo](https://open-meteo.com/)
 - Pokémon y los nombres de sus personajes pertenecen a sus respectivos titulares. Este proyecto es una demostración técnica de exploración geoespacial.
 
 - Fotografías ilustrativas de hábitats en Unsplash. [Bosque](https://images.unsplash.com/photo-1448375240586-882707db888b) · [Islandia](https://images.unsplash.com/photo-1476610182048-b716b8518aae) · [Namib](https://unsplash.com/photos/nt66_G8DCBM) · [Zermatt, Manuel Hodel](https://unsplash.com/photos/HVB2Mwj_txQ) · [Gran Barrera de Coral, GeoNadir](https://unsplash.com/photos/b78E12dTxlo)
-- Tipografías Bricolage Grotesque y DM Sans. Las licencias OFL se incluyen junto a las fuentes.
+- Tipografías [Instrument Serif](https://github.com/Instrument/instrument-serif) y DM Sans. Las licencias OFL se incluyen junto a las fuentes.

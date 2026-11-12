@@ -1,8 +1,5 @@
-.map-stage-world .map-toolbar { top: 166px; }
+.map-stage-world .map-toolbar { top: 176px; }
 
-.world-directory {
-  padding: clamp(17px, 2.5vw, 31px) clamp(14px, 2vw, 25px) 24px;
-}
 .world-intro { margin: 0 4px 20px; }
 .world-kicker {
   display: flex;
@@ -107,33 +104,31 @@
   width: 100%;
   margin-bottom: 12px;
   padding: 8px 11px 8px 8px;
-  border: 1px solid #4b7258;
-  border-radius: 13px;
+  border: 1px solid var(--green);
+  border-radius: 7px;
   color: #fffdf4;
-  background: linear-gradient(122deg, #2f6149, #1e4b38 58%, #1b4130);
-  box-shadow: 0 3px 10px #1e49372d, inset 0 1px 0 #e0eaca16;
+  background: var(--green);
   text-align: left;
-  transition: border-color 160ms, box-shadow 160ms;
+  transition: background-color 160ms, border-color 160ms;
 }
 .field-enter:hover {
-  border-color: #88a87a;
-  box-shadow: 0 5px 13px #1e493747, inset 0 1px 0 #e0eaca30;
+  border-color: #6b8b8d;
 }
 .field-enter-icon {
   display: grid;
   place-items: center;
   width: 45px;
   height: 45px;
-  border: 1px solid #dcebc02c;
-  border-radius: 9px;
-  color: #e6f1d3;
-  background: #d8e7b81f;
+  border: 1px solid #e8eee329;
+  border-radius: 5px;
+  color: #f1eddf;
+  background: #e7ede312;
 }
 .field-enter strong { display: block; font: 730 17px/1.12 var(--font-heading); }
-.field-enter small { display: block; margin-top: 4px; color: #dae9d8; font-size: 11px; line-height: 1.25; }
+.field-enter small { display: block; margin-top: 4px; color: #d7e4df; font-size: 11px; line-height: 1.25; }
 .field-enter > svg { justify-self: end; margin-right: 3px; transition: translate 160ms; }
 .field-enter:hover > svg { translate: 2px 0; }
-.field-route { position: fixed; inset: 0; z-index: 25; color: #f8f8eb; background: #15251c; }
+.field-route { position: fixed; inset: 0; z-index: 25; color: #f8f8eb; background: #101c22; }
 .field-loading { display: grid; place-items: center; height: 100%; color: #f8f8eb; }
 .detail-dialog.detail-dialog-field {
   z-index: 35; inset: 20px 20px 20px auto; width: min(390px, calc(100vw - 40px));
@@ -142,8 +137,7 @@
 .toast, .storage-warning { z-index: 40; }
 
 @media (max-width: 899px) {
-  .map-stage-world .map-toolbar { top: 201px; }
-  .world-directory { padding: 8px 13px 14px; }
+  .map-stage-world .map-toolbar { top: 116px; display: flex; }
   .world-intro { margin: 0 3px 11px; }
   .world-intro h1 { margin: 4px 0; font-size: 29px; }
   .world-intro p:last-child { max-width: none; font-size: 12px; }
@@ -155,7 +149,7 @@
   }
 }
 @media (min-width: 650px) and (max-width: 899px) and (max-height: 550px) {
-  .map-stage-world .map-toolbar { top: 142px; }
+  .map-stage-world .map-toolbar { top: 116px; }
   .detail-dialog.detail-dialog-field { inset: 8px 8px 8px auto; height: auto; width: 300px; }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -4,10 +4,16 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  color: #f8f8ef;
-  background: #17291d;
-  --field-border: color-mix(in srgb, var(--field-accent) 33%, transparent);
-  --field-glass: color-mix(in srgb, var(--field-accent) 10%, #101915f5);
+  color: #faf8f2;
+  background: #101c22;
+  --field-border: #c4d6d552;
+  --field-glass: #101c22ee;
+  --field-action: #e7bd7f;
+  --field-control-inset: clamp(16px, 4.5vw, 60px);
+  --field-control-bottom: max(
+    clamp(16px, 4vw, 42px),
+    env(safe-area-inset-bottom)
+  );
 }
 
 .field-viewport {
@@ -92,12 +98,12 @@
   background:
     linear-gradient(
       180deg,
-      #0a180fc9,
-      transparent 26%,
-      transparent 67%,
-      #07130edb
+      #101c22d9,
+      transparent 32%,
+      transparent 64%,
+      #101c22db
     ),
-    radial-gradient(ellipse at 50% 47%, transparent 43%, #0a160d66 100%);
+    radial-gradient(ellipse at 50% 47%, transparent 43%, #101c2266 100%);
 }
 
 .field-fog {
@@ -159,7 +165,7 @@
 .field-heading {
   position: absolute;
   z-index: 2;
-  inset: clamp(18px, 4vw, 48px) clamp(18px, 4.5vw, 60px) auto;
+  inset: clamp(18px, 3.8vw, 48px) var(--field-control-inset) auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -170,30 +176,35 @@
 .field-heading p {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  color: var(--field-accent);
-  font-size: 0.82rem;
-  font-weight: 650;
-  text-shadow: 0 1px 12px #0d2015;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #e5ebe6;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-shadow: 0 1px 12px #101c22;
+}
+
+.field-heading p svg {
+  flex: none;
 }
 
 .field-heading h2 {
-  font: 740 clamp(1.8rem, 5vw, 4.6rem)/1.02 var(--font-heading);
-  letter-spacing: -0.047em;
+  font: 400 clamp(2.15rem, 5.75vw, 5.5rem)/0.96
+    var(--font-editorial, Georgia, serif);
+  letter-spacing: -0.015em;
   text-wrap: balance;
-  text-shadow: 0 3px 26px #14291bc9;
+  text-shadow: 0 3px 26px #101c22dc;
 }
 
 .field-exit,
 .field-navigation,
 .field-progress,
-.field-discovery,
 .field-failure {
   border: 1px solid var(--field-border);
   background: var(--field-glass);
-  box-shadow: 0 10px 35px #0b17184d;
-  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px #101c224d;
+  backdrop-filter: blur(8px);
 }
 
 .field-exit {
@@ -202,7 +213,7 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 13px;
-  border-radius: 11px;
+  border-radius: 4px;
   font-size: 0.82rem;
   font-weight: 650;
   white-space: nowrap;
@@ -210,9 +221,8 @@
 }
 
 .field-exit:hover,
-.field-navigation button:hover,
-.field-dismiss:hover {
-  background: color-mix(in srgb, var(--field-accent) 20%, #20362b);
+.field-navigation button:hover {
+  background: #29424a;
 }
 
 .field-clue-point {
@@ -334,11 +344,16 @@
   width: 46px;
   height: 46px;
   transform: translate(-50%, -50%);
-  border: 1px solid var(--field-accent);
+  border: 1px solid var(--field-action);
   border-radius: 50%;
-  color: var(--field-accent);
-  background: #152a1cbb;
-  box-shadow: 0 0 20px #142b20b3;
+  color: var(--field-action);
+  background: #101c22d9;
+  box-shadow: 0 3px 14px #101c227f;
+}
+
+.field-clue-point[data-found="true"] .field-clue {
+  border-color: #c7ddd6;
+  color: #c7ddd6;
 }
 
 .field-scene[data-panorama="ready"] [data-habitat="table-coral"] .field-clue {
@@ -349,7 +364,7 @@
   position: absolute;
   inset: -4px;
   content: "";
-  border: 1px solid var(--field-accent);
+  border: 1px solid var(--field-action);
   border-radius: inherit;
   animation: field-pulse 2.8s ease-out infinite;
 }
@@ -359,11 +374,16 @@
   opacity: 0;
 }
 .field-clue:hover {
-  color: #23382f;
-  background: var(--field-accent);
+  color: #202d30;
+  background: var(--field-action);
+}
+.field-clue-point[data-found="true"] .field-clue:hover {
+  color: #202d30;
+  background: #c7ddd6;
 }
 .field-scene button:focus-visible {
-  outline-color: var(--field-accent);
+  outline: 2px solid var(--field-action);
+  outline-offset: 3px;
 }
 
 @keyframes field-pulse {
@@ -382,8 +402,7 @@
 .field-controls {
   position: absolute;
   z-index: 2;
-  inset: auto clamp(16px, 4.5vw, 60px)
-    max(clamp(16px, 4vw, 42px), env(safe-area-inset-bottom));
+  inset: auto var(--field-control-inset) var(--field-control-bottom);
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -394,9 +413,9 @@
 .field-navigation {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 4px;
-  border-radius: 13px;
+  gap: 1px;
+  padding: 3px;
+  border-radius: 5px;
   pointer-events: auto;
 }
 
@@ -405,21 +424,22 @@
   min-width: 44px;
   min-height: 44px;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 3px;
 }
 
 .field-navigation .field-observe {
   display: inline-flex;
+  align-items: center;
   gap: 9px;
   min-width: 0;
   padding: 6px 12px;
-  background: var(--field-accent);
-  color: #1e3425;
+  background: var(--field-action);
+  color: #202d30;
   text-align: left;
 }
 
 .field-navigation .field-observe:hover {
-  background: color-mix(in srgb, var(--field-accent), white 25%);
+  background: #f3cf99;
 }
 
 .field-observe svg {
@@ -447,11 +467,11 @@
   gap: 6px;
   margin: 0;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 650;
   white-space: nowrap;
-  color: #eef2dd;
+  color: #eef2ed;
 }
 
 .field-progress-segments {
@@ -462,12 +482,12 @@
 .field-progress-segments span {
   flex: 1;
   height: 3px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--field-accent) 28%, transparent);
+  border-radius: 1px;
+  background: #597078;
 }
 
 .field-progress-segments span[data-registered="true"] {
-  background: var(--field-accent);
+  background: #b4d5cc;
 }
 
 .field-status {
@@ -477,32 +497,38 @@
 }
 
 .field-hint {
-  color: #eff3df;
+  color: #eef2ed;
   font-size: 0.78rem;
-  text-shadow: 0 2px 9px #07130e;
+  text-shadow: 0 2px 9px #101c22;
 }
 
 .field-discovery {
   position: absolute;
   z-index: 2;
-  right: clamp(16px, 4.5vw, 60px);
-  bottom: calc(max(clamp(16px, 4vw, 42px), env(safe-area-inset-bottom)) + 58px);
+  right: var(--field-control-inset);
+  bottom: calc(var(--field-control-bottom) + 64px);
   display: grid;
   gap: 12px;
-  width: min(310px, calc(100% - 32px));
-  padding: 17px;
-  border-radius: 16px;
+  width: min(328px, calc(100% - 2 * var(--field-control-inset)));
+  padding: 18px;
+  border: 1px solid #dedbd0;
+  border-top: 3px solid var(--field-action);
+  border-radius: 5px;
+  background: #faf8f2;
+  color: #202d30;
+  box-shadow: 0 12px 32px #101c2259;
   animation: field-discovery-in 0.25s ease-out;
 }
 
 .field-discovery h3 {
-  font: 720 1.52rem/1.1 var(--font-heading);
-  letter-spacing: -0.025em;
+  padding-right: 32px;
+  font: 400 2.2rem/0.98 var(--font-editorial, Georgia, serif);
+  letter-spacing: -0.015em;
 }
 
 .field-discovery p {
-  margin: 6px 28px 0 0;
-  color: #d3decb;
+  margin-top: 8px;
+  color: #59666a;
   font-size: 0.85rem;
   line-height: 1.4;
 }
@@ -512,7 +538,7 @@
   gap: 6px;
   align-items: center;
   margin: 0 30px 6px 0;
-  color: var(--field-accent);
+  color: #24535a;
   font-size: 0.76rem;
   font-weight: 750;
 }
@@ -525,7 +551,17 @@
   width: 44px;
   height: 44px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: 3px;
+  color: #24535a;
+}
+
+.field-dismiss:hover,
+.field-reopen-button:hover {
+  background: #e6eeea;
+}
+
+.field-scene .field-discovery button:focus-visible {
+  outline-color: #24535a;
 }
 
 .field-discovery-actions {
@@ -541,15 +577,15 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 12px;
-  color: #1e3425;
-  background: var(--field-accent);
-  border-radius: 9px;
+  color: #faf8f2;
+  background: #24535a;
+  border-radius: 4px;
   font-weight: 750;
   font-size: 0.84rem;
 }
 
 .field-detail-button:hover {
-  background: color-mix(in srgb, var(--field-accent), white 25%);
+  background: #193d44;
 }
 
 .field-reopen-button {
@@ -559,23 +595,28 @@
   justify-content: center;
   gap: 4px;
   padding-inline: 8px;
-  color: #edf1da;
-  border: 1px solid var(--field-border);
-  border-radius: 9px;
+  color: #24535a;
+  border: 1px solid #b5c3be;
+  border-radius: 4px;
   font-size: 0.82rem;
   font-weight: 650;
 }
 
-.field-reopen-button:hover {
-  background: #4a5f47;
+.field-scene button {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .field-failure {
   position: absolute;
-  inset: 110px auto auto 18px;
-  max-width: calc(100% - 36px);
+  z-index: 1;
+  inset: auto var(--field-control-inset)
+    calc(var(--field-control-bottom) + 70px) auto;
+  max-width: min(320px, calc(100% - 2 * var(--field-control-inset)));
   padding: 10px;
-  border-radius: 9px;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 
 @keyframes field-discovery-in {
@@ -590,13 +631,18 @@
 }
 
 @media (max-width: 630px) {
-  .field-heading {
-    flex-direction: column-reverse;
-    gap: 15px;
+  .field-scene {
+    --field-control-bottom: max(14px, env(safe-area-inset-bottom));
   }
 
-  .field-exit {
-    min-height: 44px;
+  .field-heading {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .field-heading p {
+    margin-bottom: 5px;
+    font-size: 0.67rem;
   }
   .field-controls {
     align-items: center;
@@ -624,30 +670,47 @@
   .field-scene:has(.field-discovery) .field-hint {
     display: none;
   }
+  .field-discovery,
+  .field-failure {
+    bottom: calc(var(--field-control-bottom) + 104px);
+  }
+
   .field-discovery {
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 100px);
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .field-discovery h3 {
+    font-size: 1.9rem;
+  }
+
+  .field-discovery p {
+    margin-top: 6px;
   }
 }
 
 @media (max-height: 460px) {
+  .field-scene {
+    --field-control-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
   .field-heading {
     inset-block-start: 12px;
   }
   .field-heading h2 {
     font-size: clamp(1.6rem, 5vw, 2.4rem);
   }
-  .field-controls {
-    inset-block-end: 10px;
-  }
   .field-discovery {
     padding: 12px;
-    bottom: 60px;
+    max-height: 51%;
+    overflow: auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .field-panorama,
-  .field-pokemon {
+  .field-pokemon,
+  .field-scene button {
     transition: none;
   }
   .field-clue::before,

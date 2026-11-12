@@ -1,6 +1,10 @@
 .safari-panel {
-  padding: 16px;
-  color: var(--ink, #23382f);
+  --safari-line: #dedbd0;
+  --safari-teal: #24535a;
+  --safari-navy: #101c22;
+  --safari-brass: #e7bd7f;
+  padding: 22px;
+  color: #202d30;
 }
 
 .safari-header,
@@ -8,27 +12,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .safari-header h2 {
   margin: 0;
-  font: 730 34px/1 var(--font-heading, system-ui);
-  letter-spacing: -0.06em;
+  font: 400 44px/0.94 var(--font-editorial, Georgia, serif);
+  letter-spacing: -0.025em;
 }
 
 .safari-destination {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   max-width: 68%;
   min-height: 44px;
-  padding-inline: 9px;
-  border: 1px solid #dce6da;
-  border-radius: 10px;
-  color: #275748;
-  font-size: 11px;
-  font-weight: 700;
+  padding-inline: 10px;
+  border: 1px solid var(--safari-line);
+  border-radius: 4px;
+  color: var(--safari-teal);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .safari-destination span {
@@ -40,22 +44,20 @@
 .safari-destination svg,
 .safari-phase svg,
 .safari-weather svg {
-  flex-shrink: 0;
+  flex: none;
 }
 
 .safari-destination:hover {
-  background: #eaf1e5;
+  border-color: #a9babc;
+  background: #eaf0ec;
 }
 
 .safari-mode {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3px;
-  margin: 11px 0 10px;
-  padding: 3px;
-  border: 1px solid #e1e9df;
-  border-radius: 12px;
-  background: #edf2e9;
+  gap: 6px;
+  margin: 16px 0 12px;
+  border-bottom: 1px solid var(--safari-line);
 }
 
 .safari-mode button {
@@ -64,41 +66,43 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  color: #415e51;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: #59666a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .safari-mode button:hover {
-  background: #e1ebdf;
+  color: var(--safari-teal);
+  background: #eff1eb;
 }
 
 .safari-mode button[aria-pressed="true"] {
-  border-color: #dce8d9;
-  background: #fcfff9;
-  color: #244f40;
-  box-shadow: 0 1px 3px #1a3d2e19;
+  border-bottom-color: var(--safari-teal);
+  background: #e6eeea;
+  color: var(--safari-teal);
+  font-weight: 750;
 }
 
 .safari-console {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  padding: 13px;
-  border: 1px solid #325d49;
-  border-radius: 14px;
+  padding: 16px 13px;
+  border: 1px solid #29434b;
+  border-radius: 6px;
   background:
-    radial-gradient(ellipse at 19% 15%, #285344, transparent 76%), #15352d;
-  color: #ecf8ea;
+    radial-gradient(ellipse at 23% 35%, #1c3d43, transparent 70%),
+    var(--safari-navy);
+  color: #f1f3ed;
 }
 
 .safari-console[data-night="true"] {
-  border-color: #2d5350;
   background:
-    radial-gradient(ellipse at 19% 15%, #224a48, transparent 78%), #112c30;
+    radial-gradient(ellipse at 23% 35%, #1d3545, transparent 70%),
+    var(--safari-navy);
 }
 
 .safari-screen {
@@ -106,33 +110,31 @@
   isolation: isolate;
   justify-self: center;
   width: 100%;
-  max-width: 137px;
+  max-width: 138px;
   overflow: hidden;
   aspect-ratio: 1;
-  border: 1px solid #82bba885;
+  border: 1px solid #608482;
   border-radius: 50%;
   background:
     linear-gradient(
       90deg,
-      transparent 49.5%,
-      #8dbea747 49.5% 50.5%,
-      transparent 50.5%
+      transparent calc(50% - 0.5px),
+      #80b1aa54 calc(50% - 0.5px) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
     ),
     linear-gradient(
-      transparent 49.5%,
-      #8dbea747 49.5% 50.5%,
-      transparent 50.5%
+      transparent calc(50% - 0.5px),
+      #80b1aa54 calc(50% - 0.5px) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
     ),
     repeating-radial-gradient(
       circle,
-      transparent 0 17.2%,
-      #93bfad67 17.5% 18.4%,
-      transparent 18.7% 23%
+      transparent 0 16.3%,
+      #7aa39e65 16.6% 17.4%,
+      transparent 17.7% 21%
     ),
-    radial-gradient(circle at 50% 52%, #388c685c, #102d2766 72%);
-  box-shadow:
-    inset 0 0 12px #061d14b5,
-    0 0 15px #74c8971c;
+    radial-gradient(circle at 50% 52%, #35726976, #0d2129 72%);
+  box-shadow: inset 0 0 13px #08171ecc;
 }
 
 .safari-sweep {
@@ -141,24 +143,26 @@
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
-    transparent 0deg 278deg,
-    #75efab00 280deg,
-    #7cf4ad2c 335deg,
-    #9df6af7d 359deg,
+    transparent 0deg 280deg,
+    #8edec900 281deg,
+    #8edec929 333deg,
+    #b9e8cf82 359deg,
     transparent 360deg
   );
-  animation: safari-sweep 5s linear infinite;
+  animation: safari-sweep 6s linear infinite;
 }
 
 .safari-north {
   position: absolute;
   top: 3%;
   left: 50%;
+  padding-inline: 2px;
   transform: translateX(-50%);
-  color: #d3efd8;
-  font-size: 8px;
-  font-weight: 760;
-  line-height: 1.25;
+  background: #122a30;
+  color: #cfdfd7;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
 }
 
 .safari-blip {
@@ -168,20 +172,20 @@
   width: 6px;
   height: 6px;
   transform: translate(-50%, -50%);
-  border: 1px solid #e0ffdc;
   border-radius: 50%;
-  background: #a6ecac;
+  background: #b1e1ce;
   box-shadow:
-    0 0 0 3px #b7ffc139,
-    0 0 9px #adffaa95;
+    0 0 0 2px #b1e1ce33,
+    0 0 9px #a7e4cb9e;
 }
 
 .safari-blip[data-boosted="true"] {
-  border-color: #fff0c8;
-  background: #ffe5a3;
+  border-radius: 1px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--safari-brass);
   box-shadow:
-    0 0 0 3px #ffe7a83d,
-    0 0 9px #f9daa489;
+    0 0 0 2px #e7bd7f3d,
+    0 0 8px #e7bd7f7f;
 }
 
 @keyframes safari-sweep {
@@ -192,35 +196,44 @@
 
 .safari-conditions {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
+  padding-left: 12px;
+  border-left: 1px solid #45616a;
   font-size: 11px;
   line-height: 1.35;
 }
 
 .safari-biome,
 .safari-local-time > span {
-  color: #bedace;
+  color: #b5c6c8;
+}
+
+.safari-biome {
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
 }
 
 .safari-phase,
 .safari-weather {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .safari-phase {
-  color: #f1fff2;
-  font-size: 14px;
-  font-weight: 750;
+  color: #faf8f2;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .safari-phase svg {
-  color: #f9de9c;
+  color: var(--safari-brass);
 }
+
 .safari-weather {
-  color: #d1e8d9;
+  color: #e1e9e2;
 }
 
 .safari-local-time {
@@ -228,53 +241,52 @@
 }
 
 .safari-results-header {
-  margin-top: 14px;
+  margin-top: 19px;
 }
 
 .safari-results-header h3 {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  font: 720 19px/1.12 var(--font-heading, system-ui);
-  letter-spacing: -0.03em;
+  font: 400 26px/1 var(--font-editorial, Georgia, serif);
 }
 
-.safari-results-header h3 span,
-.safari-countdown {
-  padding: 4px 6px;
-  border-radius: 7px;
-  background: #e9f0e6;
-  color: #355c4a;
-  font: 700 11px/1.2 var(--font-body, system-ui);
+.safari-results-header h3 span {
+  color: var(--safari-teal);
+  font: 750 12px/1 var(--font-body, system-ui);
+  font-variant-numeric: tabular-nums;
 }
 
 .safari-countdown {
   display: inline-flex;
+  flex: none;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  color: #59666a;
+  font-size: 11px;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .safari-help {
-  margin: 6px 0 8px;
-  color: #496457;
-  font-size: 11px;
+  margin: 6px 0 10px;
+  color: #59666a;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .safari-empty {
-  padding: 12px;
-  border-radius: 9px;
-  background: #edf3e9;
+  padding-block: 12px;
+  border-top: 1px solid var(--safari-line);
 }
 
 .safari-signals {
   display: grid;
-  gap: 6px;
   margin: 0;
   padding: 0;
+  border-top: 1px solid var(--safari-line);
   list-style: none;
 }
 
@@ -282,20 +294,17 @@
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) 16px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  min-height: 51px;
-  padding: 4px 8px 4px 5px;
-  border: 1px solid #e1eadc;
-  border-radius: 10px;
-  background: #f3f7ef;
-  color: #315347;
+  min-height: 57px;
+  padding: 5px 5px 5px 0;
+  border-bottom: 1px solid var(--safari-line);
+  color: var(--safari-teal);
   text-align: left;
 }
 
 .safari-signal:hover {
-  border-color: #c7dac7;
-  background: #eaf2e7;
+  background: #e9efea;
 }
 
 .safari-signal-sprite {
@@ -303,14 +312,12 @@
   width: 40px;
   height: 40px;
   place-items: center;
-  border: 1px solid #dfeadd;
-  border-radius: 8px;
-  background: #ebf1e8;
+  border-radius: 4px;
+  background: #e8eeea;
 }
 
 .safari-signal[data-boosted="true"] .safari-signal-sprite {
-  border-color: #eee1bb;
-  background: #faf2da;
+  background: #f3e6d0;
 }
 
 .safari-signal-sprite img {
@@ -331,37 +338,66 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #243e33;
-  font-size: 13px;
-  font-weight: 760;
+  color: #202d30;
+  font-size: 14px;
+  font-weight: 750;
   line-height: 1.2;
 }
 
+.safari-signal-copy strong svg {
+  color: var(--safari-teal);
+}
+
 .safari-signal-copy > span {
-  color: #506759;
+  color: #59666a;
   font-size: 11px;
-  line-height: 1.3;
+  line-height: 1.35;
+}
+
+.safari-panel button {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.safari-panel button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--safari-teal);
+  outline-offset: 2px;
 }
 
 @media (max-width: 899px) {
   .safari-panel {
-    padding: 8px 12px 12px;
+    padding: 8px 16px 14px;
   }
+
   .safari-header h2 {
-    font-size: 29px;
+    font-size: 35px;
   }
+
   .safari-mode {
-    margin: 6px 0 7px;
+    margin: 5px 0 8px;
   }
+
   .safari-console {
-    grid-template-columns: 89px minmax(0, 1fr);
-    padding: 8px 11px;
+    grid-template-columns: 80px minmax(0, 1fr);
+    padding: 8px 12px;
   }
+
   .safari-results-header {
-    margin-top: 9px;
+    margin-top: 10px;
   }
+
   .safari-help {
     margin-block: 4px 6px;
+  }
+}
+
+@media (max-width: 359px) {
+  .safari-results-header h3 {
+    font-size: 23px;
   }
 }
 
@@ -369,5 +405,9 @@
   .safari-sweep {
     transform: rotate(34deg);
     animation: none;
+  }
+
+  .safari-panel button {
+    transition: none;
   }
 }

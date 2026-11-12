@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   Binoculars,
@@ -16,6 +16,17 @@ import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { weatherInfo } from "@/lib/weather";
 import type { Encounter, WeatherSnapshot } from "@/lib/types";
 import "./world-directory.css";
+
+const coordinateFormat = new Intl.NumberFormat("es-AR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function coordinateLabel([longitude, latitude]: [number, number]) {
+  const northSouth = latitude >= 0 ? "N" : "S";
+  const eastWest = longitude >= 0 ? "E" : "O";
+  return `${coordinateFormat.format(Math.abs(latitude))}° ${northSouth} · ${coordinateFormat.format(Math.abs(longitude))}° ${eastWest}`;
+}
 
 interface WorldDirectoryProps {
   activeId: string;
@@ -98,6 +109,20 @@ export default function WorldDirectory({
       ? "Consultando…"
       : "No disponible";
 
+  const destinations = useRef<HTMLUListElement>(null);
+  const showingDetail = Boolean(detail);
+  useEffect(() => {
+    const list = destinations.current;
+    const active = list?.querySelector('[aria-pressed="true"]');
+    if (!list || !active || list.scrollWidth <= list.clientWidth) return;
+    const listBounds = list.getBoundingClientRect();
+    const activeBounds = active.getBoundingClientRect();
+    if (activeBounds.right > listBounds.right)
+      list.scrollLeft += activeBounds.right - listBounds.right + 2;
+    else if (activeBounds.left < listBounds.left)
+      list.scrollLeft -= listBounds.left - activeBounds.left + 2;
+  }, [activeId, showingDetail]);
+
   if (detail) {
     return (
       <div className="world-directory world-directory-detail">{detail}</div>
@@ -113,7 +138,7 @@ export default function WorldDirectory({
             Elegí un destino para seguir sus pistas o ver sus avistamientos.
           </p>
         ) : (
-          <p>Girá el globo y elegí dónde seguir las pistas.</p>
+          <p>Girá el globo o elegí un destino.</p>
         )}
       </div>
 
@@ -121,9 +146,6 @@ export default function WorldDirectory({
         key={expedition.id}
         className="world-preview"
         aria-label={expedition.name}
-        style={
-          { "--preview-accent": site?.accent ?? "#dce9bd" } as CSSProperties
-        }
       >
         <div className="world-preview-hero">
           <Image
@@ -136,6 +158,9 @@ export default function WorldDirectory({
           <div className="world-preview-caption">
             <p>
               <MapPin size={13} aria-hidden="true" /> {expedition.country}
+              <span className="world-preview-coordinates">
+                {coordinateLabel(expedition.coordinates)}
+              </span>
             </p>
             <h2>{expedition.name}</h2>
             {site && <span>{site.name}</span>}
@@ -204,7 +229,11 @@ export default function WorldDirectory({
         </div>
       </article>
 
-      <ul className="world-quick-destinations" aria-label="Destinos">
+      <ul
+        ref={destinations}
+        className="world-quick-destinations"
+        aria-label="Destinos"
+      >
         {EXPEDITIONS.map((item) => (
           <li key={item.id}>
             <button
@@ -212,7 +241,6 @@ export default function WorldDirectory({
               aria-label={`Enfocar ${item.name}, ${item.country}`}
               aria-pressed={item.id === expedition.id}
               onClick={() => onFocusDestination(item.id)}
-              style={{ "--destination-accent": item.color } as CSSProperties}
             >
               {item.country}
             </button>

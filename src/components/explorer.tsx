@@ -44,6 +44,7 @@ import {
   SlidersHorizontal,
   Sprout,
   Stamp,
+  SunMoon,
   Users,
   X,
   CloudSun,
@@ -220,6 +221,7 @@ function ExpeditionApp() {
   const [expanded, setExpanded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
+  const [solarFocusKey, setSolarFocusKey] = useState(0);
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const originFocus = useRef<HTMLElement | null>(null);
@@ -643,6 +645,7 @@ function ExpeditionApp() {
         >
           <MapView
             recenterKey={mapAttempt}
+            solarFocusKey={solarFocusKey}
             expedition={expedition}
             encounters={mapEncounters}
             safariPeriod={
@@ -707,6 +710,15 @@ function ExpeditionApp() {
             >
               <Globe2 size={20} />
             </button>
+            {worldView && (
+              <button
+                title="Ver día y noche"
+                aria-label="Ver día y noche"
+                onClick={() => setSolarFocusKey((value) => value + 1)}
+              >
+                <SunMoon size={19} />
+              </button>
+            )}
             {!worldView && (
               <button
                 title="Centrar expedición"

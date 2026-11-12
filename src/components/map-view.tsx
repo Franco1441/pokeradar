@@ -15,6 +15,7 @@ import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite, type FieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
+import { mountGlobeLighting, solarBoundaryCenter } from "./map-lighting";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./map.css";
 
@@ -28,6 +29,7 @@ interface MapViewProps {
   worldView: boolean;
   safariPeriod?: "day" | "night";
   recenterKey?: number;
+  solarFocusKey?: number;
   focusedDestinationId?: string;
   landingSite?: FieldSite;
   landingDuration?: number;
@@ -116,9 +118,13 @@ function globeCamera(
   container: HTMLElement,
   expedition: Expedition,
   centered = false,
+  centerOverride?: [number, number],
 ) {
   const [longitude, latitude] =
-    expedition.id === "nikko" && !centered ? [104, 25] : expedition.coordinates;
+    centerOverride ??
+    (expedition.id === "nikko" && !centered
+      ? solarBoundaryCenter(104)
+      : expedition.coordinates);
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
   const padding = cameraPadding(
     container,
@@ -142,17 +148,21 @@ function colorMap(map: MapLibreMap) {
     string,
     ["background-color" | "fill-color" | "line-color", string]
   > = {
-    background: ["background-color", "#e9ecdb"],
-    park: ["fill-color", "#d3dfbe"],
-    landuse_residential: ["fill-color", "#eeebdf"],
-    landcover_wood: ["fill-color", "#c4d5b2"],
-    landcover_grass: ["fill-color", "#dce4c9"],
-    landcover_ice: ["fill-color", "#edf3ee"],
-    landcover_wetland: ["fill-color", "#c8d9c5"],
-    landcover_sand: ["fill-color", "#e8dfc5"],
-    building: ["fill-color", "#d4d2c5"],
-    waterway_river: ["line-color", "#a9cdd1"],
-    waterway_other: ["line-color", "#a9cdd1"],
+    background: ["background-color", "#e7e3d8"],
+    park: ["fill-color", "#cbd4bf"],
+    park_outline: ["line-color", "#a9b7a0"],
+    landuse_residential: ["fill-color", "#e0dbd0"],
+    landcover_wood: ["fill-color", "#aebea6"],
+    landcover_grass: ["fill-color", "#c3cfb5"],
+    landcover_ice: ["fill-color", "#e9efed"],
+    landcover_wetland: ["fill-color", "#b2c5bb"],
+    landcover_sand: ["fill-color", "#e1d1b4"],
+    building: ["fill-color", "#ccc6ba"],
+    boundary_2: ["line-color", "#777d78"],
+    boundary_3: ["line-color", "#9c9b90"],
+    boundary_disputed: ["line-color", "#777d78"],
+    waterway_river: ["line-color", "#91abb8"],
+    waterway_other: ["line-color", "#91abb8"],
   };
 
   for (const [id, [property, color]] of Object.entries(colors)) {
@@ -164,19 +174,28 @@ function colorMap(map: MapLibreMap) {
       ["linear"],
       ["zoom"],
       0,
-      "#66948d",
+      "#657f8d",
       7,
-      "#a9cdd1",
+      "#aec3ca",
     ]);
   }
+  if (map.getLayer("natural_earth")) {
+    map.setPaintProperty("natural_earth", "raster-saturation", -0.65);
+    map.setPaintProperty("natural_earth", "raster-contrast", -0.12);
+  }
+  if (map.getLayer("park")) {
+    map.setPaintProperty("park", "fill-outline-color", "#a8b29d");
+  }
+
   const globeLabelMinZoom = new Map([
     ["water_name_point_label", 3],
     ["water_name_line_label", 3],
     ["label_country_3", 3.4],
     ["label_country_2", 2.2],
+    ["label_country_1", 1.4],
   ]);
 
-  // Keep geographic labels, while removing noisy business and transit overlays.
+  // Keep names, trails and boundaries legible beneath the field markers.
   for (const layer of map.getStyle().layers) {
     if (
       layer.id.startsWith("poi_") ||
@@ -185,9 +204,18 @@ function colorMap(map: MapLibreMap) {
     ) {
       map.setLayoutProperty(layer.id, "visibility", "none");
     }
+    if (layer.type === "line" && /^(road|bridge|tunnel)_/.test(layer.id)) {
+      if (layer.id.endsWith("_casing")) {
+        map.setPaintProperty(layer.id, "line-color", "#bfb3a2");
+      } else if (/motorway|trunk_primary|secondary_tertiary/.test(layer.id)) {
+        map.setPaintProperty(layer.id, "line-color", "#f5ead5");
+      }
+    }
     if (layer.type === "symbol" && layer.layout?.["text-field"]) {
-      map.setPaintProperty(layer.id, "text-color", "#4c6253");
-      map.setPaintProperty(layer.id, "text-halo-color", "#f5f4e9");
+      const labelColor = layer.id.startsWith("water") ? "#395765" : "#37454a";
+      map.setPaintProperty(layer.id, "text-color", labelColor);
+      map.setPaintProperty(layer.id, "text-halo-color", "#f8f5eb");
+      map.setPaintProperty(layer.id, "text-halo-width", 0.85);
       const minZoom = globeLabelMinZoom.get(layer.id);
       if (minZoom !== undefined) {
         map.setLayerZoomRange(layer.id, minZoom, layer.maxzoom ?? 24);
@@ -278,6 +306,7 @@ export default function MapView(props: MapViewProps) {
   const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
+  const lastSolarFocusKey = useRef(props.solarFocusKey);
   const lastConfirmationSequence = useRef<number | undefined>(undefined);
   const previousWorldView = useRef(props.worldView);
   const previousFocusedDestinationId = useRef(props.focusedDestinationId);
@@ -373,10 +402,12 @@ export default function MapView(props: MapViewProps) {
     }
 
     const loadingTimeout = window.setTimeout(reportFailure, 18000);
+    map.once("style.load", () => {
+      if (!disposed) colorMap(map);
+    });
     map.once("load", () => {
       if (disposed) return;
       window.clearTimeout(loadingTimeout);
-      colorMap(map);
       setReady(true);
       updateMapStatus();
     });
@@ -423,6 +454,12 @@ export default function MapView(props: MapViewProps) {
       map.remove();
     };
   }, [attempt]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !props.worldView) return;
+    return mountGlobeLighting(map);
+  }, [ready, attempt, props.worldView]);
 
   const safariOpen = Boolean(props.safariPeriod);
   const fieldSite = props.onEnterField
@@ -516,7 +553,8 @@ export default function MapView(props: MapViewProps) {
       const element = marker.getElement();
       if (element.dataset.expeditionId) {
         const focused =
-          element.dataset.expeditionId === props.focusedDestinationId;
+          element.dataset.expeditionId ===
+          (props.focusedDestinationId ?? props.expedition.id);
         element.classList.toggle("is-focused", focused);
         element.setAttribute("aria-pressed", String(focused));
         continue;
@@ -546,6 +584,7 @@ export default function MapView(props: MapViewProps) {
     props.boostedTypes,
     props.worldView,
     props.focusedDestinationId,
+    props.expedition.id,
   ]);
 
   useEffect(() => {
@@ -595,13 +634,19 @@ export default function MapView(props: MapViewProps) {
       const destination = EXPEDITIONS.find(
         ({ id }) => id === props.focusedDestinationId,
       );
+      const solarFocusRequested =
+        lastSolarFocusKey.current !== props.solarFocusKey;
+      lastSolarFocusKey.current = props.solarFocusKey;
       const camera = globeCamera(
         element,
         destination ?? props.expedition,
         Boolean(destination),
+        solarFocusRequested
+          ? solarBoundaryCenter(map.getCenter().lng)
+          : undefined,
       );
-      if (focusingDestination) {
-        map.easeTo({ ...camera, duration: reducedMotion ? 0 : 620 });
+      if (focusingDestination || solarFocusRequested) {
+        map.easeTo({ ...camera, duration: reducedMotion ? 0 : 850 });
       } else {
         map.flyTo({ ...camera, duration: reducedMotion ? 0 : 1450 });
       }
@@ -730,6 +775,7 @@ export default function MapView(props: MapViewProps) {
     props.confirmationRequest,
     props.worldView,
     props.recenterKey,
+    props.solarFocusKey,
     props.focusedDestinationId,
     props.landingSite,
     props.landingDuration,
