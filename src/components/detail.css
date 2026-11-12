@@ -112,3 +112,27 @@
   .detail-stat { font-size: 12px; grid-template-columns: 88px 26px 1fr; }
   .weather-panel { padding: 22px 23px; }
 }
+
+
+.detail-panel-world .detail-stage {
+  min-height: 150px;
+  height: clamp(135px, 22dvh, 185px);
+}
+
+.detail-panel-world .detail-portrait-wrap {
+  max-height: 100%;
+}
+
+.detail-panel-world .detail-actions {
+  position: static;
+  padding: 0;
+  margin: 12px 0 14px;
+  border: 0;
+  background: none;
+}
+
+.detail-world-conditions {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}

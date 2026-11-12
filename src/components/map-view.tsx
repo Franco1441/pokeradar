@@ -9,6 +9,7 @@ import {
   AttributionControl,
   setWorkerUrl,
   getVersion,
+  type MapEventType,
 } from "maplibre-gl";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite, type FieldSite } from "@/lib/field-sites";
@@ -21,6 +22,7 @@ interface MapViewProps {
   expedition: Expedition;
   encounters: Encounter[];
   selectedId: string | null;
+  confirmationRequest?: { encounterId: string; sequence: number };
   registeredIds: number[];
   boostedTypes: PokemonType[];
   worldView: boolean;
@@ -35,29 +37,78 @@ interface MapViewProps {
   onMapError: (message: string | null) => void;
 }
 
+function visiblePanel(container: HTMLElement, detailOpen: boolean) {
+  const detail = detailOpen
+    ? document.querySelector<HTMLElement>(
+        ".detail-dialog:not(.detail-dialog-field)",
+      )
+    : null;
+  return (
+    detail ??
+    container
+      .closest(".map-stage")
+      ?.querySelector<HTMLElement>("#expedition-panel")
+  );
+}
+
 function cameraPadding(
   container: HTMLElement,
-  detailOpen: boolean,
-  safariOpen: boolean,
+  panel?: HTMLElement | null,
+  globe = false,
 ) {
-  if (window.matchMedia("(min-width: 900px)").matches) {
-    return { top: 40, right: 75, bottom: 120, left: 420 };
+  const canvas = container.getBoundingClientRect();
+  const bounds = panel?.getBoundingClientRect();
+  const width = canvas.width;
+  const height = canvas.height;
+  let left = Math.min(globe ? 24 : 38, width * 0.1);
+  const right = Math.min(globe ? 42 : 72, width * 0.17);
+  let bottom = Math.min(globe ? 48 : 112, height * 0.13);
+  let top = Math.min(globe ? 25 : 40, height * 0.12);
+
+  if (bounds && bounds.width && bounds.height) {
+    if (bounds.width >= width * 0.65) {
+      // Leave enough room for the map even when the user expands the sheet.
+      bottom = Math.min(
+        Math.max(bottom, canvas.bottom - bounds.top + 12),
+        height * 0.93,
+      );
+      top = Math.min(globe ? 20 : 78, Math.max(0, height - bottom - 112));
+    } else {
+      const maxLeft = width - right - Math.min(145, width * 0.35);
+      left = Math.min(Math.max(left, bounds.right - canvas.left + 18), maxLeft);
+    }
   }
-  if (window.matchMedia("(min-width: 650px) and (max-height: 550px)").matches) {
-    return { top: 75, right: 58, bottom: 33, left: 320 };
-  }
-  const height = container.clientHeight;
-  const viewportHeight = window.innerHeight;
-  const sheetHeight = detailOpen
-    ? Math.min(viewportHeight * 0.6, viewportHeight - 146)
-    : safariOpen
-      ? Math.max(220, Math.min(viewportHeight * 0.44, 370))
-      : Math.max(178, Math.min(viewportHeight * 0.38, 335));
-  return {
-    top: Math.min(155, height * 0.31),
-    right: 63,
-    bottom: Math.min(sheetHeight + 18, height * (detailOpen ? 0.71 : 0.52)),
-    left: 40,
+
+  return { top, right, bottom, left };
+}
+
+function observePanelPadding(
+  map: MapLibreMap,
+  container: HTMLElement,
+  panel: HTMLElement | null | undefined,
+  initial: ReturnType<typeof cameraPadding>,
+) {
+  let padding = initial;
+  const updatePadding = () => {
+    if (map.isMoving()) return;
+    const next = cameraPadding(container, panel);
+    if (
+      Math.abs(next.top - padding.top) < 1 &&
+      Math.abs(next.right - padding.right) < 1 &&
+      Math.abs(next.bottom - padding.bottom) < 1 &&
+      Math.abs(next.left - padding.left) < 1
+    )
+      return;
+    padding = next;
+    map.setPadding(padding);
+  };
+  const observer = new ResizeObserver(updatePadding);
+  observer.observe(container);
+  if (panel) observer.observe(panel);
+  map.on("moveend", updatePadding);
+  return () => {
+    observer.disconnect();
+    map.off("moveend", updatePadding);
   };
 }
 
@@ -69,20 +120,11 @@ function globeCamera(
   const [longitude, latitude] =
     expedition.id === "nikko" && !centered ? [104, 25] : expedition.coordinates;
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
-  const desktop = window.matchMedia("(min-width: 900px)").matches;
-  const landscape = window.matchMedia(
-    "(min-width: 650px) and (max-height: 550px)",
-  ).matches;
-  const padding = desktop
-    ? { left: 350, right: 42, top: 30, bottom: 65 }
-    : landscape
-      ? { left: 300, right: 32, top: 12, bottom: 24 }
-      : {
-          left: 14,
-          right: 14,
-          top: 20,
-          bottom: Math.min(265, container.clientHeight * 0.43),
-        };
+  const padding = cameraPadding(
+    container,
+    visiblePanel(container, false),
+    true,
+  );
   const available = Math.min(
     container.clientWidth - padding.left - padding.right,
     container.clientHeight - padding.top - padding.bottom,
@@ -236,6 +278,7 @@ export default function MapView(props: MapViewProps) {
   const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
+  const lastConfirmationSequence = useRef<number | undefined>(undefined);
   const previousWorldView = useRef(props.worldView);
   const previousFocusedDestinationId = useRef(props.focusedDestinationId);
   const activeLanding = useRef<{ map: MapLibreMap; site: FieldSite } | null>(
@@ -547,11 +590,6 @@ export default function MapView(props: MapViewProps) {
           ? "Globo interactivo de expediciones Pokémon. Podés usar las flechas para girar."
           : "Mapa de avistamientos Pokémon. También podés explorar con la lista de especies.",
       );
-    const padding = cameraPadding(
-      element,
-      Boolean(props.selectedId),
-      safariOpen,
-    );
     map.stop();
     if (props.worldView) {
       const destination = EXPEDITIONS.find(
@@ -569,8 +607,6 @@ export default function MapView(props: MapViewProps) {
       }
       return;
     }
-    map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
-
     const recenterRequested = lastRecenterKey.current !== props.recenterKey;
     lastRecenterKey.current = props.recenterKey;
     const selected = recenterRequested
@@ -579,6 +615,9 @@ export default function MapView(props: MapViewProps) {
           (encounter) => encounter.id === props.selectedId,
         );
     if (!selected) {
+      map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+      const panel = visiblePanel(element, Boolean(props.selectedId));
+      const padding = cameraPadding(element, panel);
       const coordinates = props.expedition.encounters.map(
         (item) => item.coordinates,
       );
@@ -598,21 +637,97 @@ export default function MapView(props: MapViewProps) {
           bearing: 0,
         },
       );
-      return;
+      return observePanelPadding(map, element, panel, padding);
     }
-    map.flyTo({
-      center: selected.coordinates,
-      zoom: Math.max(props.expedition.zoom + 0.5, 13),
-      padding,
-      pitch: 0,
-      duration: reducedMotion ? 0 : 650,
-      essential: false,
+
+    let stopObserving: (() => void) | undefined;
+    let onArrival: ((event: MapEventType["moveend"]) => void) | undefined;
+    let confirmation: HTMLElement | undefined;
+    let confirmationTimer = 0;
+    // Radix places the selected detail in a portal. Measure it after the DOM commit.
+    const frame = requestAnimationFrame(() => {
+      const panel = visiblePanel(element, true);
+      const padding = cameraPadding(element, panel);
+      const marker = markers.current
+        .get(`encounter:${selected.id}`)
+        ?.getElement();
+      const zoom = Math.max(props.expedition.zoom + 0.5, 13);
+      const usableHeight = element.clientHeight - padding.top - padding.bottom;
+      // The marker is bottom-anchored. Lower its anchor so the sprite stays centered in the gap.
+      const anchorOffset = Math.max(
+        0,
+        Math.min((marker?.offsetHeight ?? 80) / 2, usableHeight / 2 - 8),
+      );
+      const request = props.confirmationRequest;
+      const intentional =
+        request?.encounterId === selected.id &&
+        request.sequence !== lastConfirmationSequence.current;
+      const duration = intentional && !reducedMotion ? 650 : 0;
+
+      if (intentional) lastConfirmationSequence.current = request.sequence;
+      if (intentional && duration > 0) {
+        const startTime = performance.now();
+        onArrival = (event) => {
+          if (
+            !("confirmationSequence" in event) ||
+            event.confirmationSequence !== request.sequence
+          )
+            return;
+          if (onArrival) map.off("moveend", onArrival);
+
+          // MapLibre also emits moveend if a gesture or another animation interrupts flyTo.
+          if (
+            performance.now() - startTime < duration - 16 ||
+            Math.abs(map.getZoom() - zoom) > 0.05
+          )
+            return;
+          const point = map.project(selected.coordinates);
+          const expectedX =
+            (element.clientWidth + padding.left - padding.right) / 2;
+          const expectedY =
+            (element.clientHeight + padding.top - padding.bottom) / 2 +
+            anchorOffset;
+          if (Math.hypot(point.x - expectedX, point.y - expectedY) > 10) return;
+          confirmation = markers.current
+            .get(`encounter:${selected.id}`)
+            ?.getElement();
+          confirmation?.classList.add("has-confirmation");
+          confirmationTimer = window.setTimeout(
+            () => confirmation?.classList.remove("has-confirmation"),
+            760,
+          );
+        };
+        map.on("moveend", onArrival);
+      }
+
+      map.flyTo(
+        {
+          center: selected.coordinates,
+          zoom,
+          padding,
+          offset: [0, anchorOffset],
+          pitch: 0,
+          duration,
+          essential: false,
+        },
+        { confirmationSequence: request?.sequence },
+      );
+      stopObserving = observePanelPadding(map, element, panel, padding);
     });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      stopObserving?.();
+      if (onArrival) map.off("moveend", onArrival);
+      window.clearTimeout(confirmationTimer);
+      confirmation?.classList.remove("has-confirmation");
+    };
   }, [
     ready,
     attempt,
     props.expedition,
     props.selectedId,
+    props.confirmationRequest,
     props.worldView,
     props.recenterKey,
     props.focusedDestinationId,
@@ -620,7 +735,6 @@ export default function MapView(props: MapViewProps) {
     props.landingDuration,
     fieldSite,
     reducedMotion,
-    safariOpen,
   ]);
 
   return (

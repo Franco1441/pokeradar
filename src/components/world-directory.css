@@ -23,6 +23,17 @@
   color: var(--world-ink);
 }
 
+.map-stage-world .world-directory-detail {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #dce4d5;
+  border-radius: 15px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 10px 28px #0b19192b;
+  animation: world-preview-in 200ms ease-out both;
+}
+
 .world-directory-heading {
   margin-bottom: 17px;
   padding-inline: 2px;
@@ -122,6 +133,114 @@
   padding: 8px;
 }
 
+.world-preview-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) auto;
+  gap: 12px;
+  margin: 0 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #b9d4b72b;
+}
+
+.world-preview-facts > div {
+  min-width: 0;
+}
+
+.world-preview-facts dt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--world-muted);
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.world-preview-facts dt svg {
+  flex: none;
+}
+
+.world-preview-facts dd {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--world-ink);
+  font-size: 10px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.world-preview-species {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 9px 8px 3px;
+}
+
+.world-species-preview {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 55px;
+  padding: 4px 6px 4px 2px;
+  border: 1px solid #b9d4b72b;
+  border-radius: 9px;
+  color: var(--world-ink);
+  background: #20392f;
+  text-align: left;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+.world-species-preview:hover {
+  border-color: #cee0be;
+  background: #375647;
+}
+
+.world-species-sprite {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  font: 700 15px/1 var(--font-heading);
+}
+
+.world-species-sprite img {
+  width: 48px;
+  height: 48px;
+  max-width: none;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.world-species-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.world-species-name strong {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.world-species-name > span {
+  color: var(--world-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.world-species-preview > svg {
+  flex: none;
+  color: var(--world-muted);
+}
+
 .world-preview-actions > button,
 .world-quick-destinations button {
   min-height: 44px;
@@ -164,6 +283,7 @@
 }
 
 .world-preview-actions button:focus-visible,
+.world-species-preview:focus-visible,
 .world-quick-destinations button:focus-visible {
   outline: 2px solid #e9f4cb;
   outline-offset: 2px;
@@ -209,7 +329,12 @@
     inset: auto 9px 31px;
     width: auto;
     height: auto;
-    max-height: min(61%, 350px);
+    max-height: min(64%, 374px);
+  }
+
+  .map-stage-world .field-panel:has(.world-directory-detail) {
+    height: min(63dvh, calc(100% - 42px));
+    max-height: calc(100% - 42px);
   }
 
   .world-directory-heading {
@@ -244,8 +369,42 @@
     padding: 5px;
   }
 
+  .world-preview-facts {
+    gap: 8px;
+    margin-inline: 10px;
+    padding-block: 8px;
+  }
+
+  .world-preview-species {
+    padding: 7px 5px 2px;
+  }
+
+  .world-species-preview {
+    min-height: 49px;
+  }
+
   .world-quick-destinations {
     margin-top: 6px;
+  }
+}
+
+@media (max-width: 630px) {
+  .world-quick-destinations {
+    display: flex;
+    overflow-x: auto;
+    padding: 2px 2px 3px;
+    scroll-padding-inline: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #819c88 transparent;
+  }
+
+  .world-quick-destinations li {
+    flex: 0 0 auto;
+  }
+
+  .world-quick-destinations button {
+    min-width: 58px;
+    padding-inline: 7px;
   }
 }
 
@@ -255,13 +414,19 @@
     width: min(280px, 43vw);
     max-height: calc(100% - 16px);
   }
+
+  .map-stage-world .field-panel:has(.world-directory-detail) {
+    height: calc(100% - 16px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world-preview {
+  .world-preview,
+  .world-directory-detail {
     animation: none;
   }
   .world-preview-actions button,
+  .world-species-preview,
   .world-quick-destinations button {
     transition: none;
   }

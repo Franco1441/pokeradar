@@ -28,6 +28,21 @@
 .pokemon-marker.is-selected { z-index: 3; }
 .pokemon-marker.is-selected .marker-inner { border-color: #30664c; box-shadow: 0 0 0 6px #34694d22, 0 8px 25px #244c4133; transform: translateY(-5px); }
 .pokemon-marker.is-selected .marker-label { color: #fffdf4; background: #285e47; }
+.pokemon-marker.has-confirmation .marker-inner::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 2px solid #3c805d;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #eef9d997;
+  pointer-events: none;
+  opacity: 0;
+  animation: encounter-confirmation .72s ease-out;
+}
+@keyframes encounter-confirmation {
+  from { scale: .89; opacity: 1; }
+  to { scale: 1.38; opacity: 0; }
+}
 .pokemon-marker:hover .marker-inner, .pokemon-marker:focus-visible .marker-inner { transform: translateY(-5px); border-color: #30664c; }
 .pokemon-marker:focus-visible { outline: 0; }
 .pokemon-marker:focus-visible .marker-inner { outline: 3px solid #245845; outline-offset: 5px; }
@@ -102,7 +117,12 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pokemon-marker .marker-inner { transition: none; }
+  .pokemon-marker.has-confirmation .marker-inner::before { animation: none; }
   .map-loading-ring { animation: none; }
+}
+@media (max-width: 649px) and (max-height: 640px) {
+  .pokemon-marker.is-selected .marker-inner { width: 48px; height: 48px; }
+  .pokemon-marker.is-selected .marker-sprite { width: 53px; height: 53px; }
 }
 
 .is-safari .maplibregl-canvas { transition: filter .48s ease; }
@@ -140,4 +160,29 @@
   .safari-signal-enter .marker-inner,
   .is-safari .pokemon-marker .marker-inner::after { animation: none; }
   .is-safari .maplibregl-canvas { transition: none; }
+}
+
+
+@media (max-width: 630px) {
+  .is-globe .expedition-marker:not(.is-focused, :focus-visible) {
+    display: block;
+    width: 44px;
+    padding: 0;
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+  .is-globe .expedition-marker:not(.is-focused, :focus-visible) strong,
+  .is-globe .expedition-marker:not(.is-focused, :focus-visible)::after {
+    display: none;
+  }
+  .is-globe .expedition-marker:not(.is-focused, :focus-visible)::before {
+    top: auto;
+    bottom: 2px;
+    left: calc(50% - 4px);
+    width: 8px;
+    height: 8px;
+    background: color-mix(in srgb, var(--expedition-color) 55%, #f2efb7);
+    box-shadow: 0 0 0 3px #172e28a6;
+  }
 }

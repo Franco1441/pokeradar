@@ -39,6 +39,8 @@ interface PokemonDetailPanelProps {
   onToggleTeam: () => void;
   onClose: () => void;
   boostedTypes: PokemonType[];
+  inWorld?: boolean;
+  worldConditions?: string;
 }
 
 export function TypeBadge({ type }: { type: PokemonType }) {
@@ -161,6 +163,8 @@ export default function PokemonDetailPanel({
   onToggleTeam,
   onClose,
   boostedTypes,
+  inWorld = false,
+  worldConditions,
 }: PokemonDetailPanelProps) {
   const reduceMotion = useReducedMotion();
   const pokemonQuery = useQuery({
@@ -182,12 +186,50 @@ export default function PokemonDetailPanel({
   const boosted = types.some((type) => boostedTypes.includes(type));
   const title = (pokemon?.name ?? encounter.name).replaceAll("-", " ");
 
+  const actions = (
+    <div className="detail-actions">
+      <button
+        type="button"
+        className={`detail-primary${registered ? " is-recorded" : ""}`}
+        onClick={onRegister}
+        disabled={registered || !pokemon}
+      >
+        {registered ? <Check size={17} /> : <Bookmark size={17} />}
+        {registered ? "Guardado en tu atlas" : "Registrar avistamiento"}
+      </button>
+      {registered && (
+        <button
+          type="button"
+          className={`detail-secondary${inTeam ? " is-in-team" : ""}`}
+          onClick={onToggleTeam}
+          disabled={!inTeam && teamFull}
+          aria-pressed={inTeam}
+        >
+          <Heart size={16} fill={inTeam ? "currentColor" : "none"} />
+          {inTeam
+            ? "Quitar de mi equipo"
+            : teamFull
+              ? "Tu equipo está completo"
+              : "Añadir a mi equipo"}
+        </button>
+      )}
+      {registered && teamFull && !inTeam && (
+        <p className="detail-team-hint">
+          Podés liberar un lugar desde tu equipo de seis.
+        </p>
+      )}
+    </div>
+  );
+
   return (
-    <section className="detail-panel" aria-labelledby="pokemon-detail-title">
+    <section
+      className={`detail-panel${inWorld ? " detail-panel-world" : ""}`}
+      aria-labelledby="pokemon-detail-title"
+    >
       <div className="detail-toolbar">
         <button className="detail-back" onClick={onClose} type="button">
           <ArrowLeft size={16} />
-          <span>Volver a explorar</span>
+          <span>{inWorld ? "Volver al destino" : "Volver a explorar"}</span>
         </button>
         <span className="detail-number">
           N.º {String(encounter.pokemonId).padStart(3, "0")}
@@ -258,6 +300,12 @@ export default function PokemonDetailPanel({
             <TypeBadge type={type} key={type} />
           ))}
         </div>
+
+        {worldConditions && (
+          <p className="detail-world-conditions">{worldConditions}</p>
+        )}
+
+        {inWorld && actions}
 
         {boosted && (
           <p className="detail-weather-boost">
@@ -372,38 +420,7 @@ export default function PokemonDetailPanel({
           </a>
         </p>
       </div>
-      <div className="detail-actions">
-        <button
-          type="button"
-          className={`detail-primary${registered ? " is-recorded" : ""}`}
-          onClick={onRegister}
-          disabled={registered || !pokemon}
-        >
-          {registered ? <Check size={17} /> : <Bookmark size={17} />}
-          {registered ? "Guardado en tu atlas" : "Registrar avistamiento"}
-        </button>
-        {registered && (
-          <button
-            type="button"
-            className={`detail-secondary${inTeam ? " is-in-team" : ""}`}
-            onClick={onToggleTeam}
-            disabled={!inTeam && teamFull}
-            aria-pressed={inTeam}
-          >
-            <Heart size={16} fill={inTeam ? "currentColor" : "none"} />
-            {inTeam
-              ? "Quitar de mi equipo"
-              : teamFull
-                ? "Tu equipo está completo"
-                : "Añadir a mi equipo"}
-          </button>
-        )}
-        {registered && teamFull && !inTeam && (
-          <p className="detail-team-hint">
-            Podés liberar un lugar desde tu equipo de seis.
-          </p>
-        )}
-      </div>
+      {!inWorld && actions}
     </section>
   );
 }

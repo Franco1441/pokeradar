@@ -138,6 +138,13 @@ button:disabled { cursor: default; }
 .atlas-stamps button { min-height: 48px; position: relative; display: grid; gap: 4px; justify-items: center; padding: 5px 1px; color: var(--muted); background: #f0f0e8; border: 1px solid var(--line); border-radius: 8px; font-size: 9px; }
 .atlas-stamps button.earned, .atlas-stamps button.chosen { color: var(--green); background: #e5efde; border-color: #a6bc9f; }
 .atlas-stamps svg:nth-of-type(2) { position: absolute; top: 3px; right: 4px; }
+.atlas-postcards { display: grid; gap: 6px; margin: 12px 0 15px; }
+.atlas-postcards h2 { color: var(--green); font: 720 18px/1.2 var(--font-heading); }
+.atlas-postcards button { display: grid; grid-template-columns: 19px 1fr 15px; align-items: center; gap: 9px; min-height: 44px; padding: 6px 9px; text-align: left; color: var(--green); border: 1px solid #dce7d5; border-radius: 9px; background: #f0f4e9; }
+.atlas-postcards button:hover { background: #e6efdf; }
+.atlas-postcards button strong, .atlas-postcards button small { display: block; }
+.atlas-postcards button strong { font-size: 12px; }
+.atlas-postcards button small { color: var(--muted); font-size: 11px; }
 .atlas-filters { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0; font-size: 12px; }
 .atlas-filters label { display: inline-flex; align-items: center; gap: 5px; }
 .atlas-filters select { background: #f2f3ea; border: 1px solid var(--line); border-radius: 6px; min-height: 35px; }
