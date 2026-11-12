@@ -233,7 +233,7 @@ function createTrailheadMarker(site: FieldSite, onEnter: () => void) {
 export default function MapView(props: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const markers = useRef<Marker[]>([]);
+  const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
   const previousWorldView = useRef(props.worldView);
@@ -254,7 +254,12 @@ export default function MapView(props: MapViewProps) {
     const element = container.current;
     if (!element) return;
 
+    const attachedMarkers = markers.current;
     let disposed = false;
+    let blockingError = false;
+    let contextLost = false;
+    let tileReceived = false;
+    let tileError = false;
     let map: MapLibreMap;
     const reportFailure = () => {
       if (disposed) return;
@@ -314,21 +319,49 @@ export default function MapView(props: MapViewProps) {
     map.addControl(new NavigationControl({ showCompass: true }), "top-right");
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
+    function updateMapStatus() {
+      if (disposed || blockingError || contextLost) return;
+      if (tileError && !tileReceived) {
+        reportFailure();
+      } else {
+        setError(false);
+        latest.current.onMapError(null);
+      }
+    }
+
     const loadingTimeout = window.setTimeout(reportFailure, 18000);
     map.once("load", () => {
       if (disposed) return;
       window.clearTimeout(loadingTimeout);
       colorMap(map);
       setReady(true);
-      setError(false);
-      latest.current.onMapError(null);
+      updateMapStatus();
     });
-    map.on("error", reportFailure);
-    map.on("webglcontextlost", reportFailure);
+    map.on("sourcedata", (event) => {
+      if (event.tile) tileReceived = true;
+    });
+    map.on("error", (event) => {
+      // MapLibre attaches the individual tile to tile-loading errors.
+      // Wait for the initial batch to settle before reporting a failed map.
+      if ("tile" in event) {
+        tileError = true;
+        return;
+      }
+      blockingError = true;
+      reportFailure();
+    });
+    map.on("webglcontextlost", () => {
+      contextLost = true;
+      tileReceived = false;
+      tileError = false;
+      reportFailure();
+    });
+    map.on("webglcontextrestored", () => {
+      contextLost = false;
+    });
     map.on("idle", () => {
       if (!disposed && map.isStyleLoaded() && map.areTilesLoaded()) {
-        setError(false);
-        latest.current.onMapError(null);
+        updateMapStatus();
       }
     });
 
@@ -341,8 +374,8 @@ export default function MapView(props: MapViewProps) {
       disposed = true;
       window.clearTimeout(loadingTimeout);
       observer.disconnect();
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
+      attachedMarkers.forEach((marker) => marker.remove());
+      attachedMarkers.clear();
       mapRef.current = null;
       map.remove();
     };
@@ -357,55 +390,86 @@ export default function MapView(props: MapViewProps) {
     const map = mapRef.current;
     if (!ready || !map) return;
 
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = [];
+    const attachedMarkers = markers.current;
+    const nextKeys = new Set<string>();
+
+    const retainMarker = (key: string, create: () => Marker) => {
+      nextKeys.add(key);
+      if (!attachedMarkers.has(key)) {
+        attachedMarkers.set(key, create().addTo(map));
+      }
+    };
 
     if (props.worldView) {
-      markers.current = EXPEDITIONS.map((expedition) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "expedition-marker";
-        button.dataset.expeditionId = expedition.id;
-        button.setAttribute(
-          "aria-label",
-          `Explorar ${expedition.name}, ${expedition.country}`,
-        );
-        const title = document.createElement("strong");
-        title.textContent = expedition.country;
-        const country = document.createElement("span");
-        country.textContent = expedition.name;
-        button.append(title, country);
-        button.style.setProperty("--expedition-color", expedition.color);
-        button.addEventListener("click", () =>
-          latest.current.onExpedition(expedition.id),
-        );
-        return new Marker({ element: button, anchor: "bottom" })
-          .setLngLat(expedition.coordinates)
-          .addTo(map);
-      });
+      for (const expedition of EXPEDITIONS) {
+        retainMarker(`world:${expedition.id}`, () => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "expedition-marker";
+          button.dataset.expeditionId = expedition.id;
+          button.setAttribute(
+            "aria-label",
+            `Explorar ${expedition.name}, ${expedition.country}`,
+          );
+          const title = document.createElement("strong");
+          title.textContent = expedition.country;
+          const country = document.createElement("span");
+          country.textContent = expedition.name;
+          button.append(title, country);
+          button.style.setProperty("--expedition-color", expedition.color);
+          button.addEventListener("click", () =>
+            latest.current.onExpedition(expedition.id),
+          );
+          return new Marker({ element: button, anchor: "bottom" }).setLngLat(
+            expedition.coordinates,
+          );
+        });
+      }
     } else {
-      markers.current = props.encounters.map((encounter) => {
-        const button = createPokemonElement(encounter, () =>
-          latest.current.onSelect(encounter),
-        );
-        return new Marker({ element: button, anchor: "bottom" })
-          .setLngLat(encounter.coordinates)
-          .addTo(map);
-      });
+      for (const encounter of props.encounters) {
+        retainMarker(`encounter:${encounter.id}`, () => {
+          const button = createPokemonElement(encounter, () => {
+            const current = latest.current.encounters.find(
+              ({ id }) => id === encounter.id,
+            );
+            if (current) latest.current.onSelect(current);
+          });
+          if (safariOpen) button.classList.add("safari-signal-enter");
+          return new Marker({ element: button, anchor: "bottom" }).setLngLat(
+            encounter.coordinates,
+          );
+        });
+      }
       if (fieldSite) {
-        markers.current.push(
+        retainMarker(`trailhead:${props.expedition.id}`, () =>
           createTrailheadMarker(fieldSite, () =>
             latest.current.onEnterField?.(),
-          ).addTo(map),
+          ),
         );
       }
     }
-  }, [ready, attempt, props.worldView, props.encounters, fieldSite]);
+
+    // Preserve attached elements for surviving signals so focus and loaded sprites stay in place.
+    for (const [key, marker] of attachedMarkers) {
+      if (!nextKeys.has(key)) {
+        marker.remove();
+        attachedMarkers.delete(key);
+      }
+    }
+  }, [
+    ready,
+    attempt,
+    props.worldView,
+    props.encounters,
+    props.expedition.id,
+    fieldSite,
+    safariOpen,
+  ]);
 
   useEffect(() => {
     const registered = new Set(props.registeredIds);
     const boosted = new Set(props.boostedTypes);
-    for (const marker of markers.current) {
+    for (const marker of markers.current.values()) {
       const element = marker.getElement();
       if (element.dataset.expeditionId) {
         const focused =

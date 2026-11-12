@@ -70,11 +70,17 @@ button:disabled { cursor: default; }
 .expedition-intro { color: var(--muted); font-size: 13px; line-height: 1.55; }
 .mission-card { display: grid; grid-template-columns: 37px 1fr; gap: 11px; padding: 12px; margin: 14px 0 20px; border: 1px solid #dde7d4; border-radius: 13px; background: #eef3e7; }
 .mission-icon { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 11px; color: var(--green); background: #dce9d4; }
-.mission-heading { display: flex; align-items: center; justify-content: space-between; gap: 7px; font-weight: 750; font-size: 13px; color: var(--green); }
-.mission-heading span { font-size: 11px; color: #466e4d; }
-.mission-card p { margin-top: 2px; font-size: 11px; color: var(--muted); }
-.mission-track { height: 4px; background: #d8e3ce; border-radius: 4px; margin-top: 8px; overflow: hidden; }
-.mission-track span { display: block; height: 100%; border-radius: inherit; background: #61935b; transition: width .25s ease; }
+.mission-heading { font-weight: 750; font-size: 13px; color: var(--green); }
+.mission-card p { margin-top: 3px; font-size: 11px; color: var(--muted); }
+.mission-goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
+.mission-goals label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+.mission-goals label > span { display: flex; justify-content: space-between; gap: 4px; }
+.mission-goals b { color: var(--green); font-variant-numeric: tabular-nums; }
+.mission-goals progress { appearance: none; width: 100%; height: 5px; border: 0; border-radius: 5px; overflow: hidden; background: #d8e3ce; }
+.mission-goals progress::-webkit-progress-bar { background: #d8e3ce; }
+.mission-goals progress::-webkit-progress-value { background: #61935b; }
+.mission-goals progress::-moz-progress-bar { background: #61935b; }
+#regional-sightings { scroll-margin-top: 38px; }
 .mission-complete { background: #e7f0df; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 9px; }
 .section-heading h2 { font: 720 20px/1.2 var(--font-heading); letter-spacing: -.035em; }
@@ -104,8 +110,6 @@ button:disabled { cursor: default; }
 .map-toolbar { position: absolute; z-index: 2; top: 169px; right: 32px; display: grid; gap: 6px; }
 .map-toolbar button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; color: var(--green); border: 1px solid #d6ded2; background: var(--surface); box-shadow: 0 3px 10px #243b2816; }
 .map-toolbar button:hover, .map-toolbar .selected { background: #e5eedc; }
-.map-error { position: absolute; z-index: 4; top: 70px; left: calc(var(--panel-width) + 40px); max-width: 290px; padding: 12px; border-radius: 12px; background: #fff9e9; color: #6b4b2e; font-size: 12px; }
-.map-error button { display: block; margin-top: 6px; text-decoration: underline; }
 .map-retry { z-index: 2; }
 .weather-glance { position: absolute; z-index: 2; top: 22px; right: 89px; display: flex; align-items: center; gap: 10px; padding: 8px 11px 8px 8px; background: #fdfcf5f7; border: 1px solid #dfe5d8; border-radius: 12px; box-shadow: 0 3px 15px #30433517; text-align: left; color: var(--green); }
 .weather-glance-icon { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: #edf1e2; }
@@ -215,7 +219,6 @@ button:disabled { cursor: default; }
   .map-toolbar { right: 8px; top: 207px; }
   .map-toolbar button { width: 43px; height: 43px; }
   .map-bottom { display: none; }
-  .map-error { top: 94px; left: 8px; right: 62px; }
   .detail-dialog { inset: auto 8px calc(var(--footer) + 8px); width: auto; height: min(60dvh, calc(100dvh - 146px)); }
   .toast { bottom: calc(var(--footer) + 13px); }
   .storage-warning { bottom: calc(var(--footer) + 62px); }
@@ -258,7 +261,7 @@ button:disabled { cursor: default; }
   .field-panel.safari-sheet:not(.is-expanded) { height: auto; }
   .sheet-handle { display: none; }
   .detail-dialog { inset: calc(var(--header) + 8px) auto 8px 8px; width: var(--panel-width); height: auto; }
-  .map-topline, .weather-glance, .map-error { left: calc(var(--panel-width) + 16px); }
+  .map-topline, .weather-glance { left: calc(var(--panel-width) + 16px); }
   .map-toolbar { top: 141px; }
   .expedition-app .map-canvas .maplibregl-ctrl-top-right { top: 4px; }
 }

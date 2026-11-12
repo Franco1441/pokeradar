@@ -109,6 +109,13 @@
 .is-safari-night .maplibregl-canvas { filter: brightness(.52) saturate(.68) hue-rotate(28deg); }
 .is-safari .pokemon-marker .marker-inner { border-color: #83d39d; box-shadow: 0 0 0 5px #59b87c2b, 0 5px 18px #172e2875; }
 .is-safari .pokemon-marker .marker-label { background: #173b2e; color: #f0fbec; }
+.is-safari .pokemon-marker.is-selected .marker-inner { border-color: #2a6b4c; box-shadow: 0 0 0 5px #9eeeb080, 0 5px 18px #172e2875; }
+.is-safari .pokemon-marker.is-selected .marker-label { background: #286347; }
+.safari-signal-enter .marker-inner { animation: safari-signal-enter .32s ease-out both; }
+@keyframes safari-signal-enter {
+  from { scale: .88; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
 .is-safari .pokemon-marker .marker-inner::after {
   content: "";
   position: absolute;
@@ -130,6 +137,7 @@
   .is-safari .pokemon-marker .marker-registration { width: 17px; height: 17px; font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .safari-signal-enter .marker-inner,
   .is-safari .pokemon-marker .marker-inner::after { animation: none; }
   .is-safari .maplibregl-canvas { transition: none; }
 }

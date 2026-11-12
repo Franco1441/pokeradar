@@ -1,12 +1,13 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import { ArrowUpRight, Binoculars, Map, MapPin } from "lucide-react";
+import { ArrowUpRight, Binoculars, List, Map, MapPin } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite } from "@/lib/field-sites";
 import "./world-directory.css";
 
 interface WorldDirectoryProps {
   activeId: string;
+  mapUnavailable: boolean;
   onFocusDestination: (id: string) => void;
   onChoose: (id: string) => void;
   onLand: (id: string) => void;
@@ -14,6 +15,7 @@ interface WorldDirectoryProps {
 
 export default function WorldDirectory({
   activeId,
+  mapUnavailable,
   onFocusDestination,
   onChoose,
   onLand,
@@ -26,7 +28,13 @@ export default function WorldDirectory({
     <section className="world-directory" aria-labelledby="world-title">
       <div className="world-directory-heading">
         <h1 id="world-title">El mundo por explorar.</h1>
-        <p>Girá el globo o elegí un destino.</p>
+        {mapUnavailable ? (
+          <p role="status">
+            Elegí un destino para seguir sus pistas o ver sus avistamientos.
+          </p>
+        ) : (
+          <p>Girá el globo y elegí dónde seguir las pistas.</p>
+        )}
       </div>
 
       <article
@@ -55,8 +63,12 @@ export default function WorldDirectory({
         </div>
         <div className="world-preview-actions">
           <button type="button" onClick={() => onChoose(expedition.id)}>
-            <Map size={15} aria-hidden="true" />
-            Ver mapa
+            {mapUnavailable ? (
+              <List size={15} aria-hidden="true" />
+            ) : (
+              <Map size={15} aria-hidden="true" />
+            )}
+            {mapUnavailable ? "Ver avistamientos" : "Ver mapa"}
           </button>
           {site && (
             <button

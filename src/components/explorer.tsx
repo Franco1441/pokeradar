@@ -350,6 +350,15 @@ function ExpeditionApp() {
     setExpanded(false);
     setTab("explore");
   }
+  function openDestinationFromGlobe(id: string) {
+    changeExpedition(id);
+    if (mapError) {
+      setExpanded(true);
+      requestAnimationFrame(() =>
+        document.getElementById("regional-sightings")?.focus(),
+      );
+    }
+  }
   function showWorld() {
     setFocusedDestinationId(expedition.id);
     navigate(expedition.id, undefined, false, "world");
@@ -466,7 +475,11 @@ function ExpeditionApp() {
         data-landing={currentLanding?.phase === "approach"}
       >
         <a className="skip-link" href="#expedition-panel">
-          Ir a los avistamientos
+          {tab === "explore"
+            ? worldView
+              ? "Ir a los destinos"
+              : "Ir a los avistamientos"
+            : "Ir al panel"}
         </a>
         <header className="app-header">
           <Link href="/" className="brand" aria-label="PokéRadar, inicio">
@@ -589,12 +602,6 @@ function ExpeditionApp() {
               </button>
             )}
           </div>
-          {mapError && (
-            <div className="map-error" role="status">
-              Podés explorar los avistamientos desde la lista.
-            </div>
-          )}
-
           <aside
             tabIndex={-1}
             id="expedition-panel"
@@ -620,8 +627,9 @@ function ExpeditionApp() {
             {tab === "explore" && worldView && (
               <WorldDirectory
                 activeId={focusedDestinationId ?? expedition.id}
+                mapUnavailable={Boolean(mapError)}
                 onFocusDestination={focusDestination}
-                onChoose={changeExpedition}
+                onChoose={openDestinationFromGlobe}
                 onLand={enterField}
               />
             )}
@@ -682,28 +690,41 @@ function ExpeditionApp() {
                       )}
                     </div>
                     <div>
-                      <div className="mission-heading">
+                      <h2 className="mission-heading">
                         {goal.complete
                           ? "Expedición completada"
                           : "Tu misión de campo"}
-                        <span>{Math.min(goal.registered, 3)}/3</span>
-                      </div>
-                      <p>
-                        {goal.complete
-                          ? "Un nuevo sello en tu atlas. Seguí explorando."
-                          : "Registrá 3 especies de al menos 2 tipos."}
-                      </p>
-                      <div className="mission-track">
-                        <span
-                          style={{
-                            width: `${Math.min(goal.registered / 3, 1) * 100}%`,
-                          }}
-                        />
-                      </div>
+                      </h2>
+                      {goal.complete ? (
+                        <p>Sumaste un sello a tu atlas.</p>
+                      ) : (
+                        <div className="mission-goals">
+                          <label>
+                            <span>
+                              Especies <b>{Math.min(goal.registered, 3)}/3</b>
+                            </span>
+                            <progress
+                              value={Math.min(goal.registered, 3)}
+                              max={3}
+                            />
+                          </label>
+                          <label>
+                            <span>
+                              Tipos <b>{Math.min(goal.typeCount, 2)}/2</b>
+                            </span>
+                            <progress
+                              value={Math.min(goal.typeCount, 2)}
+                              max={2}
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="section-heading">
-                    <h2>En esta expedición</h2>
+                    <h2 id="regional-sightings" tabIndex={-1}>
+                      En esta expedición
+                    </h2>
                     <span>{visibleEncounters.length} especies</span>
                   </div>
                   <div className="search-field">

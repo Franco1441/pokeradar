@@ -43,7 +43,7 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
     name: "El mundo por explorar.",
   });
   await directory
-    .getByRole("button", { name: "Ver mapa", exact: true })
+    .getByRole("button", { name: /^Ver (mapa|avistamientos)$/ })
     .click();
   await expect(page).toHaveURL(/[?&]region=nikko/);
 
@@ -79,6 +79,16 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
   await detail.getByRole("button", { name: "Volver a explorar" }).click();
   await expect(detail).toBeHidden();
   await expect(field.getByText("1 de 3 registrados")).toBeVisible();
+  const nextClue = field.getByRole("button", {
+    name: "Buscar la siguiente pista",
+  });
+  await expect(nextClue).toBeFocused();
+  await nextClue.press("Enter");
+  await expect(
+    field.getByRole("button", {
+      name: "Examinar pista enfocada: Hojas que se mueven",
+    }),
+  ).toBeFocused();
   await field.getByRole("button", { name: "Volver al mapa" }).click();
   await expect(field).toBeHidden();
   await expect(page).toHaveURL(/\?region=nikko$/);
@@ -137,7 +147,9 @@ for (const destination of [
       .getByRole("region", { name: "El mundo por explorar." })
       .getByRole("button", { name: new RegExp(destination.title) })
       .click();
-    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await page
+      .getByRole("button", { name: /^Ver (mapa|avistamientos)$/ })
+      .click();
     const expedition = page.getByRole("complementary", {
       name: "Expedición y avistamientos",
     });

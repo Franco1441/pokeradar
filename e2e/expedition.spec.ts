@@ -84,3 +84,42 @@ test("keeps the latest selection when a previous request is delayed", async ({
     page.getByRole("dialog", { name: "Ficha de Bulbasaur" }),
   ).toHaveCount(0);
 });
+
+test("opens regional sightings from the globe without WebGL", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      ...args: unknown[]
+    ) {
+      if (type.startsWith("webgl") || type === "experimental-webgl")
+        return null;
+      return Reflect.apply(getContext, this, [type, ...args]);
+    } as typeof getContext;
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const globe = page.getByRole("region", { name: "El mundo por explorar." });
+  await expect(
+    globe.getByRole("button", { name: "Ver avistamientos" }),
+  ).toBeVisible();
+  await globe
+    .getByRole("button", { name: "Enfocar Selva de Iguazú, Argentina" })
+    .click();
+  await globe.getByRole("button", { name: "Ver avistamientos" }).click();
+
+  await expect(page).toHaveURL(/\?region=iguazu$/);
+  const expedition = page.getByRole("complementary", {
+    name: "Expedición y avistamientos",
+  });
+  await expect(
+    expedition.getByRole("heading", { name: "En esta expedición" }),
+  ).toBeFocused();
+  await expedition.getByRole("button", { name: /Aipom/ }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Ficha de Aipom" }),
+  ).toBeVisible();
+});

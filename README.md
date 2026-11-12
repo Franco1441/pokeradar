@@ -8,7 +8,7 @@ PokéRadar propone un recorrido de investigación con diez especies por expedici
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
-Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Las fichas comparten el catálogo y el progreso del mapa. Al volver, el descubrimiento queda marcado en la zona.
+Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Después de registrar una especie, podés enfocar la siguiente pista pendiente con un botón. Las fichas comparten el catálogo y el progreso del mapa. Si el globo no carga, podés elegir un destino y abrir sus avistamientos o su panorama.
 
 | Destino | Escena | Avistamientos |
 | --- | --- | --- |
@@ -105,7 +105,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además de la rotación por minuto.
 
-Pasaron TypeScript, ESLint, 39 pruebas unitarias, 12 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, el descenso directo a Heron y un registro desde Safari que se conserva al cambiar de expedición y abrir el atlas. Safari y los dos destinos nuevos se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
+Pasaron TypeScript, ESLint, 39 pruebas unitarias, 13 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, verifican el descenso directo a Heron, prueban un registro desde Safari y comprueban el acceso a las fichas sin WebGL. Safari y los dos destinos nuevos se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
 
 ## 3. Uso de inteligencia artificial
 

@@ -410,9 +410,35 @@
 
 .field-navigation .field-observe {
   display: inline-flex;
-  gap: 8px;
-  padding: 0 13px;
+  gap: 9px;
+  min-width: 0;
+  padding: 6px 12px;
+  background: var(--field-accent);
+  color: #1e3425;
+  text-align: left;
+}
+
+.field-navigation .field-observe:hover {
+  background: color-mix(in srgb, var(--field-accent), white 25%);
+}
+
+.field-observe svg {
+  flex: none;
+}
+
+.field-observe-copy {
+  display: grid;
+  gap: 2px;
+  line-height: 1.22;
+}
+
+.field-observe-copy strong {
   font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.field-observe-copy span {
+  font-size: 0.72rem;
   font-weight: 650;
 }
 
@@ -481,6 +507,16 @@
   line-height: 1.4;
 }
 
+.field-discovery .field-registration {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0 30px 6px 0;
+  color: var(--field-accent);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
 .field-dismiss {
   position: absolute;
   top: 5px;
@@ -492,7 +528,13 @@
   border-radius: 50%;
 }
 
+.field-discovery-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .field-detail-button {
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -509,6 +551,25 @@
 .field-detail-button:hover {
   background: color-mix(in srgb, var(--field-accent), white 25%);
 }
+
+.field-reopen-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding-inline: 8px;
+  color: #edf1da;
+  border: 1px solid var(--field-border);
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.field-reopen-button:hover {
+  background: #4a5f47;
+}
+
 .field-failure {
   position: absolute;
   inset: 110px auto auto 18px;
@@ -546,12 +607,7 @@
     max-width: 100%;
   }
   .field-navigation .field-observe {
-    padding-inline: 6px;
-    font-size: 0.75rem;
-    text-align: left;
-  }
-  .field-navigation .field-observe svg {
-    flex-shrink: 0;
+    padding-inline: 8px;
   }
   .field-progress {
     padding: 5px 9px;
@@ -565,8 +621,11 @@
     font-size: 0.69rem;
     text-align: center;
   }
+  .field-scene:has(.field-discovery) .field-hint {
+    display: none;
+  }
   .field-discovery {
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 122px);
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 100px);
   }
 }
 

@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Binoculars,
+  BookOpen,
   Check,
   MapPin,
   ScanLine,
@@ -74,7 +75,9 @@ export default function FieldScene({
   const drag = useRef<{ id: number; startX: number; startPan: number } | null>(
     null,
   );
-  const openDetail = useRef<HTMLButtonElement>(null);
+  const primaryAction = useRef<HTMLButtonElement>(null);
+  const examineClue = useRef<HTMLButtonElement>(null);
+  const focusClueOnDismiss = useRef(false);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [aspect, setAspect] = useState(3);
   const [imageStatus, setImageStatus] = useState<
@@ -102,8 +105,12 @@ export default function FieldScene({
   }, []);
 
   useEffect(() => {
-    if (revealedIndex !== null)
-      openDetail.current?.focus({ preventScroll: true });
+    if (revealedIndex !== null) {
+      primaryAction.current?.focus({ preventScroll: true });
+    } else if (focusClueOnDismiss.current) {
+      focusClueOnDismiss.current = false;
+      examineClue.current?.focus({ preventScroll: true });
+    }
   }, [revealedIndex]);
 
   const clues = site.clues.flatMap((clue) => {
@@ -124,6 +131,10 @@ export default function FieldScene({
     registeredIds.includes(clue.pokemonId),
   ).length;
   const revealed = revealedIndex === null ? null : clues[revealedIndex];
+  const revealedIsRegistered = Boolean(
+    revealed && registeredIds.includes(revealed.pokemonId),
+  );
+  const fieldComplete = clues.length > 0 && discovered === clues.length;
   const hasTableCoral = expedition.id === "heron";
 
   function lookAt(index: number) {
@@ -200,7 +211,7 @@ export default function FieldScene({
     lookAt(index);
     setRevealedIndex(index);
     if (revealedIndex === index)
-      openDetail.current?.focus({ preventScroll: true });
+      primaryAction.current?.focus({ preventScroll: true });
   }
 
   function dismissReveal() {
@@ -210,6 +221,23 @@ export default function FieldScene({
       viewport.current
         ?.querySelector<HTMLButtonElement>(`[data-clue="${id}"]`)
         ?.focus();
+  }
+
+  function continueFieldwork() {
+    if (fieldComplete) {
+      onExit();
+      return;
+    }
+
+    const isUnregistered = (clue: (typeof clues)[number]) =>
+      !registeredIds.includes(clue.pokemonId);
+    const nextIndex = clues.findIndex(
+      (clue, index) =>
+        index > (revealedIndex ?? lookingAt) && isUnregistered(clue),
+    );
+    lookAt(nextIndex < 0 ? clues.findIndex(isUnregistered) : nextIndex);
+    focusClueOnDismiss.current = true;
+    setRevealedIndex(null);
   }
 
   return (
@@ -350,13 +378,17 @@ export default function FieldScene({
               <ArrowLeft size={18} />
             </button>
             <button
+              ref={examineClue}
               className="field-observe"
               type="button"
               onClick={() => examine(lookingAt)}
               aria-label={`Examinar pista enfocada: ${currentClue.label}`}
             >
-              <Binoculars size={19} />
-              <span>{currentClue.label}</span>
+              <Binoculars size={19} aria-hidden="true" />
+              <span className="field-observe-copy">
+                <strong>Examinar pista</strong>
+                <span>{currentClue.label}</span>
+              </span>
             </button>
             <button
               type="button"
@@ -407,17 +439,46 @@ export default function FieldScene({
             <X size={17} />
           </button>
           <div>
+            {revealedIsRegistered && (
+              <p className="field-registration" aria-live="polite">
+                <Check size={15} aria-hidden="true" />
+                {fieldComplete
+                  ? "Recorrido completado"
+                  : "Registrado en tu atlas"}
+              </p>
+            )}
             <h3>{revealed.name}</h3>
             <p>{revealed.observation}</p>
           </div>
-          <button
-            ref={openDetail}
-            className="field-detail-button"
-            type="button"
-            onClick={() => onObserve(revealed.id)}
-          >
-            Abrir ficha <ArrowRight size={16} />
-          </button>
+          <div className="field-discovery-actions">
+            <button
+              ref={primaryAction}
+              className="field-detail-button"
+              type="button"
+              onClick={
+                revealedIsRegistered
+                  ? continueFieldwork
+                  : () => onObserve(revealed.id)
+              }
+            >
+              {revealedIsRegistered
+                ? fieldComplete
+                  ? "Finalizar recorrido"
+                  : "Buscar la siguiente pista"
+                : "Abrir ficha"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+            {revealedIsRegistered && (
+              <button
+                className="field-reopen-button"
+                type="button"
+                onClick={() => onObserve(revealed.id)}
+                aria-label="Ver ficha de nuevo"
+              >
+                <BookOpen size={15} aria-hidden="true" /> Ficha
+              </button>
+            )}
+          </div>
         </div>
       )}
     </section>
