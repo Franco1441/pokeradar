@@ -75,12 +75,12 @@
 .postcard-close:focus-visible { outline-color: #fffbed; }
 .postcard-location { position: absolute; bottom: 23px; left: 25px; right: 25px; }
 .postcard-location > span { font-size: 11px; font-weight: 650; letter-spacing: .04em; }
-.postcard-location h2 { margin-top: 5px; font: 400 clamp(31px, 5vw, 42px)/1.04 var(--font-editorial, Georgia, serif); letter-spacing: -.02em; }
+.postcard-location h2 { margin-top: 5px; font: 650 clamp(31px, 5vw, 42px)/1.04 var(--font-heading, Helvetica, Arial, sans-serif); letter-spacing: -.02em; }
 .postcard-paper { padding: 25px; }
 .postcard-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .postcard-heading > div:first-child { flex: 1; }
 .postcard-kicker { color: var(--muted, #59666a); font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .11em; }
-.postcard-heading h3 { margin-top: 5px; font: 400 29px/1.1 var(--font-editorial, Georgia, serif); letter-spacing: -.02em; }
+.postcard-heading h3 { margin-top: 5px; font: 650 29px/1.1 var(--font-heading, Helvetica, Arial, sans-serif); letter-spacing: -.02em; }
 .postcard-heading p { max-width: 350px; margin-top: 7px; color: var(--muted, #59666a); font-size: 12px; line-height: 1.55; }
 
 .postcard-stamp {
@@ -106,12 +106,12 @@
 .postcard-finding { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; min-height: 150px; }
 .postcard-finding-copy { flex: 1; }
 .postcard-finding-copy > span { display: block; max-width: 210px; color: var(--muted, #59666a); font-size: 11px; line-height: 1.5; }
-.postcard-finding-copy > strong { display: block; margin-top: 4px; font: 400 36px/1.05 var(--font-editorial, Georgia, serif); letter-spacing: -.025em; }
+.postcard-finding-copy > strong { display: block; margin-top: 4px; font: 650 36px/1.05 var(--font-heading, Helvetica, Arial, sans-serif); letter-spacing: -.025em; }
 .postcard-finding-copy time { display: block; margin-top: 12px; color: var(--ink, #202d30); font-size: 12px; font-weight: 650; }
 .postcard-finding-copy small { display: block; margin-top: 3px; color: var(--muted, #59666a); font-size: 10px; }
 .postcard-featured-artwork { width: 176px; height: 155px; display: grid; place-items: center; flex: none; }
 .postcard-featured-artwork img { width: 170px; height: 170px; object-fit: contain; filter: drop-shadow(0 7px 5px #202d3015); }
-.postcard-artwork-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--green, #24535a); font: 400 40px/1 var(--font-editorial, Georgia, serif); }
+.postcard-artwork-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--green, #24535a); font: 650 40px/1 var(--font-heading, Helvetica, Arial, sans-serif); }
 .postcard-pixel-art { image-rendering: pixelated; }
 
 .postcard-goals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; list-style: none; padding: 12px 0; margin: 18px 0 0; border-top: 1px solid var(--line, #dadbd3); border-bottom: 1px solid var(--line, #dadbd3); }

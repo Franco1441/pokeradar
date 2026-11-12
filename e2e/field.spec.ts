@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { EXPEDITIONS } from "../src/lib/expeditions";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -78,7 +79,7 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
 
   await detail.getByRole("button", { name: "Volver a explorar" }).click();
   await expect(detail).toBeHidden();
-  await expect(field.getByText("1 de 3 registrados")).toBeVisible();
+  await expect(field.getByText("1 de 10 registrados")).toBeVisible();
   const nextClue = field.getByRole("button", {
     name: "Buscar la siguiente pista",
   });
@@ -86,7 +87,7 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
   await nextClue.press("Enter");
   await expect(
     field.getByRole("button", {
-      name: "Examinar pista enfocada: Hojas que se mueven",
+      name: "Observar pista enfocada: Pikachu",
     }),
   ).toBeFocused();
   await field.getByRole("button", { name: "Volver al mapa" }).click();
@@ -101,51 +102,15 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
   ).toBeVisible();
 });
 
-for (const destination of [
-  {
-    id: "nikko",
-    title: "Bosques de Nikkō",
-    species: ["Bulbasaur", "Caterpie", "Hoothoot"],
-  },
-  {
-    id: "reykjanes",
-    title: "Tierras de fuego",
-    species: ["Charmander", "Geodude", "Vulpix"],
-  },
-  {
-    id: "namib",
-    title: "Dunas del Namib",
-    species: ["Sandshrew", "Cacnea", "Sandile"],
-  },
-  {
-    id: "zermatt",
-    title: "Cumbres de Zermatt",
-    species: ["Sneasel", "Swinub", "Delibird"],
-  },
-  {
-    id: "heron",
-    title: "Arrecife de Heron",
-    species: ["Squirtle", "Corsola", "Horsea"],
-  },
-  {
-    id: "iguazu",
-    title: "Selva de Iguazú",
-    species: ["Aipom", "Lotad", "Tropius"],
-  },
-  {
-    id: "everglades",
-    title: "Humedales de Everglades",
-    species: ["Totodile", "Croagunk", "Ducklett"],
-  },
-]) {
-  test(`opens the panorama and all three sightings in ${destination.title}`, async ({
+for (const destination of EXPEDITIONS) {
+  test(`opens the panorama and all ten sightings in ${destination.name}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page
       .getByRole("region", { name: "El mundo por explorar." })
-      .getByRole("button", { name: new RegExp(destination.title) })
+      .getByRole("button", { name: new RegExp(destination.name) })
       .click();
     await page
       .getByRole("button", { name: /^Ver (mapa|avistamientos)$/ })
@@ -173,20 +138,30 @@ for (const destination of [
       )
       .toBeGreaterThan(0);
 
-    for (const [index, name] of destination.species.entries()) {
+    await expect(field.getByText("0 de 10 registrados")).toBeVisible();
+    await expect(
+      field.getByRole("button", { name: /^Observar a / }),
+    ).toHaveCount(7);
+    const seen = new Set<string>();
+    for (let index = 0; index < destination.encounters.length; index++) {
       if (index > 0)
         await field.getByRole("button", { name: "Mirar a la derecha" }).click();
       await field
-        .getByRole("button", { name: /Examinar pista enfocada/ })
+        .getByRole("button", { name: /^(Examinar|Observar) pista enfocada/ })
         .click();
-      await expect(
-        field.getByRole("heading", { name, exact: true }),
-      ).toBeVisible();
+      const name = await field
+        .getByRole("region", { name: /^Avistamiento de / })
+        .getByRole("heading", { level: 3 })
+        .textContent();
+      if (name) seen.add(name);
     }
+    expect([...seen].sort()).toEqual(
+      destination.encounters.map(({ name }) => name).sort(),
+    );
 
     await field.getByRole("button", { name: "Volver al mapa" }).click();
     await expect(
-      expedition.getByRole("heading", { name: destination.title, exact: true }),
+      expedition.getByRole("heading", { name: destination.name, exact: true }),
     ).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`\\?region=${destination.id}$`));
   });

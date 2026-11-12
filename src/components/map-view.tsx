@@ -16,6 +16,7 @@ import { getFieldSite, type FieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
 import { mountGlobeLighting, solarBoundaryCenter } from "./map-lighting";
+import { loadEarthTextures, mountPhotographicGlobe } from "./earth-surface";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./map.css";
 
@@ -62,8 +63,8 @@ function cameraPadding(
   const bounds = panel?.getBoundingClientRect();
   const width = canvas.width;
   const height = canvas.height;
-  let left = Math.min(globe ? 24 : 38, width * 0.1);
-  const right = Math.min(globe ? 42 : 72, width * 0.17);
+  let left = Math.min(globe ? 15 : 38, width * 0.1);
+  const right = Math.min(globe ? 26 : 72, width * 0.17);
   let bottom = Math.min(globe ? 48 : 112, height * 0.13);
   let top = Math.min(globe ? 25 : 40, height * 0.12);
 
@@ -138,7 +139,7 @@ function globeCamera(
   const baseDiameter = 512 / Math.PI / Math.cos((center[1] * Math.PI) / 180);
   const zoom = Math.min(
     2.2,
-    Math.max(0, Math.log2((available * 0.9) / baseDiameter)),
+    Math.max(0, Math.log2((available * 0.96) / baseDiameter)),
   );
   return { center, zoom, padding, pitch: 0, bearing: 0 };
 }
@@ -345,6 +346,7 @@ export default function MapView(props: MapViewProps) {
       // Resolve the module worker from the same origin in both dev and Turbopack builds.
       setWorkerUrl(`/vendor/maplibre-gl-worker.mjs?v=${getVersion()}`);
       const { expedition, worldView } = latest.current;
+      if (worldView) void loadEarthTextures().catch(() => undefined);
       map = new MapLibreMap({
         container: element,
         style: "https://tiles.openfreemap.org/styles/liberty",
@@ -458,7 +460,7 @@ export default function MapView(props: MapViewProps) {
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !props.worldView) return;
-    return mountGlobeLighting(map);
+    return mountPhotographicGlobe(map, () => mountGlobeLighting(map));
   }, [ready, attempt, props.worldView]);
 
   const safariOpen = Boolean(props.safariPeriod);

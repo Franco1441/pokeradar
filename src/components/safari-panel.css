@@ -17,7 +17,7 @@
 
 .safari-header h2 {
   margin: 0;
-  font: 400 44px/0.94 var(--font-editorial, Georgia, serif);
+  font: 650 44px/0.94 var(--font-heading, Helvetica, Arial, sans-serif);
   letter-spacing: -0.025em;
 }
 
@@ -249,7 +249,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font: 400 26px/1 var(--font-editorial, Georgia, serif);
+  font: 650 26px/1 var(--font-heading, Helvetica, Arial, sans-serif);
 }
 
 .safari-results-header h3 span {

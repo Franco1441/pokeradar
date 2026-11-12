@@ -191,7 +191,7 @@
 
 .field-heading h2 {
   font: 400 clamp(2.15rem, 5.75vw, 5.5rem)/0.96
-    var(--font-editorial, Georgia, serif);
+    var(--font-heading, Helvetica, Arial, sans-serif);
   letter-spacing: -0.015em;
   text-wrap: balance;
   text-shadow: 0 3px 26px #101c22dc;
@@ -255,6 +255,51 @@
   opacity: 1;
   filter: saturate(0.8) brightness(0.94) drop-shadow(0 8px 12px #142018bd);
   clip-path: inset(0);
+}
+
+.field-wild-pokemon {
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  justify-items: center;
+  width: max-content;
+  min-width: 54px;
+  min-height: 44px;
+  padding: 3px;
+  border-radius: 6px;
+  transform: translate(-50%, 23px);
+}
+
+.field-wild-pokemon .field-pokemon {
+  position: static;
+  width: clamp(49px, 10vh, 94px);
+  transform: none;
+  opacity: 1;
+  clip-path: none;
+  filter: saturate(0.84) drop-shadow(0 6px 5px #0a1726b8);
+}
+
+.field-wild-pokemon span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid #e1e7de55;
+  border-radius: 4px;
+  background: #101c22eb;
+  color: #faf8f2;
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.field-wild-pokemon:hover span,
+.field-wild-pokemon:focus-visible span {
+  border-color: var(--field-action);
+  background: var(--field-action);
+  color: #202d30;
 }
 
 .field-scene[data-panorama="ready"]
@@ -522,7 +567,7 @@
 
 .field-discovery h3 {
   padding-right: 32px;
-  font: 400 2.2rem/0.98 var(--font-editorial, Georgia, serif);
+  font: 650 2.2rem/0.98 var(--font-heading, Helvetica, Arial, sans-serif);
   letter-spacing: -0.015em;
 }
 
@@ -654,6 +699,9 @@
   }
   .field-navigation .field-observe {
     padding-inline: 8px;
+  }
+  .field-wild-pokemon .field-pokemon {
+    width: clamp(50px, 9vh, 77px);
   }
   .field-progress {
     padding: 5px 9px;

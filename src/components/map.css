@@ -61,7 +61,7 @@
     var(--star-warm) 63% 8% / 4px 4px no-repeat,
     var(--star-warm) 81% 59% / 4px 4px no-repeat,
     var(--star-warm) 91% 11% / 4px 4px no-repeat,
-    radial-gradient(ellipse at 55% 44%, #182933, var(--map-ink) 63%, #0b1419);
+    radial-gradient(ellipse at 55% 44%, #080e16, #030509 67%, #020306);
 }
 
 .is-globe .map-loading { color: #e9e5d9; background: transparent; }

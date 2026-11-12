@@ -822,7 +822,8 @@ function ExpeditionApp() {
                       <span>
                         <strong>{fieldSite.action}</strong>
                         <small>
-                          {fieldSite.name} · {fieldSite.clues.length} pistas
+                          {fieldSite.name} · {expedition.encounters.length}{" "}
+                          avistamientos
                         </small>
                       </span>
                       <ArrowRight size={17} />

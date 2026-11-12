@@ -4,15 +4,15 @@ Explorá siete hábitats del mundo, investigá Pokémon y construí tu propio di
 
 ## 1. Concepto y narrativa
 
-PokéRadar propone un recorrido de investigación con diez especies por expedición. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en la vista Explorar y cuatro especies adicionales en el radar Safari.
+PokéRadar propone un recorrido de investigación con diez especies por expedición. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en el mapa regional, diez en la exploración a pie y un conjunto rotativo en el radar Safari.
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
-El globo muestra el día, el crepúsculo y la noche según la posición aproximada del sol. El botón **Ver día y noche** centra la cámara en el límite entre ambos. Las luces representan observaciones satelitales de NASA Black Marble de 2016 y se atenúan hacia la zona iluminada. El fondo estrellado enmarca el globo y la vista regional conserva su cartografía de detalle.
+El globo muestra el día, el crepúsculo y la noche según la posición aproximada del sol. El botón **Ver día y noche** centra la cámara en el límite entre ambos. Las luces representan observaciones satelitales de NASA Black Marble de 2016 y se atenúan hacia la zona iluminada. Una capa de MapLibre renderiza las texturas satelitales, mezcla la sombra solar de forma continua y dibuja el halo de la atmósfera. Al acercar la cámara, la capa se funde con la cartografía regional.
 
-Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para seguir tres pistas por región. Después de registrar una especie, podés enfocar la siguiente pista pendiente con un botón. Las fichas comparten el catálogo y el progreso del mapa. El globo muestra clima, hora local y dos especies del destino enfocado. Al consultar una de esas especies, la ficha se abre en el mismo panel y se puede volver al destino con el globo en la misma posición. Si el globo no carga, podés elegir un destino y abrir sus avistamientos o su panorama.
+Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar desde el marcador, el panel del destino o directamente desde la tarjeta del globo. Al enfocar un destino, el globo gira hacia la región y se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para recorrer los diez avistamientos. Siete Pokémon están a la vista con nombre y tres se revelan al examinar una pista marcada. Después de registrar una especie, podés enfocar la siguiente pista pendiente con un botón. Las fichas comparten el catálogo y el progreso del mapa. El globo muestra clima, hora local y dos especies del destino enfocado. Al consultar una de esas especies, la ficha se abre en el mismo panel y se puede volver al destino con el globo en la misma posición. Si el globo no carga, podés elegir un destino y abrir sus avistamientos o su panorama.
 
-| Destino | Escena | Avistamientos |
+| Destino | Escena | Pistas |
 | --- | --- | --- |
 | Nikkō | Claro de los cedros | Bulbasaur, Caterpie y Hoothoot |
 | Reykjanes | Campo de basalto | Charmander, Geodude y Vulpix |
@@ -108,7 +108,7 @@ npm run test:e2e
 
 Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además de la rotación por minuto.
 
-Pasaron TypeScript, ESLint, 55 pruebas unitarias, 15 pruebas E2E y la compilación de producción. Las pruebas E2E recorren las 21 pistas, verifican el descenso directo a Heron, prueban un registro desde Safari y comprueban el acceso a las fichas sin WebGL. También verifican el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
+Pasaron TypeScript, ESLint, 55 pruebas unitarias, 15 pruebas E2E y la compilación de producción. Las pruebas E2E recorren los 70 avistamientos de campo, verifican el descenso directo a Heron, prueban un registro desde Safari y comprueban el acceso a las fichas sin WebGL. También verifican el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
 
 ## 3. Uso de inteligencia artificial
 
@@ -139,9 +139,9 @@ Con una semana adicional ampliaría el trabajo en estas direcciones.
 
 - Datos y recursos de Pokémon mediante PokéAPI y su repositorio de sprites. [PokéAPI](https://pokeapi.co/docs/v2) · [Sprites](https://github.com/PokeAPI/sprites)
 - Cartografía vectorial mediante OpenFreeMap y datos de OpenStreetMap. Las atribuciones se conservan en el mapa. [OpenFreeMap](https://openfreemap.org/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
-- Luces nocturnas de NASA Earth Observatory, Black Marble 2016. Imágenes de Joshua Stevens con datos Suomi NPP VIIRS de Miguel Román, NASA Goddard Space Flight Center. El mosaico se agrupa en celdas para mostrar las luces en el globo. [NASA Earth at Night](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/)
+- Texturas del globo de NASA Earth Observatory. Blue Marble Next Generation aporta color natural, topografía y batimetría. Black Marble 2016 aporta las luces nocturnas, con imágenes de Joshua Stevens y datos Suomi NPP VIIRS de Miguel Román, NASA Goddard Space Flight Center. [Blue Marble](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography-bathymetry/) · [Black Marble](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/)
 - Datos meteorológicos de Open-Meteo. [Open-Meteo](https://open-meteo.com/)
 - Pokémon y los nombres de sus personajes pertenecen a sus respectivos titulares. Este proyecto es una demostración técnica de exploración geoespacial.
 
 - Fotografías ilustrativas de hábitats en Unsplash. [Bosque](https://images.unsplash.com/photo-1448375240586-882707db888b) · [Islandia](https://images.unsplash.com/photo-1476610182048-b716b8518aae) · [Namib](https://unsplash.com/photos/nt66_G8DCBM) · [Zermatt, Manuel Hodel](https://unsplash.com/photos/HVB2Mwj_txQ) · [Gran Barrera de Coral, GeoNadir](https://unsplash.com/photos/b78E12dTxlo)
-- Tipografías [Instrument Serif](https://github.com/Instrument/instrument-serif) y DM Sans. Las licencias OFL se incluyen junto a las fuentes.
+- Tipografía de sistema Helvetica Neue, con Helvetica y Arial como alternativas según el dispositivo.

@@ -6,6 +6,8 @@ export interface FieldClue {
   y: number;
 }
 
+type FieldSighting = readonly [encounterId: string, x: number, y: number];
+
 export interface FieldSite {
   name: string;
   action: string;
@@ -13,6 +15,7 @@ export interface FieldSite {
   image: string;
   accent: string;
   clues: readonly FieldClue[];
+  sightings: readonly FieldSighting[];
 }
 
 const FIELD_SITES = new Map<string, FieldSite>([
@@ -46,6 +49,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           x: 0.85,
           y: 0.31,
         },
+      ],
+      sightings: [
+        ["nikko-shroomish", 0.09, 0.74],
+        ["nikko-pikachu", 0.285, 0.53],
+        ["nikko-leafeon", 0.39, 0.7],
+        ["nikko-butterfree", 0.46, 0.35],
+        ["nikko-oddish", 0.63, 0.7],
+        ["nikko-scyther", 0.745, 0.57],
+        ["nikko-noctowl", 0.94, 0.44],
       ],
     },
   ],
@@ -81,6 +93,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           y: 0.59,
         },
       ],
+      sightings: [
+        ["reykjanes-slugma", 0.09, 0.72],
+        ["reykjanes-numel", 0.28, 0.79],
+        ["reykjanes-magmar", 0.38, 0.58],
+        ["reykjanes-rhyhorn", 0.45, 0.74],
+        ["reykjanes-litwick", 0.62, 0.61],
+        ["reykjanes-onix", 0.705, 0.51],
+        ["reykjanes-houndour", 0.93, 0.74],
+      ],
     },
   ],
   [
@@ -114,6 +135,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           x: 0.81,
           y: 0.64,
         },
+      ],
+      sightings: [
+        ["namib-diglett", 0.08, 0.72],
+        ["namib-helioptile", 0.275, 0.53],
+        ["namib-trapinch", 0.38, 0.77],
+        ["namib-maractus", 0.435, 0.61],
+        ["namib-gligar", 0.63, 0.43],
+        ["namib-cubone", 0.73, 0.77],
+        ["namib-umbreon", 0.92, 0.57],
       ],
     },
   ],
@@ -151,6 +181,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           y: 0.47,
         },
       ],
+      sightings: [
+        ["zermatt-bergmite", 0.085, 0.56],
+        ["zermatt-snorunt", 0.28, 0.76],
+        ["zermatt-cubchoo", 0.39, 0.67],
+        ["zermatt-froslass", 0.46, 0.51],
+        ["zermatt-vanillite", 0.63, 0.69],
+        ["zermatt-snover", 0.73, 0.78],
+        ["zermatt-glalie", 0.93, 0.58],
+      ],
     },
   ],
   [
@@ -185,6 +224,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           y: 0.6,
         },
       ],
+      sightings: [
+        ["heron-clamperl", 0.08, 0.77],
+        ["heron-magikarp", 0.285, 0.44],
+        ["heron-psyduck", 0.39, 0.74],
+        ["heron-finneon", 0.45, 0.43],
+        ["heron-staryu", 0.63, 0.78],
+        ["heron-chinchou", 0.71, 0.53],
+        ["heron-jellicent", 0.92, 0.49],
+      ],
     },
   ],
   [
@@ -218,6 +266,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           y: 0.58,
         },
       ],
+      sightings: [
+        ["iguazu-morelull", 0.09, 0.78],
+        ["iguazu-yanma", 0.28, 0.45],
+        ["iguazu-surskit", 0.41, 0.63],
+        ["iguazu-vivillon", 0.47, 0.35],
+        ["iguazu-leavanny", 0.63, 0.7],
+        ["iguazu-lurantis", 0.72, 0.46],
+        ["iguazu-venonat", 0.93, 0.76],
+      ],
     },
   ],
   [
@@ -250,6 +307,15 @@ const FIELD_SITES = new Map<string, FieldSite>([
           x: 0.8,
           y: 0.58,
         },
+      ],
+      sightings: [
+        ["everglades-gastly", 0.09, 0.49],
+        ["everglades-wooper", 0.275, 0.77],
+        ["everglades-barboach", 0.39, 0.64],
+        ["everglades-lombre", 0.46, 0.76],
+        ["everglades-poliwag", 0.625, 0.63],
+        ["everglades-palpitoad", 0.715, 0.77],
+        ["everglades-quagsire", 0.93, 0.68],
       ],
     },
   ],

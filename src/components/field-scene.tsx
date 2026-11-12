@@ -2,9 +2,11 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
@@ -48,6 +50,7 @@ function FieldPokemon({ pokemonId }: { pokemonId: number }) {
       width={160}
       height={160}
       draggable={false}
+      decoding="async"
       onError={() =>
         setSource(source === spriteUrl(pokemonId) ? "" : spriteUrl(pokemonId))
       }
@@ -70,6 +73,22 @@ export default function FieldScene({
   cinematicArrival = false,
   onPanoramaReady,
 }: FieldSceneProps) {
+  const spots = useMemo(() => {
+    const encounters = new Map(
+      expedition.encounters.map((encounter) => [encounter.id, encounter]),
+    );
+    const hiddenSpots = site.clues.flatMap((clue) => {
+      const encounter = encounters.get(clue.encounterId);
+      return encounter ? [{ ...clue, ...encounter, hidden: true }] : [];
+    });
+    const visibleSpots = site.sightings.flatMap(([encounterId, x, y]) => {
+      const encounter = encounters.get(encounterId);
+      return encounter
+        ? [{ ...encounter, x, y, label: encounter.name, observation: encounter.rationale, hidden: false }]
+        : [];
+    });
+    return [...hiddenSpots, ...visibleSpots].sort((left, right) => left.x - right.x);
+  }, [expedition, site]);
   const viewport = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ id: number; startX: number; startPan: number } | null>(
@@ -83,7 +102,9 @@ export default function FieldScene({
   const [imageStatus, setImageStatus] = useState<
     "loading" | "ready" | "failed"
   >("loading");
-  const [lookingAt, setLookingAt] = useState(0);
+  const [lookingAt, setLookingAt] = useState(() =>
+    Math.max(0, spots.findIndex((spot) => spot.id === site.clues[0]?.encounterId)),
+  );
   const [manualPan, setManualPan] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const [revealedIndex, setRevealedIndex] = useState<number | null>(null);
@@ -113,33 +134,27 @@ export default function FieldScene({
     }
   }, [revealedIndex]);
 
-  const clues = site.clues.flatMap((clue) => {
-    const encounter = expedition.encounters.find(
-      ({ id }) => id === clue.encounterId,
-    );
-    return encounter ? [{ ...clue, ...encounter }] : [];
-  });
-  const currentClue = clues[lookingAt];
+  const currentSpot = spots[lookingAt];
   const sceneWidth = Math.max(size.width * 1.18, size.height * aspect);
   const sceneHeight = sceneWidth / aspect;
   const maxPan = Math.max(0, sceneWidth - size.width);
   const pan = clamp(
-    manualPan ?? (currentClue?.x ?? 0.5) * sceneWidth - size.width / 2,
+    manualPan ?? (currentSpot?.x ?? 0.5) * sceneWidth - size.width / 2,
     maxPan,
   );
-  const discovered = clues.filter((clue) =>
-    registeredIds.includes(clue.pokemonId),
+  const discovered = spots.filter((spot) =>
+    registeredIds.includes(spot.pokemonId),
   ).length;
-  const revealed = revealedIndex === null ? null : clues[revealedIndex];
+  const revealed = revealedIndex === null ? null : spots[revealedIndex];
   const revealedIsRegistered = Boolean(
     revealed && registeredIds.includes(revealed.pokemonId),
   );
-  const fieldComplete = clues.length > 0 && discovered === clues.length;
+  const fieldComplete = spots.length > 0 && discovered === spots.length;
   const hasTableCoral = expedition.id === "heron";
 
   function lookAt(index: number) {
-    if (!clues.length) return;
-    setLookingAt((index + clues.length) % clues.length);
+    if (!spots.length) return;
+    setLookingAt((index + spots.length) % spots.length);
     setManualPan(null);
   }
 
@@ -188,12 +203,12 @@ export default function FieldScene({
       maxPan,
     );
     setManualPan(nextPan);
-    if (!sceneWidth || !clues.length) return;
+    if (!sceneWidth || !spots.length) return;
 
     const center = (nextPan + size.width / 2) / sceneWidth;
-    const nearestIndex = clues.reduce(
-      (nearest, clue, index) =>
-        Math.abs(clue.x - center) < Math.abs(clues[nearest].x - center)
+    const nearestIndex = spots.reduce(
+      (nearest, spot, index) =>
+        Math.abs(spot.x - center) < Math.abs(spots[nearest].x - center)
           ? index
           : nearest,
       0,
@@ -229,13 +244,13 @@ export default function FieldScene({
       return;
     }
 
-    const isUnregistered = (clue: (typeof clues)[number]) =>
-      !registeredIds.includes(clue.pokemonId);
-    const nextIndex = clues.findIndex(
-      (clue, index) =>
-        index > (revealedIndex ?? lookingAt) && isUnregistered(clue),
+    const isUnregistered = (spot: (typeof spots)[number]) =>
+      !registeredIds.includes(spot.pokemonId);
+    const nextIndex = spots.findIndex(
+      (spot, index) =>
+        index > (revealedIndex ?? lookingAt) && isUnregistered(spot),
     );
-    lookAt(nextIndex < 0 ? clues.findIndex(isUnregistered) : nextIndex);
+    lookAt(nextIndex < 0 ? spots.findIndex(isUnregistered) : nextIndex);
     focusClueOnDismiss.current = true;
     setRevealedIndex(null);
   }
@@ -301,33 +316,51 @@ export default function FieldScene({
               draggable={false}
             />
           )}
-          {clues.map((clue, index) => {
-            const registered = registeredIds.includes(clue.pokemonId);
+          {spots.map((spot, index) => {
+            const registered = registeredIds.includes(spot.pokemonId);
             const found = registered || index === revealedIndex;
+            const position = { left: `${spot.x * 100}%`, top: `${spot.y * 100}%` };
+            const focusSpot = (event: FocusEvent<HTMLButtonElement>) => {
+              if (event.currentTarget.matches(":focus-visible")) lookAt(index);
+            };
+            if (!spot.hidden) {
+              return (
+                <div key={spot.id} className="field-clue-point" style={position}>
+                  <button
+                    className="field-wild-pokemon"
+                    type="button"
+                    data-clue={spot.id}
+                    aria-label={registered ? `Volver a observar a ${spot.name}` : `Observar a ${spot.name}`}
+                    onFocus={focusSpot}
+                    onClick={() => examine(index)}
+                  >
+                    <FieldPokemon pokemonId={spot.pokemonId} />
+                    <span>{registered && <Check size={13} aria-hidden="true" />}{spot.name}</span>
+                  </button>
+                </div>
+              );
+            }
             return (
               <div
-                key={clue.id}
+                key={spot.id}
                 className="field-clue-point"
                 data-found={found}
                 data-habitat={
-                  clue.id === "heron-squirtle" ? "table-coral" : undefined
+                  spot.id === "heron-squirtle" ? "table-coral" : undefined
                 }
-                style={{ left: `${clue.x * 100}%`, top: `${clue.y * 100}%` }}
+                style={position}
               >
-                <FieldPokemon pokemonId={clue.pokemonId} />
+                <FieldPokemon pokemonId={spot.pokemonId} />
                 <button
                   className="field-clue"
                   type="button"
-                  data-clue={clue.id}
+                  data-clue={spot.id}
                   aria-label={
                     registered
-                      ? `Volver a observar a ${clue.name}`
-                      : `Examinar: ${clue.label}`
+                      ? `Volver a observar a ${spot.name}`
+                      : `Examinar: ${spot.label}`
                   }
-                  onFocus={(event) => {
-                    if (event.currentTarget.matches(":focus-visible"))
-                      lookAt(index);
-                  }}
+                  onFocus={focusSpot}
                   onClick={() => examine(index)}
                 >
                   {registered ? <Check size={19} /> : <ScanLine size={20} />}
@@ -368,7 +401,7 @@ export default function FieldScene({
       )}
 
       <div className="field-controls">
-        {currentClue && (
+        {currentSpot && (
           <nav className="field-navigation" aria-label="Mirar alrededor">
             <button
               type="button"
@@ -382,12 +415,14 @@ export default function FieldScene({
               className="field-observe"
               type="button"
               onClick={() => examine(lookingAt)}
-              aria-label={`Examinar pista enfocada: ${currentClue.label}`}
+              aria-label={currentSpot.hidden
+                ? `Examinar pista enfocada: ${currentSpot.label}`
+                : `Observar pista enfocada: ${currentSpot.name}`}
             >
               <Binoculars size={19} aria-hidden="true" />
               <span className="field-observe-copy">
-                <strong>Examinar pista</strong>
-                <span>{currentClue.label}</span>
+                <strong>{currentSpot.hidden ? "Examinar pista" : "Observar Pokémon"}</strong>
+                <span>{currentSpot.label}</span>
               </span>
             </button>
             <button
@@ -401,19 +436,19 @@ export default function FieldScene({
         )}
         <div className="field-status">
           <p className="field-hint">
-            Arrastrá para mirar alrededor o examiná una pista.
+            Arrastrá para mirar alrededor. Tocá un Pokémon o una pista.
           </p>
           <div className="field-progress">
             <div className="field-progress-segments" aria-hidden="true">
-              {clues.map((clue) => (
+              {spots.map((spot) => (
                 <span
-                  key={clue.id}
-                  data-registered={registeredIds.includes(clue.pokemonId)}
+                  key={spot.id}
+                  data-registered={registeredIds.includes(spot.pokemonId)}
                 />
               ))}
             </div>
             <p aria-live="polite">
-              {discovered} de {clues.length} registrados
+              {discovered} de {spots.length} registrados
             </p>
           </div>
         </div>
