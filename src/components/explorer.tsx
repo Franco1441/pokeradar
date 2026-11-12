@@ -32,13 +32,11 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
-  ChevronDown,
   Compass,
   Globe2,
   Leaf,
   LocateFixed,
   MapPin,
-  Plus,
   Radar,
   Search,
   SlidersHorizontal,
@@ -95,28 +93,43 @@ const FieldScene = dynamic(() => import("./field-scene"), {
   ),
 });
 
-const LANDING_DURATION = 1520;
+const SafariWalk = dynamic(() => import("./safari-walk"), {
+  ssr: false,
+  loading: () => (
+    <div className="field-loading" role="status">
+      Preparando el safari…
+    </div>
+  ),
+});
+
+type TerrainView = "field" | "safari";
 type LandingPhase = "approach" | "covered" | "reveal" | "complete";
-type Landing = { expeditionId: string; origin: string; phase: LandingPhase };
+type Landing = {
+  expeditionId: string;
+  origin: string;
+  phase: LandingPhase;
+  view: TerrainView;
+  duration: number;
+};
 const veilMotion: Variants = {
-  approach: {
-    opacity: [0, 0, 0.38, 1],
-    scale: [1, 1, 1.05, 1.2],
+  approach: (duration: number) => ({
+    opacity: [0, 0, 0.25, 1],
+    scale: [1, 1, 1.04, 1.08],
     transition: {
-      duration: LANDING_DURATION / 1000,
-      times: [0, 0.32, 0.66, 1],
+      duration: duration / 1000,
+      times: [0, 0.35, 0.71, 1],
       ease: "easeIn",
     },
-  },
-  covered: { opacity: 1, scale: 1.2, transition: { duration: 0 } },
+  }),
+  covered: { opacity: 1, scale: 1.08, transition: { duration: 0 } },
   reveal: {
     opacity: 0,
-    scale: 1.42,
-    transition: { duration: 0.8, ease: [0.2, 0.68, 0.3, 1] },
+    scale: 1.12,
+    transition: { duration: 0.38, ease: [0.2, 0.68, 0.3, 1] },
   },
 };
 
-type Tab = "explore" | "atlas" | "weather" | "safari";
+type Tab = "explore" | "atlas" | "radar";
 
 function getClockWindow() {
   return Math.floor(Date.now() / SAFARI_INTERVAL_MS) * SAFARI_INTERVAL_MS;
@@ -134,10 +147,9 @@ const CATALOG_SIZE = EXPEDITIONS.reduce(
   0,
 );
 const NAV = [
-  { id: "explore" as const, label: "Explorar", icon: Compass },
-  { id: "safari" as const, label: "Safari", icon: Radar },
+  { id: "explore" as const, label: "Mapa", icon: Compass },
+  { id: "safari" as const, label: "Safari", icon: Binoculars },
   { id: "atlas" as const, label: "Mi atlas", icon: BookOpen },
-  { id: "weather" as const, label: "Observatorio", icon: CloudSun },
 ];
 
 function PokemonSprite({
@@ -171,8 +183,11 @@ function ExpeditionApp() {
     expedition.encounters.find((item) => item.id === params.get("encounter")) ??
     null;
   const { progress, update, storageError } = useResearch();
-  const [activeTab, setTab] = useState<Exclude<Tab, "safari">>("explore");
-  const tab = params.get("view") === "safari" ? "safari" : activeTab;
+  const [activeTab, setTab] = useState<Exclude<Tab, "radar">>("explore");
+  const view = params.get("view");
+  const tab = view === "radar" ? "radar" : activeTab;
+  const terrainView = view === "field" || view === "safari" ? view : undefined;
+  const safariOpen = terrainView === "safari";
   const [safariMode, setSafariMode] = useState<SafariMode>("live");
   const [search, setSearch] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
@@ -181,12 +196,16 @@ function ExpeditionApp() {
   const [destinationOpen, setDestinationOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const worldView = params.get("view") === "world" || !params.has("region");
+  const [weatherOpen, setWeatherOpen] = useState(false);
+  const weatherOpener = useRef<HTMLButtonElement>(null);
+  const worldView =
+    view === "world" ||
+    (!terrainView && view !== "radar" && !params.has("region"));
   const worldDetail = worldView && tab === "explore" ? selected : null;
   const focusedDestinationId =
     worldView && params.has("region") ? expedition.id : undefined;
   const clockWindow = useSyncExternalStore<number | null>(
-    (worldView && tab === "explore") || tab === "safari"
+    (worldView && tab === "explore") || tab === "radar" || safariOpen
       ? subscribeToClock
       : inactiveClock,
     getClockWindow,
@@ -202,7 +221,7 @@ function ExpeditionApp() {
           hourCycle: "h23",
         }).format(clockWindow);
   const fieldSite = getFieldSite(expedition.id);
-  const fieldOpen = Boolean(fieldSite) && params.get("view") === "field";
+  const fieldOpen = Boolean(fieldSite && terrainView);
   const reducedMotion = useReducedMotion();
   const [landing, setLanding] = useState<Landing | null>(null);
   const currentLocation = params.toString();
@@ -210,7 +229,9 @@ function ExpeditionApp() {
     landing &&
     (landing.phase === "approach"
       ? landing.origin === currentLocation
-      : fieldOpen && landing.expeditionId === expedition.id)
+      : fieldOpen &&
+        landing.view === terrainView &&
+        landing.expeditionId === expedition.id)
       ? landing
       : null;
   const landingSite = currentLanding
@@ -256,7 +277,7 @@ function ExpeditionApp() {
       setLanding((value) =>
         value === currentLanding ? { ...value, phase: "reveal" } : value,
       );
-    }, 1800);
+    }, 950);
     return () => window.clearTimeout(timeout);
   }, [currentLanding]);
 
@@ -301,7 +322,9 @@ function ExpeditionApp() {
     queryFn: ({ signal }) => fetchWeather(expedition, signal),
     staleTime: 15 * 60 * 1000,
     refetchInterval:
-      tab === "safari" && safariMode === "live" ? SAFARI_INTERVAL_MS : false,
+      (tab === "radar" || safariOpen) && safariMode === "live"
+        ? SAFARI_INTERVAL_MS
+        : false,
     retry: 1,
   });
   const currentWeather = weather.isError ? undefined : weather.data;
@@ -350,7 +373,7 @@ function ExpeditionApp() {
       (!type || encounter.types.includes(type)),
   );
   const encountersInView =
-    tab === "safari"
+    tab === "radar"
       ? safariSnapshot.signals.map(({ encounter }) => encounter)
       : tab === "explore"
         ? visibleEncounters
@@ -373,33 +396,31 @@ function ExpeditionApp() {
     setNotice(message);
     noticeTimer.current = setTimeout(() => setNotice(""), 4500);
   }
-  function changeTab(next: Tab) {
-    if (next === "safari") {
-      if (tab === "safari" && !selected) return;
-      const regionId = worldView
-        ? (focusedDestinationId ?? expedition.id)
-        : expedition.id;
-      navigate(regionId, undefined, tab === "safari", "safari");
-    } else {
-      if (selected || tab === "safari")
-        navigate(
-          expedition.id,
-          undefined,
-          Boolean(selected),
-          worldView ? "world" : undefined,
-        );
-      setTab(next);
-    }
+  function changeTab(next: Exclude<Tab, "radar">) {
+    if (selected || tab === "radar")
+      navigate(
+        expedition.id,
+        undefined,
+        Boolean(selected),
+        worldView ? "world" : undefined,
+      );
+    setTab(next);
     setSearch("");
     setType("");
     setExpanded(false);
   }
-  function changeExpedition(
-    id: string,
-    next: "explore" | "safari" = "explore",
-  ) {
+  function openRadar() {
+    setLanding(null);
+    setExpanded(false);
+    setTab("explore");
+    navigate(expedition.id, undefined, false, "radar");
+    requestAnimationFrame(() =>
+      document.getElementById("expedition-panel")?.focus(),
+    );
+  }
+  function changeExpedition(id: string, next: "explore" | "radar" = "explore") {
     setConfirmationRequest(undefined);
-    navigate(id, undefined, false, next === "safari" ? "safari" : undefined);
+    navigate(id, undefined, false, next === "radar" ? "radar" : undefined);
     setNotice("");
     setSearch("");
     setType("");
@@ -424,7 +445,7 @@ function ExpeditionApp() {
     setExpanded(false);
     setTab("explore");
   }
-  function prepareField(id: string) {
+  function prepareField(id: string, terrain: TerrainView = "field") {
     const site = getFieldSite(id);
     if (!site) return;
     if (!preparedImage.current?.src.endsWith(site.image)) {
@@ -432,7 +453,9 @@ function ExpeditionApp() {
       image.src = site.image;
       preparedImage.current = image;
     }
-    void import("./field-scene").catch(() => undefined);
+    const component =
+      terrain === "safari" ? import("./safari-walk") : import("./field-scene");
+    void component.catch(() => undefined);
   }
   function focusDestination(id: string) {
     if (focusedDestinationId === id) setMapAttempt((value) => value + 1);
@@ -440,28 +463,38 @@ function ExpeditionApp() {
       navigate(id, undefined, true, "world");
     prepareField(id);
   }
-  function enterField(id = expedition.id) {
+  function enterField(id = expedition.id, terrain: TerrainView = "field") {
     if (!getFieldSite(id) || landingBusy) return;
     fieldOrigin.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    setConfirmationRequest(undefined);
+    setTab("explore");
+    setWeatherOpen(false);
+    prepareField(id, terrain);
     if (reducedMotion || mapError) {
-      navigate(id, undefined, false, "field");
+      navigate(id, undefined, false, terrain);
       return;
     }
-    prepareField(id);
     setLanding({
       expeditionId: id,
       origin: currentLocation,
       phase: "approach",
+      view: terrain,
+      duration: worldView ? 1180 : 650,
     });
   }
   function advanceLanding(phase: string) {
     if (!currentLanding || phase !== currentLanding.phase) return;
     if (phase === "approach") {
       setLanding({ ...currentLanding, phase: "covered" });
-      navigate(currentLanding.expeditionId, undefined, false, "field");
+      navigate(
+        currentLanding.expeditionId,
+        undefined,
+        false,
+        currentLanding.view,
+      );
     } else if (phase === "reveal") {
       setLanding({ ...currentLanding, phase: "complete" });
     }
@@ -477,13 +510,8 @@ function ExpeditionApp() {
       expedition.id,
       undefined,
       true,
-      fieldOpen
-        ? "field"
-        : tab === "safari"
-          ? "safari"
-          : worldView
-            ? "world"
-            : undefined,
+      terrainView ??
+        (tab === "radar" ? "radar" : worldView ? "world" : undefined),
     );
   }
   function selectEncounter(encounter: Encounter, region = expedition) {
@@ -491,15 +519,15 @@ function ExpeditionApp() {
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    const view = fieldOpen
-      ? "field"
-      : tab === "safari"
-        ? "safari"
+    const detailView =
+      terrainView ??
+      (tab === "radar"
+        ? "radar"
         : worldView && tab === "explore"
           ? "world"
-          : undefined;
+          : undefined);
 
-    if (view !== "field" && view !== "world") {
+    if (!terrainView && detailView !== "world") {
       setConfirmationRequest({
         encounterId: encounter.id,
         sequence: ++confirmationSequence.current,
@@ -509,9 +537,19 @@ function ExpeditionApp() {
       region.id,
       encounter.id,
       !!selected && region.id === expedition.id,
-      view,
+      detailView,
     );
     setTeamOpen(false);
+  }
+  function observeInTerrain(encounterId: string) {
+    const encounter = expedition.encounters.find(
+      (item) => item.id === encounterId,
+    );
+    if (encounter) selectEncounter(encounter);
+  }
+  function leaveTerrain() {
+    setLanding(null);
+    navigate(expedition.id, undefined, true);
   }
   function registerSelected() {
     if (!selected) return;
@@ -611,9 +649,20 @@ function ExpeditionApp() {
             {NAV.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => changeTab(id)}
-                aria-current={tab === id ? "page" : undefined}
-                className={tab === id ? "active" : ""}
+                onClick={() => {
+                  if (id === "safari") enterField(expedition.id, "safari");
+                  else changeTab(id);
+                }}
+                aria-current={
+                  tab === id || (tab === "radar" && id === "explore")
+                    ? "page"
+                    : undefined
+                }
+                className={
+                  tab === id || (tab === "radar" && id === "explore")
+                    ? "active"
+                    : ""
+                }
               >
                 <Icon size={17} />
                 {label}
@@ -621,11 +670,6 @@ function ExpeditionApp() {
             ))}
           </nav>
           <div className="header-actions">
-            <span className="discovery-count">
-              <Sprout size={16} />
-              <strong>{progress.records.length}</strong>
-              <span>descubrimientos</span>
-            </span>
             <button className="team-header" onClick={() => setTeamOpen(true)}>
               <Users size={17} />
               <span>Mi equipo</span>
@@ -649,7 +693,7 @@ function ExpeditionApp() {
             expedition={expedition}
             encounters={mapEncounters}
             safariPeriod={
-              tab === "safari"
+              tab === "radar"
                 ? safariSnapshot.isDay
                   ? "day"
                   : "night"
@@ -666,27 +710,12 @@ function ExpeditionApp() {
             landingSite={
               currentLanding?.phase === "approach" ? landingSite : undefined
             }
-            landingDuration={LANDING_DURATION}
+            landingDuration={currentLanding?.duration}
             onMapError={setMapError}
             onEnterField={
-              fieldSite && tab !== "safari" ? () => enterField() : undefined
+              fieldSite && tab !== "radar" ? () => enterField() : undefined
             }
           />
-          {!worldView && (
-            <div className="map-topline">
-              <span className="simulation-label">
-                <span /> Avistamientos simulados
-              </span>
-              <button
-                className="map-location"
-                onClick={() => setDestinationOpen(true)}
-              >
-                <MapPin size={14} />
-                {expedition.country}
-                <ChevronDown size={13} />
-              </button>
-            </div>
-          )}
           <div className="map-toolbar">
             <button
               title={
@@ -732,15 +761,13 @@ function ExpeditionApp() {
           <aside
             tabIndex={-1}
             id="expedition-panel"
-            className={`field-panel ${tab === "safari" ? "safari-sheet" : ""} ${expanded ? "is-expanded" : ""} ${selected && !worldDetail ? "panel-behind-detail" : ""}`}
+            className={`field-panel ${tab === "radar" ? "safari-sheet" : ""} ${expanded ? "is-expanded" : ""} ${selected && !worldDetail ? "panel-behind-detail" : ""}`}
             aria-label={
               tab === "explore"
                 ? "Expedición y avistamientos"
                 : tab === "atlas"
                   ? "Atlas de descubrimientos"
-                  : tab === "safari"
-                    ? "Radar Safari"
-                    : "Observatorio meteorológico"
+                  : "Radar Safari"
             }
           >
             <button
@@ -757,7 +784,7 @@ function ExpeditionApp() {
                 mapUnavailable={Boolean(mapError)}
                 onFocusDestination={focusDestination}
                 onChoose={openDestinationFromGlobe}
-                onLand={enterField}
+                onLand={(id) => enterField(id)}
                 weather={currentWeather}
                 weatherPending={weather.isPending}
                 localTime={localTime}
@@ -814,6 +841,8 @@ function ExpeditionApp() {
                   {fieldSite && (
                     <button
                       className="field-enter"
+                      onPointerEnter={() => prepareField(expedition.id)}
+                      onFocus={() => prepareField(expedition.id)}
                       onClick={() => enterField()}
                     >
                       <span className="field-enter-icon">
@@ -829,7 +858,22 @@ function ExpeditionApp() {
                       <ArrowRight size={17} />
                     </button>
                   )}
-                  <p className="expedition-intro">{expedition.description}</p>
+                  <div className="map-side-actions">
+                    <button type="button" onClick={openRadar}>
+                      <Radar size={16} aria-hidden="true" /> Ver radar
+                    </button>
+                    <button
+                      type="button"
+                      ref={weatherOpener}
+                      aria-label="Ver clima local"
+                      onClick={() => setWeatherOpen(true)}
+                    >
+                      <CloudSun size={16} aria-hidden="true" />
+                      {currentWeather
+                        ? `${Math.round(currentWeather.temperature)}° · ${weatherSummary?.label}`
+                        : "Clima local"}
+                    </button>
+                  </div>
                   <div
                     className={`mission-card ${goal.complete ? "mission-complete" : ""}`}
                   >
@@ -969,7 +1013,7 @@ function ExpeditionApp() {
                   )}
                   <p className="panel-footnote">
                     <MapPin size={12} />
-                    Elegí un Pokémon para investigar su hábitat.
+                    Ubicaciones simuladas
                   </p>
                 </div>
               </>
@@ -1135,7 +1179,7 @@ function ExpeditionApp() {
                 )}
               </div>
             )}
-            {tab === "safari" && (
+            {tab === "radar" && (
               <SafariPanel
                 expedition={expedition}
                 snapshot={safariSnapshot}
@@ -1146,89 +1190,7 @@ function ExpeditionApp() {
                 onChangeDestination={() => setDestinationOpen(true)}
               />
             )}
-            {tab === "weather" && (
-              <WeatherPanel
-                expedition={expedition}
-                weather={weather.data}
-                isLoading={weather.isPending}
-                error={weather.isError}
-                onRetry={() => {
-                  void weather.refetch();
-                }}
-              />
-            )}
           </aside>
-
-          {!worldView && (
-            <button
-              className="weather-glance"
-              onClick={() => changeTab("weather")}
-            >
-              <span className="weather-glance-icon">
-                <CloudSun size={25} strokeWidth={1.5} />
-              </span>
-              <span>
-                <span className="eyebrow">
-                  EN {expedition.country.toUpperCase()}
-                </span>
-                <strong>
-                  {weather.data
-                    ? `${Math.round(weather.data.temperature)}°`
-                    : "—"}{" "}
-                  <small>
-                    {weatherSummary?.label ??
-                      (weather.isPending
-                        ? "Consultando clima"
-                        : "Clima no disponible")}
-                  </small>
-                </strong>
-              </span>
-              <ArrowUpRight size={15} />
-            </button>
-          )}
-          {!worldView && (
-            <div className="map-bottom">
-              <div className="team-dock">
-                <div className="dock-label">
-                  <span>Tu equipo de expedición</span>
-                  <button onClick={() => setTeamOpen(true)}>
-                    {progress.team.length}/6
-                    <ArrowUpRight size={13} />
-                  </button>
-                </div>
-                <div className="team-slots">
-                  {Array.from({ length: 6 }, (_, index) => {
-                    const id = progress.team[index];
-                    const found = allEncounters.find(
-                      ({ encounter }) => encounter.pokemonId === id,
-                    );
-                    return (
-                      <button
-                        key={index}
-                        className={id ? "occupied" : ""}
-                        aria-label={
-                          found
-                            ? `Ver ${found.encounter.name} de tu equipo`
-                            : `Lugar ${index + 1} disponible en tu equipo`
-                        }
-                        onClick={() =>
-                          found
-                            ? selectEncounter(found.encounter, found.region)
-                            : setTeamOpen(true)
-                        }
-                      >
-                        {found ? (
-                          <PokemonSprite id={id} name={found.encounter.name} />
-                        ) : (
-                          <Plus size={17} />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
         </main>
         <footer className="app-footer">
           <span>
@@ -1270,6 +1232,36 @@ function ExpeditionApp() {
           </Dialog.Portal>
         </Dialog.Root>
 
+        <Dialog.Root open={weatherOpen} onOpenChange={setWeatherOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="modal-overlay" />
+            <Dialog.Content
+              className="weather-dialog"
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                weatherOpener.current?.focus();
+              }}
+            >
+              <Dialog.Title className="sr-only">
+                Clima local en {expedition.name}
+              </Dialog.Title>
+              <Dialog.Description className="sr-only">
+                Consultá las condiciones que influyen en el Safari.
+              </Dialog.Description>
+              <Dialog.Close className="modal-close" aria-label="Cerrar clima">
+                <X size={20} />
+              </Dialog.Close>
+              <WeatherPanel
+                expedition={expedition}
+                weather={weather.data}
+                isLoading={weather.isPending}
+                error={weather.isError}
+                onRetry={() => void weather.refetch()}
+              />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
         <Dialog.Root open={destinationOpen} onOpenChange={setDestinationOpen}>
           <Dialog.Portal>
             <Dialog.Overlay className="modal-overlay" />
@@ -1294,7 +1286,7 @@ function ExpeditionApp() {
                     onClick={() =>
                       changeExpedition(
                         region.id,
-                        tab === "safari" ? "safari" : "explore",
+                        tab === "radar" ? "radar" : "explore",
                       )
                     }
                   >
@@ -1516,27 +1508,40 @@ function ExpeditionApp() {
       {fieldOpen && fieldSite && (
         <main
           className="field-route"
-          aria-label="Exploración en primera persona"
+          aria-label={
+            safariOpen
+              ? "Safari en primera persona"
+              : "Exploración en primera persona"
+          }
         >
-          <FieldScene
-            key={expedition.id}
-            expedition={expedition}
-            site={fieldSite}
-            cinematicArrival={Boolean(currentLanding)}
-            onPanoramaReady={revealLanding}
-            registeredIds={registeredIds}
-            detailOpen={Boolean(selected)}
-            onObserve={(encounterId) => {
-              const encounter = expedition.encounters.find(
-                (item) => item.id === encounterId,
-              );
-              if (encounter) selectEncounter(encounter);
-            }}
-            onExit={() => {
-              setLanding(null);
-              navigate(expedition.id, undefined, true);
-            }}
-          />
+          {safariOpen ? (
+            <SafariWalk
+              key={expedition.id}
+              expedition={expedition}
+              site={fieldSite}
+              snapshot={safariSnapshot}
+              mode={safariMode}
+              onModeChange={setSafariMode}
+              registeredIds={registeredIds}
+              detailOpen={Boolean(selected)}
+              onObserve={observeInTerrain}
+              onExit={leaveTerrain}
+              onOpenRadar={openRadar}
+              onReady={revealLanding}
+            />
+          ) : (
+            <FieldScene
+              key={expedition.id}
+              expedition={expedition}
+              site={fieldSite}
+              cinematicArrival={Boolean(currentLanding)}
+              onPanoramaReady={revealLanding}
+              registeredIds={registeredIds}
+              detailOpen={Boolean(selected)}
+              onObserve={observeInTerrain}
+              onExit={leaveTerrain}
+            />
+          )}
         </main>
       )}
       {landingBusy && landingSite && (
@@ -1551,6 +1556,7 @@ function ExpeditionApp() {
             initial={{ opacity: 0, scale: 1 }}
             animate={currentLanding.phase}
             variants={veilMotion}
+            custom={currentLanding.duration}
             onAnimationComplete={(phase) => {
               if (typeof phase === "string") advanceLanding(phase);
             }}
@@ -1562,7 +1568,7 @@ function ExpeditionApp() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -8] }}
               transition={{
-                duration: LANDING_DURATION / 1000,
+                duration: currentLanding.duration / 1000,
                 times: [0, 0.21, 0.55, 0.86],
               }}
             >

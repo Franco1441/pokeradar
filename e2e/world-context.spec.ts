@@ -2,6 +2,32 @@ import { expect, test } from "@playwright/test";
 
 test.use({ reducedMotion: "reduce" });
 
+test("keeps regional and globe zoom limits in their own views", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 840 });
+  await page.goto("/?region=everglades");
+
+  const surface = page.locator(".map-surface");
+  const zoomOut = page.getByRole("button", { name: "Alejar mapa" });
+  await expect(zoomOut).toBeEnabled();
+  for (let step = 0; step < 5 && (await zoomOut.isEnabled()); step++) {
+    await zoomOut.click();
+  }
+  await expect(zoomOut).toBeDisabled();
+  await expect(surface).not.toHaveClass(/\bhas-space\b/);
+  await expect(page).toHaveURL(/\?region=everglades$/);
+
+  await page.getByRole("button", { name: "Ver todas las expediciones" }).click();
+  await expect(surface).toHaveClass(/\bhas-space\b/);
+  for (let step = 0; step < 4 && (await zoomOut.isEnabled()); step++) {
+    await zoomOut.click();
+  }
+  await expect(zoomOut).toBeDisabled();
+  await expect(surface).toHaveClass(/\bhas-space\b/);
+  await expect(page).toHaveURL(/\?region=everglades&view=world$/);
+});
+
 test("keeps the selected destination, weather, and Pokémon detail in one globe panel", async ({
   page,
 }) => {

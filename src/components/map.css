@@ -14,7 +14,7 @@
   background: #e7e3d8;
 }
 
-.map-surface.is-globe {
+.map-surface.has-space {
   --star-faint: radial-gradient(circle, #b8d2db70 0.4px, transparent 1.05px);
   --star-cool: radial-gradient(circle, #d8edf1b3 0.55px, #a1bbc94a 0.9px, transparent 1.55px);
   --star-warm: radial-gradient(circle, #ecded0a8 0.52px, #c7b2a336 0.85px, transparent 1.4px);
@@ -377,7 +377,7 @@
 }
 
 .is-safari .maplibregl-canvas { transition: filter .48s ease; }
-.is-safari-night .maplibregl-canvas { filter: brightness(.58) saturate(.57); }
+.is-safari-night:not(.has-space) .maplibregl-canvas { filter: brightness(.58) saturate(.57); }
 
 .is-safari .pokemon-marker:not(.is-selected) .marker-inner {
   border-color: #9ca68d;

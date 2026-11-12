@@ -45,7 +45,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   );
 
   await page.goto("/?region=iguazu");
-  await page.getByRole("button", { name: "Safari", exact: true }).click();
+  await page.getByRole("button", { name: "Ver radar", exact: true }).click();
   const radar = page.getByRole("complementary", { name: "Radar Safari" });
   await expect(radar.getByText("Día local")).toBeVisible();
   await expect(radar.getByText("Lluvia", { exact: true })).toBeVisible();
@@ -61,7 +61,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   await expect(venonat).toContainText("clima favorable");
   await venonat.click();
   await expect(page).toHaveURL(
-    /region=iguazu&view=safari&encounter=iguazu-venonat/,
+    /region=iguazu&view=radar&encounter=iguazu-venonat/,
   );
   const detail = page.getByRole("dialog", { name: "Ficha de Venonat" });
   await expect(detail.getByText("Estadísticas base")).toBeVisible();
@@ -71,14 +71,14 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
     radar.getByRole("button", { name: "Noche", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(venonat.getByLabel("Registrado", { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/region=iguazu&view=safari$/);
+  await expect(page).toHaveURL(/region=iguazu&view=radar$/);
 
   await radar.getByRole("button", { name: /Cambiar destino/ }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /Humedales de Everglades/ })
     .click();
-  await expect(page).toHaveURL(/region=everglades&view=safari$/);
+  await expect(page).toHaveURL(/region=everglades&view=radar$/);
   await expect(
     radar.getByText("Humedal subtropical", { exact: true }),
   ).toBeVisible();

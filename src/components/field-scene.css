@@ -34,7 +34,8 @@
   position: absolute;
   left: 0;
   background: radial-gradient(ellipse at 45% 42%, #57684e, #1a2c1c 68%);
-  transition: transform 0.65s cubic-bezier(0.2, 0.74, 0.3, 1);
+  transition: transform 0.48s cubic-bezier(0.24, 0.75, 0.26, 1);
+  will-change: transform;
 }
 
 .field-viewport[data-dragging="true"] .field-panorama {
@@ -131,15 +132,15 @@
 
 .field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-viewport {
   transform-origin: 50% 44%;
-  animation: field-camera-settle 1.15s cubic-bezier(0.18, 0.73, 0.23, 1) both;
+  animation: field-camera-settle 0.64s cubic-bezier(0.18, 0.73, 0.23, 1) both;
 }
 
 .field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-heading {
-  animation: field-chrome-in 0.52s 0.26s ease-out both;
+  animation: field-chrome-in 0.32s 0.12s ease-out both;
 }
 
 .field-scene[data-arrival="cinematic"][data-panorama="ready"] .field-controls {
-  animation: field-chrome-in 0.48s 0.43s ease-out both;
+  animation: field-chrome-in 0.30s 0.2s ease-out both;
 }
 
 @keyframes field-camera-settle {
@@ -296,6 +297,7 @@
 }
 
 .field-wild-pokemon:hover span,
+.field-clue-point[data-focused="true"] .field-wild-pokemon span,
 .field-wild-pokemon:focus-visible span {
   border-color: var(--field-action);
   background: var(--field-action);
@@ -386,62 +388,60 @@
   place-items: center;
   position: absolute;
   z-index: 2;
-  width: 46px;
-  height: 46px;
+  left: 37px;
+  top: -11px;
+  width: 44px;
+  height: 44px;
   transform: translate(-50%, -50%);
-  border: 1px solid var(--field-action);
   border-radius: 50%;
-  color: var(--field-action);
-  background: #101c22d9;
-  box-shadow: 0 3px 14px #101c227f;
 }
 
-.field-clue-point[data-found="true"] .field-clue {
-  border-color: #c7ddd6;
+.field-clue-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--field-action);
+  background: #101c2299;
+  box-shadow: 0 1px 4px #101c2290;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  pointer-events: none;
+}
+
+.field-clue-point[data-found="true"] .field-clue-icon {
   color: #c7ddd6;
 }
 
 .field-scene[data-panorama="ready"] [data-habitat="table-coral"] .field-clue {
-  top: calc(var(--reef-creature-size) * -0.66);
+  top: calc(var(--reef-creature-size) * -0.88);
+  left: clamp(40px, calc(var(--reef-creature-size) * 0.38), 62px);
 }
 
-.field-clue::before {
-  position: absolute;
-  inset: -4px;
-  content: "";
-  border: 1px solid var(--field-action);
-  border-radius: inherit;
-  animation: field-pulse 2.8s ease-out infinite;
-}
-
-.field-clue-point[data-found="true"] .field-clue::before {
-  animation: none;
-  opacity: 0;
-}
-.field-clue:hover {
+.field-clue:hover .field-clue-icon,
+.field-clue-point[data-focused="true"] .field-clue-icon {
   color: #202d30;
   background: var(--field-action);
 }
-.field-clue-point[data-found="true"] .field-clue:hover {
+.field-clue-point[data-found="true"] .field-clue:hover .field-clue-icon,
+.field-clue-point[data-found="true"][data-focused="true"] .field-clue-icon {
   color: #202d30;
   background: #c7ddd6;
 }
+
 .field-scene button:focus-visible {
   outline: 2px solid var(--field-action);
   outline-offset: 3px;
 }
 
-@keyframes field-pulse {
-  0%,
-  24% {
-    opacity: 0.8;
-    transform: scale(0.9);
-  }
-  90%,
-  100% {
-    opacity: 0;
-    transform: scale(1.45);
-  }
+.field-scene .field-clue:focus-visible {
+  outline: none;
+}
+
+.field-clue:focus-visible .field-clue-icon {
+  outline: 2px solid var(--field-action);
+  outline-offset: 3px;
 }
 
 .field-controls {
@@ -456,9 +456,10 @@
 }
 
 .field-navigation {
-  display: inline-flex;
-  align-items: center;
+  display: inline-grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   gap: 1px;
+  width: min(100%, 310px);
   padding: 3px;
   border-radius: 5px;
   pointer-events: auto;
@@ -511,7 +512,7 @@
   display: grid;
   gap: 6px;
   margin: 0;
-  padding: 9px 12px;
+  padding: 6px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 650;
@@ -537,7 +538,7 @@
 
 .field-status {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -708,8 +709,9 @@
   }
   .field-status {
     align-items: center;
-    flex-direction: column;
-    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
   }
   .field-hint {
     font-size: 0.69rem;
@@ -720,7 +722,7 @@
   }
   .field-discovery,
   .field-failure {
-    bottom: calc(var(--field-control-bottom) + 104px);
+    bottom: calc(var(--field-control-bottom) + 95px);
   }
 
   .field-discovery {
@@ -758,10 +760,10 @@
 @media (prefers-reduced-motion: reduce) {
   .field-panorama,
   .field-pokemon,
+  .field-clue-icon,
   .field-scene button {
     transition: none;
   }
-  .field-clue::before,
   .field-discovery,
   .field-scene[data-panorama="ready"]
     [data-habitat="table-coral"][data-found="false"]::before,

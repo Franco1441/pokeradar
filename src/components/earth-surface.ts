@@ -5,6 +5,8 @@ import type {
 import { getSolarPosition } from "@/lib/globe-lighting";
 
 export const EARTH_SURFACE_LAYER = "pokeradar-earth-surface";
+export const EARTH_SURFACE_FADE_END = 6.25;
+const EARTH_SURFACE_FADE_START = 4.25;
 const LONGITUDE_SEGMENTS = 144;
 const LATITUDE_SEGMENTS = 72;
 const RADIANS = Math.PI / 180;
@@ -20,6 +22,7 @@ uniform sampler2D u_night;
 uniform vec3 u_sun;
 uniform vec4 u_horizon;
 uniform float u_opacity;
+uniform float u_projection_transition;
 uniform bool u_atmosphere;
 
 void main() {
@@ -34,25 +37,28 @@ void main() {
     vec3 sky = mix(vec3(0.43, 0.64, 0.82), vec3(0.68, 0.86, 1.0), blueHour);
 
     if (u_atmosphere) {
-        float scattering = exp(-altitude * 58.0) * mix(0.27, 0.53, blueHour);
+        float scattering = exp(-altitude * 58.0) * mix(0.32, 0.62, blueHour);
         float opacity = scattering * u_opacity;
         fragColor = vec4(sky * opacity, opacity);
         return;
     }
 
     vec3 ground = texture(u_day, v_texture).rgb;
-    float ocean = smoothstep(0.025, 0.13, ground.b - max(ground.r, ground.g) * 0.85)
+    float ocean = smoothstep(0.012, 0.065, ground.b - max(ground.r, ground.g) * 1.05)
         * (1.0 - smoothstep(0.32, 0.65, ground.r));
-    ground = mix(ground, ground * vec3(0.82, 1.05, 0.95) + vec3(0.043, 0.085, 0.12), ocean * 0.84);
+    float waterRelief = dot(ground, vec3(0.2126, 0.7152, 0.0722));
+    vec3 water = vec3(0.080, 0.157, 0.222) + waterRelief * vec3(0.25, 0.31, 0.34);
+    ground = mix(ground, water, ocean * 0.88);
     float radiance = texture(u_night, v_texture).r;
-    vec3 daylight = ground * mix(0.60, 0.96, smoothstep(-0.07, 0.78, light));
-    vec3 night = ground * vec3(0.12, 0.15, 0.23) + vec3(0.012, 0.018, 0.035);
-    float city = pow(clamp((radiance - 0.055) / 0.945, 0.0, 1.0), 1.48);
-    night += vec3(1.0, 0.77, 0.48) * city * 0.84;
+    vec3 daylight = pow(ground, vec3(0.89)) * mix(0.83, 1.09, smoothstep(-0.07, 0.78, light));
+    vec3 night = ground * vec3(0.25, 0.29, 0.40) + vec3(0.012, 0.018, 0.030);
+    float city = pow(clamp((radiance - 0.048) / 0.952, 0.0, 1.0), 1.15);
+    night += vec3(1.0, 0.80, 0.52) * city;
     vec3 color = mix(night, daylight, day);
-    float rim = exp(-altitude * 10.5) * mix(0.16, 0.45, blueHour);
-    float edge = exp(-altitude * 48.0) * mix(0.45, 0.55, blueHour);
-    color = mix(color, sky, clamp(rim + edge, 0.0, 0.95));
+    float rim = exp(-altitude * 12.0) * mix(0.17, 0.45, blueHour);
+    float edge = exp(-altitude * 54.0) * mix(0.47, 0.65, blueHour);
+    float atmosphere = clamp(rim + edge, 0.0, 0.96) * u_projection_transition;
+    color = mix(color, sky, atmosphere);
     fragColor = vec4(color * u_opacity, u_opacity);
 }
 `;
@@ -71,7 +77,7 @@ void main() {
     float pole = a_texture.y == 0.0 ? -32768.0 : (a_texture.y == 1.0 ? 32767.0 : a_mercator.y);
 #ifdef GLOBE
     if (u_atmosphere) {
-        gl_Position = projectTileWithElevation(a_mercator, 62000.0);
+        gl_Position = projectTileWithElevation(a_mercator, 74000.0);
     } else
 #endif
     {
@@ -222,11 +228,20 @@ export function createEarthSurface(
     renderingMode: "2d",
     onAdd(map) {
       zoom = () => map.getZoom();
-      timer = window.setInterval(() => map.triggerRepaint(), 60_000);
+      timer = window.setInterval(() => {
+        if (zoom() < EARTH_SURFACE_FADE_END) map.triggerRepaint();
+      }, 60_000);
     },
     render(gl, args) {
       if (failed || gl.isContextLost()) return;
-      const opacity = Math.max(0, Math.min(1, (6.25 - zoom()) / 2));
+      const opacity = Math.max(
+        0,
+        Math.min(
+          1,
+          (EARTH_SURFACE_FADE_END - zoom()) /
+            (EARTH_SURFACE_FADE_END - EARTH_SURFACE_FADE_START),
+        ),
+      );
       if (opacity === 0) return;
 
       try {
@@ -289,7 +304,10 @@ export function createEarthSurface(
         gl.bindTexture(gl.TEXTURE_2D, nightTexture);
         gl.uniform1i(shader.night, 1);
         gl.bindVertexArray(vertexArray);
-        if (args.shaderData.variantName === "globe" && zoom() < 4.25) {
+        if (
+          args.shaderData.variantName === "globe" &&
+          zoom() < EARTH_SURFACE_FADE_START
+        ) {
           gl.uniform1i(shader.atmosphere, 1);
           gl.drawElements(
             gl.TRIANGLES,

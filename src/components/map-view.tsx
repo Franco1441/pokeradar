@@ -16,7 +16,11 @@ import { getFieldSite, type FieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
 import { mountGlobeLighting, solarBoundaryCenter } from "./map-lighting";
-import { loadEarthTextures, mountPhotographicGlobe } from "./earth-surface";
+import {
+  EARTH_SURFACE_FADE_END,
+  loadEarthTextures,
+  mountPhotographicGlobe,
+} from "./earth-surface";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./map.css";
 
@@ -115,6 +119,24 @@ function observePanelPadding(
   };
 }
 
+function globeViewport(container: HTMLElement) {
+  const padding = cameraPadding(container, visiblePanel(container, false), true);
+  const available = Math.min(
+    container.clientWidth - padding.left - padding.right,
+    container.clientHeight - padding.top - padding.bottom,
+  );
+  return { padding, available };
+}
+
+function globeMinimumZoom(available: number) {
+  const zoom = Math.log2((available * 0.68 * Math.PI) / 512);
+  return Math.max(0, Math.min(1.55, zoom));
+}
+
+function regionalMinimumZoom(expedition: Expedition) {
+  return expedition.zoom - 3;
+}
+
 function globeCamera(
   container: HTMLElement,
   expedition: Expedition,
@@ -127,15 +149,7 @@ function globeCamera(
       ? solarBoundaryCenter(104)
       : expedition.coordinates);
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
-  const padding = cameraPadding(
-    container,
-    visiblePanel(container, false),
-    true,
-  );
-  const available = Math.min(
-    container.clientWidth - padding.left - padding.right,
-    container.clientHeight - padding.top - padding.bottom,
-  );
+  const { padding, available } = globeViewport(container);
   const baseDiameter = 512 / Math.PI / Math.cos((center[1] * Math.PI) / 180);
   const zoom = Math.min(
     2.2,
@@ -304,6 +318,7 @@ function createTrailheadMarker(site: FieldSite, onEnter: () => void) {
 export default function MapView(props: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const installGlobe = useRef<(() => void) | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
@@ -317,6 +332,7 @@ export default function MapView(props: MapViewProps) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [showSpace, setShowSpace] = useState(props.worldView);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -333,6 +349,7 @@ export default function MapView(props: MapViewProps) {
     let contextLost = false;
     let tileReceived = false;
     let tileError = false;
+    let disposeGlobe: (() => void) | undefined;
     let map: MapLibreMap;
     const reportFailure = () => {
       if (disposed) return;
@@ -352,7 +369,17 @@ export default function MapView(props: MapViewProps) {
         style: "https://tiles.openfreemap.org/styles/liberty",
         transformStyle: (_, style) => ({
           ...style,
-          projection: { type: "globe" },
+          projection: {
+            type: [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              EARTH_SURFACE_FADE_END - 1,
+              "vertical-perspective",
+              EARTH_SURFACE_FADE_END,
+              "mercator",
+            ],
+          },
           sky: {
             "sky-color": "transparent",
             "horizon-color": "transparent",
@@ -371,7 +398,9 @@ export default function MapView(props: MapViewProps) {
         ...(worldView
           ? globeCamera(element, expedition)
           : { center: expedition.coordinates, zoom: expedition.zoom }),
-        minZoom: 0,
+        minZoom: worldView
+          ? globeMinimumZoom(globeViewport(element).available)
+          : regionalMinimumZoom(expedition),
         maxZoom: 18,
         attributionControl: false,
         renderWorldCopies: false,
@@ -390,8 +419,38 @@ export default function MapView(props: MapViewProps) {
     }
 
     mapRef.current = map;
+    installGlobe.current = () => {
+      disposeGlobe ??= mountPhotographicGlobe(map, () => mountGlobeLighting(map));
+    };
+    let space: boolean | undefined;
+    function updateBackdrop() {
+      const next = map.getZoom() < EARTH_SURFACE_FADE_END;
+      if (space === next) return;
+      space = next;
+      setShowSpace(next);
+    }
+    updateBackdrop();
+    map.on("zoom", updateBackdrop);
     map.addControl(new NavigationControl({ showCompass: true }), "top-right");
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+    const zoomOut = element.querySelector<HTMLButtonElement>(
+      ".maplibregl-ctrl-zoom-out",
+    );
+    function updateZoomOut() {
+      if (!zoomOut) return;
+      const zoom = map.getZoom();
+      const onGlobe = zoom < EARTH_SURFACE_FADE_END - 1;
+      // The sphere's zoom floor is latitude-adjusted, unlike the control's floor.
+      const latitude = Math.min(Math.abs(map.getCenter().lat), 85.051129);
+      const minimum = onGlobe
+        ? map.getMinZoom() + Math.log2(Math.cos((latitude * Math.PI) / 180))
+        : map.getMinZoom(true);
+      const disabled = zoom <= minimum + 0.001;
+      zoomOut.disabled = disabled;
+      zoomOut.setAttribute("aria-disabled", String(disabled));
+    }
+    map.on("move", updateZoomOut);
+    updateZoomOut();
 
     function updateMapStatus() {
       if (disposed || blockingError || contextLost) return;
@@ -441,8 +500,28 @@ export default function MapView(props: MapViewProps) {
       }
     });
 
+    let viewportWidth = element.clientWidth;
+    let viewportHeight = element.clientHeight;
     const observer = new ResizeObserver(() => {
+      const resized =
+        viewportWidth !== element.clientWidth ||
+        viewportHeight !== element.clientHeight;
+      viewportWidth = element.clientWidth;
+      viewportHeight = element.clientHeight;
       map.resize();
+      if (latest.current.worldView) {
+        const { available, padding } = globeViewport(element);
+        const minimum = globeMinimumZoom(available);
+        const previousMinimum = map.getMinZoom();
+        const previousZoom = map.getZoom();
+        if (previousMinimum !== minimum) map.setMinZoom(minimum);
+        if (resized && !map.isMoving() && previousZoom < 3) {
+          map.jumpTo({
+            padding,
+            zoom: Math.max(minimum, previousZoom + minimum - previousMinimum),
+          });
+        }
+      }
     });
     observer.observe(element);
 
@@ -452,15 +531,15 @@ export default function MapView(props: MapViewProps) {
       observer.disconnect();
       attachedMarkers.forEach((marker) => marker.remove());
       attachedMarkers.clear();
+      disposeGlobe?.();
+      installGlobe.current = null;
       mapRef.current = null;
       map.remove();
     };
   }, [attempt]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map || !props.worldView) return;
-    return mountPhotographicGlobe(map, () => mountGlobeLighting(map));
+    if (ready && props.worldView) installGlobe.current?.();
   }, [ready, attempt, props.worldView]);
 
   const safariOpen = Boolean(props.safariPeriod);
@@ -633,6 +712,7 @@ export default function MapView(props: MapViewProps) {
       );
     map.stop();
     if (props.worldView) {
+      map.setMinZoom(globeMinimumZoom(globeViewport(element).available));
       const destination = EXPEDITIONS.find(
         ({ id }) => id === props.focusedDestinationId,
       );
@@ -654,6 +734,11 @@ export default function MapView(props: MapViewProps) {
       }
       return;
     }
+    const minimum = regionalMinimumZoom(props.expedition);
+    const constrainRegion = () => map.setMinZoom(minimum);
+    // Let a descent leave the globe before applying its regional zoom floor.
+    const approachingRegion = map.getZoom() < minimum;
+    if (!approachingRegion) constrainRegion();
     const recenterRequested = lastRecenterKey.current !== props.recenterKey;
     lastRecenterKey.current = props.recenterKey;
     const selected = recenterRequested
@@ -671,6 +756,7 @@ export default function MapView(props: MapViewProps) {
       if (fieldSite) coordinates.push(fieldSite.coordinates);
       const longitudes = coordinates.map(([longitude]) => longitude);
       const latitudes = coordinates.map(([, latitude]) => latitude);
+      if (approachingRegion) map.once("moveend", constrainRegion);
       map.fitBounds(
         [
           [Math.min(...longitudes), Math.min(...latitudes)],
@@ -684,7 +770,11 @@ export default function MapView(props: MapViewProps) {
           bearing: 0,
         },
       );
-      return observePanelPadding(map, element, panel, padding);
+      const stopObserving = observePanelPadding(map, element, panel, padding);
+      return () => {
+        map.off("moveend", constrainRegion);
+        stopObserving();
+      };
     }
 
     let stopObserving: (() => void) | undefined;
@@ -747,6 +837,7 @@ export default function MapView(props: MapViewProps) {
         map.on("moveend", onArrival);
       }
 
+      if (approachingRegion) map.once("moveend", constrainRegion);
       map.flyTo(
         {
           center: selected.coordinates,
@@ -764,6 +855,7 @@ export default function MapView(props: MapViewProps) {
 
     return () => {
       cancelAnimationFrame(frame);
+      map.off("moveend", constrainRegion);
       stopObserving?.();
       if (onArrival) map.off("moveend", onArrival);
       window.clearTimeout(confirmationTimer);
@@ -787,7 +879,7 @@ export default function MapView(props: MapViewProps) {
 
   return (
     <div
-      className={`map-surface${props.worldView ? " is-globe" : ""}${props.landingSite ? " is-descending" : ""}${props.safariPeriod ? ` is-safari is-safari-${props.safariPeriod}` : ""}`}
+      className={`map-surface${props.worldView ? " is-globe" : ""}${showSpace ? " has-space" : ""}${props.landingSite ? " is-descending" : ""}${props.safariPeriod ? ` is-safari is-safari-${props.safariPeriod}` : ""}`}
     >
       <div ref={container} className="map-canvas" />
       {!ready && !error && (

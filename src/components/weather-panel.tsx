@@ -64,10 +64,10 @@ export function WeatherPanel({
 
   return (
     <section className="weather-panel" aria-labelledby="weather-panel-title">
-      <h2 id="weather-panel-title">Observatorio</h2>
+      <h2 id="weather-panel-title">Clima local</h2>
       <p className="weather-intro">
-        Consultá el clima local y qué tipos de Pokémon tienen condiciones
-        favorables.
+        Estas condiciones influyen en qué Pokémon podés encontrar durante el
+        Safari.
       </p>
       <div className="weather-location">
         <MapPin size={15} />

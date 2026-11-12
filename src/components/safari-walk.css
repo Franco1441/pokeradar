@@ -1,0 +1,410 @@
+.safari-walk {
+  --walk-border: #e1ece64d;
+  --walk-glass: #14292aef;
+  --walk-accent: #f3ca89;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: #fffaf0;
+  background: #172b28;
+}
+
+.safari-walk-viewport,
+.safari-walk-world,
+.safari-walk-vignette,
+.safari-walk-sightings {
+  position: absolute;
+  inset: 0;
+}
+
+.safari-walk-viewport {
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.safari-walk-viewport:active {
+  cursor: grabbing;
+}
+
+.safari-walk-panorama {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center center;
+  transform: translateX(var(--walk-offset, 0%)) scale(var(--walk-scale, 1.075));
+  pointer-events: none;
+}
+
+.safari-walk-world {
+  pointer-events: none;
+}
+
+.safari-walk-world canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.safari-walk-vignette {
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      #112222d4,
+      transparent 34%,
+      transparent 61%,
+      #111f20e8
+    ),
+    radial-gradient(ellipse at 50% 45%, transparent 38%, #10262662);
+}
+
+.safari-walk[data-night="true"] .safari-walk-panorama {
+  filter: brightness(0.63) saturate(0.68) hue-rotate(5deg);
+}
+
+.safari-walk[data-night="true"] .safari-walk-vignette {
+  background:
+    linear-gradient(
+      180deg,
+      #101e35ed,
+      transparent 38%,
+      transparent 60%,
+      #0d1827ed
+    ),
+    #28446b38;
+}
+
+.safari-walk-sightings {
+  pointer-events: none;
+}
+
+.safari-walk-sighting {
+  position: absolute;
+  visibility: hidden;
+  display: grid;
+  width: max(44px, var(--sighting-size, 100px));
+  min-height: 44px;
+  place-items: center;
+  transform: translate3d(var(--sighting-x, 0px), var(--sighting-y, 0px), 0)
+    translate(-50%, -88%);
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: #fffaf0;
+}
+
+.safari-walk-sighting img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 3px #03100b80);
+}
+
+.safari-walk-sighting img[hidden] {
+  display: none;
+}
+
+.safari-walk-sighting > span {
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ebf0db44;
+  background: #122525e8;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.safari-walk-header {
+  position: absolute;
+  inset: max(18px, env(safe-area-inset-top)) max(18px, 3vw) auto;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  pointer-events: none;
+}
+
+.safari-walk-header-actions {
+  display: flex;
+  gap: 7px;
+  pointer-events: auto;
+}
+
+.safari-walk-glass,
+.safari-walk-modes,
+.safari-walk-observe {
+  border: 1px solid var(--walk-border);
+  border-radius: 8px;
+  background: var(--walk-glass);
+  color: #fffaf0;
+}
+
+.safari-walk-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  font: 650 12px/1.2 var(--font-body, Helvetica, Arial, sans-serif);
+  cursor: pointer;
+}
+
+.safari-walk-glass:hover:not(:disabled),
+.safari-walk-modes button:hover {
+  background: #31504be8;
+}
+
+.safari-walk-glass:disabled {
+  opacity: 0.46;
+  cursor: default;
+}
+
+.safari-walk-location {
+  text-align: center;
+  text-shadow: 0 2px 14px #0b1b1f;
+}
+
+.safari-walk-location h2 {
+  margin: 6px 0 4px;
+  font-size: clamp(32px, 5vw, 57px);
+  font-weight: 650;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.safari-walk-location p,
+.safari-walk-weather {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #edf2e6;
+  font-size: 12px;
+}
+
+.safari-walk-location p {
+  font-weight: 650;
+}
+
+.safari-walk-weather > span {
+  border-left: 1px solid var(--walk-border);
+  padding-left: 7px;
+}
+
+.safari-walk-modes {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  pointer-events: auto;
+}
+
+.safari-walk-modes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  min-width: 47px;
+  padding: 0 9px;
+  border-radius: 5px;
+  background: transparent;
+  border: 0;
+  color: #fffaf0;
+  font: 650 11px/1 var(--font-body, Helvetica, Arial, sans-serif);
+  cursor: pointer;
+}
+
+.safari-walk-modes button[aria-pressed="true"] {
+  background: #f0ead7;
+  color: #203b36;
+}
+
+.safari-walk-footer {
+  position: absolute;
+  inset: auto max(18px, 3vw) max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 1fr minmax(230px, 290px);
+  align-items: end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.safari-walk-instructions {
+  margin: 0;
+  grid-column: 1 / -1;
+  color: #f7edd5;
+  font-size: 12px;
+  text-shadow: 0 1px 5px #061516;
+}
+
+.safari-walk-route {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+}
+
+.safari-walk-route-context {
+  display: grid;
+  gap: 3px;
+  color: #fffaf0;
+  font-size: 13px;
+  font-weight: 650;
+  text-shadow: 0 1px 5px #061516;
+}
+
+.safari-walk-route-context small {
+  color: #e4e9d9;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.safari-walk-movement {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.safari-walk-movement button {
+  min-width: 108px;
+}
+
+.safari-walk-movement button:last-child:not(:disabled) {
+  color: #203833;
+  border-color: #f2e0a9;
+  background: #f0d594;
+}
+
+.safari-walk-observe {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 56px;
+  padding: 8px 12px;
+  pointer-events: auto;
+  text-align: left;
+  cursor: pointer;
+}
+
+.safari-walk-observe:hover {
+  background: #284944;
+}
+
+.safari-walk-observe > svg {
+  color: var(--walk-accent);
+}
+
+.safari-walk-observe > span {
+  display: grid;
+  gap: 4px;
+}
+
+.safari-walk-observe strong {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.safari-walk-observe small {
+  color: #e2e9d9;
+  font-size: 11px;
+}
+
+.safari-walk button:focus-visible {
+  outline: 2px solid var(--walk-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .safari-walk-header {
+    inset-inline: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+
+  .safari-walk-location {
+    order: 3;
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .safari-walk-location p,
+  .safari-walk-weather {
+    justify-content: flex-start;
+  }
+
+  .safari-walk-header-actions {
+    gap: 4px;
+  }
+
+  .safari-walk-header-actions .safari-walk-glass {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .safari-walk-radar span {
+    display: none;
+  }
+
+  .safari-walk-modes button {
+    padding-inline: 5px;
+    min-width: 44px;
+  }
+
+  .safari-walk-modes button > svg {
+    display: none;
+  }
+
+  .safari-walk-footer {
+    inset-inline: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .safari-walk-route {
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .safari-walk-movement button {
+    min-width: auto;
+    padding-inline: 9px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 359px) {
+  .safari-walk-map-label {
+    display: none;
+  }
+
+  .safari-walk-header-actions .safari-walk-glass {
+    gap: 3px;
+  }
+
+  .safari-walk-route-context > span {
+    font-size: 11px;
+  }
+
+  .safari-walk-movement .safari-walk-glass {
+    padding-inline: 6px;
+  }
+}

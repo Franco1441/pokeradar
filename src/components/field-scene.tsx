@@ -90,6 +90,7 @@ export default function FieldScene({
     return [...hiddenSpots, ...visibleSpots].sort((left, right) => left.x - right.x);
   }, [expedition, site]);
   const viewport = useRef<HTMLDivElement>(null);
+  const panorama = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ id: number; startX: number; startPan: number } | null>(
     null,
@@ -179,29 +180,7 @@ export default function FieldScene({
     lookAt(lookingAt + (event.key === "ArrowRight" ? 1 : -1));
   }
 
-  function startDrag(event: PointerEvent<HTMLDivElement>) {
-    if (
-      !event.isPrimary ||
-      event.button !== 0 ||
-      (event.target as HTMLElement).closest("button")
-    )
-      return;
-    drag.current = {
-      id: event.pointerId,
-      startX: event.clientX,
-      startPan: pan,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragging(true);
-  }
-
-  function moveDrag(event: PointerEvent<HTMLDivElement>) {
-    const active = drag.current;
-    if (!active || active.id !== event.pointerId) return;
-    const nextPan = clamp(
-      active.startPan + active.startX - event.clientX,
-      maxPan,
-    );
+  function followPan(nextPan: number) {
     setManualPan(nextPan);
     if (!sceneWidth || !spots.length) return;
 
@@ -214,6 +193,40 @@ export default function FieldScene({
       0,
     );
     setLookingAt(nearestIndex);
+  }
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    if (
+      !event.isPrimary ||
+      event.button !== 0 ||
+      (event.target as HTMLElement).closest("button")
+    )
+      return;
+    // A drag can begin halfway through a look animation. Start at the
+    // painted position so the panorama stays under the pointer.
+    const transform = panorama.current
+      ? getComputedStyle(panorama.current).transform
+      : "none";
+    const startPan =
+      transform === "none"
+        ? pan
+        : clamp(-new DOMMatrixReadOnly(transform).m41, maxPan);
+    drag.current = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startPan,
+    };
+    followPan(startPan);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  }
+
+  function moveDrag(event: PointerEvent<HTMLDivElement>) {
+    const active = drag.current;
+    if (!active || active.id !== event.pointerId) return;
+    followPan(
+      clamp(active.startPan + active.startX - event.clientX, maxPan),
+    );
   }
 
   function stopDrag(event: PointerEvent<HTMLDivElement>) {
@@ -276,6 +289,7 @@ export default function FieldScene({
         onLostPointerCapture={stopDrag}
       >
         <div
+          ref={panorama}
           className="field-panorama"
           style={
             {
@@ -325,7 +339,12 @@ export default function FieldScene({
             };
             if (!spot.hidden) {
               return (
-                <div key={spot.id} className="field-clue-point" style={position}>
+                <div
+                  key={spot.id}
+                  className="field-clue-point"
+                  data-focused={index === lookingAt}
+                  style={position}
+                >
                   <button
                     className="field-wild-pokemon"
                     type="button"
@@ -345,6 +364,7 @@ export default function FieldScene({
                 key={spot.id}
                 className="field-clue-point"
                 data-found={found}
+                data-focused={index === lookingAt}
                 data-habitat={
                   spot.id === "heron-squirtle" ? "table-coral" : undefined
                 }
@@ -363,7 +383,9 @@ export default function FieldScene({
                   onFocus={focusSpot}
                   onClick={() => examine(index)}
                 >
-                  {registered ? <Check size={19} /> : <ScanLine size={20} />}
+                  <span className="field-clue-icon" aria-hidden="true">
+                    {registered ? <Check size={12} /> : <ScanLine size={12} />}
+                  </span>
                 </button>
               </div>
             );
@@ -435,9 +457,7 @@ export default function FieldScene({
           </nav>
         )}
         <div className="field-status">
-          <p className="field-hint">
-            Arrastrá para mirar alrededor. Tocá un Pokémon o una pista.
-          </p>
+          <p className="field-hint">Arrastrá para mirar alrededor.</p>
           <div className="field-progress">
             <div className="field-progress-segments" aria-hidden="true">
               {spots.map((spot) => (

@@ -174,7 +174,7 @@
 .landing-veil {
   position: absolute;
   inset: -7%;
-  background: radial-gradient(ellipse at 52% 46%, #f1fff9 2%, var(--arrival-accent, #dce9bd) 57%, color-mix(in srgb, var(--arrival-accent, #dce9bd) 67%, #55766f));
+  background: radial-gradient(ellipse at 52% 46%, color-mix(in srgb, var(--arrival-accent, #dce9bd) 28%, #13262a) 2%, #101c22 80%);
 }
 .landing-destination {
   position: absolute;
@@ -194,8 +194,8 @@
   font-size: 14px;
   font-weight: 700;
 }
-.expedition-app[data-landing="true"] :is(.field-panel, .app-header, .app-footer, .map-toolbar, .map-topline, .weather-glance, .map-bottom, .detail-dialog) {
-  animation: hide-flight-chrome 330ms ease-out both;
+.expedition-app[data-landing="true"] :is(.field-panel, .app-header, .app-footer, .map-toolbar, .detail-dialog) {
+  animation: hide-flight-chrome 190ms ease-out both;
 }
 @keyframes hide-flight-chrome { to { opacity: 0; } }
 .landing-overlay[data-phase="covered"] { pointer-events: auto; }

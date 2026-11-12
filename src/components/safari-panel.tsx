@@ -139,7 +139,7 @@ export default function SafariPanel({
   return (
     <section className="safari-panel" aria-labelledby="safari-title">
       <header className="safari-header">
-        <h2 id="safari-title">Safari</h2>
+        <h2 id="safari-title">Radar</h2>
         <button
           className="safari-destination"
           type="button"
