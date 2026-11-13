@@ -2,7 +2,7 @@
 
 Explorá siete hábitats del mundo, descubrí Pokémon y registrá tus hallazgos en un diario de campo. Proyecto para el desafío técnico Frontend Engineer Junior de DataInt.
 
-[Guía de exploración](#1-concepto-y-narrativa) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA](#3-uso-de-inteligencia-artificial-ai-native-workflow)
+[Abrir PokéRadar](https://pokeradar-lyart.vercel.app/) · [Guía de exploración](#1-concepto-y-narrativa) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA](#3-uso-de-inteligencia-artificial-ai-native-workflow)
 
 ## 1. Concepto y narrativa
 
