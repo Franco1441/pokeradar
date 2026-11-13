@@ -103,6 +103,7 @@ const SafariWalk = dynamic(() => import("./safari-walk"), {
 });
 
 type TerrainView = "field" | "safari";
+const FIELD_LANDING_DURATION = 1520;
 type LandingPhase = "approach" | "covered" | "reveal" | "complete";
 type Landing = {
   expeditionId: string;
@@ -112,21 +113,28 @@ type Landing = {
   duration: number;
 };
 const veilMotion: Variants = {
-  approach: (duration: number) => ({
-    opacity: [0, 0, 0.25, 1],
-    scale: [1, 1, 1.04, 1.08],
+  approach: ({ duration, view }: Landing) => ({
+    opacity: [0, 0, view === "field" ? 0.38 : 0.25, 1],
+    scale: view === "field" ? [1, 1, 1.05, 1.2] : [1, 1, 1.04, 1.08],
     transition: {
       duration: duration / 1000,
-      times: [0, 0.35, 0.71, 1],
+      times: view === "field" ? [0, 0.32, 0.66, 1] : [0, 0.35, 0.71, 1],
       ease: "easeIn",
     },
   }),
-  covered: { opacity: 1, scale: 1.08, transition: { duration: 0 } },
-  reveal: {
+  covered: ({ view }: Landing) => ({
+    opacity: 1,
+    scale: view === "field" ? 1.2 : 1.08,
+    transition: { duration: 0 },
+  }),
+  reveal: ({ view }: Landing) => ({
     opacity: 0,
-    scale: 1.12,
-    transition: { duration: 0.38, ease: [0.2, 0.68, 0.3, 1] },
-  },
+    scale: view === "field" ? 1.42 : 1.12,
+    transition: {
+      duration: view === "field" ? 0.8 : 0.38,
+      ease: [0.2, 0.68, 0.3, 1],
+    },
+  }),
 };
 
 type Tab = "explore" | "atlas" | "radar";
@@ -277,7 +285,7 @@ function ExpeditionApp() {
       setLanding((value) =>
         value === currentLanding ? { ...value, phase: "reveal" } : value,
       );
-    }, 950);
+    }, currentLanding.view === "field" ? 1800 : 950);
     return () => window.clearTimeout(timeout);
   }, [currentLanding]);
 
@@ -482,7 +490,8 @@ function ExpeditionApp() {
       origin: currentLocation,
       phase: "approach",
       view: terrain,
-      duration: worldView ? 1180 : 650,
+      duration:
+        terrain === "field" ? FIELD_LANDING_DURATION : worldView ? 1180 : 650,
     });
   }
   function advanceLanding(phase: string) {
@@ -627,6 +636,7 @@ function ExpeditionApp() {
         className="expedition-app"
         inert={fieldOpen || landingBusy}
         data-landing={currentLanding?.phase === "approach"}
+        data-landing-view={currentLanding?.view}
       >
         <a className="skip-link" href="#expedition-panel">
           {tab === "explore"
@@ -712,9 +722,7 @@ function ExpeditionApp() {
             }
             landingDuration={currentLanding?.duration}
             onMapError={setMapError}
-            onEnterField={
-              fieldSite && tab !== "radar" ? () => enterField() : undefined
-            }
+            onEnterField={fieldSite && tab !== "radar" ? enterField : undefined}
           />
           <div className="map-toolbar">
             <button
@@ -1545,7 +1553,11 @@ function ExpeditionApp() {
         </main>
       )}
       {landingBusy && landingSite && (
-        <div className="landing-overlay" data-phase={currentLanding.phase}>
+        <div
+          className="landing-overlay"
+          data-phase={currentLanding.phase}
+          data-view={currentLanding.view}
+        >
           <span className="sr-only" role="status">
             Viajando a {landingSite.name}
           </span>
@@ -1556,7 +1568,7 @@ function ExpeditionApp() {
             initial={{ opacity: 0, scale: 1 }}
             animate={currentLanding.phase}
             variants={veilMotion}
-            custom={currentLanding.duration}
+            custom={currentLanding}
             onAnimationComplete={(phase) => {
               if (typeof phase === "string") advanceLanding(phase);
             }}

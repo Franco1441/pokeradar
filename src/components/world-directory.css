@@ -58,6 +58,12 @@
   font-size: 13px;
 }
 
+.world-marker-hint { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .world-marker-hint { display: inline; }
+}
+
 .world-preview {
   overflow: hidden;
   border: 1px solid #c0c7bf85;

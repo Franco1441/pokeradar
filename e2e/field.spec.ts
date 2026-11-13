@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { EXPEDITIONS } from "../src/lib/expeditions";
+import { getFieldSite } from "../src/lib/field-sites";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -79,7 +80,10 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
 
   await detail.getByRole("button", { name: "Volver a explorar" }).click();
   await expect(detail).toBeHidden();
-  await expect(field.getByText("1 de 10 registrados")).toBeVisible();
+  const nikko = EXPEDITIONS.find(({ id }) => id === "nikko");
+  await expect(
+    field.getByText(`1 de ${nikko?.encounters.length} registrados`),
+  ).toBeVisible();
   const nextClue = field.getByRole("button", {
     name: "Buscar la siguiente pista",
   });
@@ -103,7 +107,7 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
 });
 
 for (const destination of EXPEDITIONS) {
-  test(`opens the panorama and all ten sightings in ${destination.name}`, async ({
+  test(`opens the panorama and all sightings in ${destination.name}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -138,10 +142,12 @@ for (const destination of EXPEDITIONS) {
       )
       .toBeGreaterThan(0);
 
-    await expect(field.getByText("0 de 10 registrados")).toBeVisible();
+    const total = destination.encounters.length;
+    const hidden = getFieldSite(destination.id)?.clues.length ?? 0;
+    await expect(field.getByText(`0 de ${total} registrados`)).toBeVisible();
     await expect(
       field.getByRole("button", { name: /^Observar a / }),
-    ).toHaveCount(7);
+    ).toHaveCount(total - hidden);
     const seen = new Set<string>();
     for (let index = 0; index < destination.encounters.length; index++) {
       if (index > 0)
@@ -167,6 +173,26 @@ for (const destination of EXPEDITIONS) {
   });
 }
 
+test("focuses a globe pin on click and enters on double click", async ({ page }) => {
+  await page.goto("/?region=everglades&view=world");
+  const iguazu = page.getByRole("button", {
+    name: "Explorar Selva de Iguazú, Argentina",
+  });
+  await iguazu.click();
+  await expect(iguazu).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/\?region=iguazu&view=world$/);
+
+  await page
+    .getByRole("button", {
+      name: "Explorar Humedales de Everglades, Estados Unidos",
+    })
+    .dblclick();
+  await expect(page).toHaveURL(/\?region=everglades&view=field$/);
+  await expect(
+    page.getByRole("main", { name: "Exploración en primera persona" }),
+  ).toBeVisible();
+});
+
 test("lands from the globe with a continuous transition and returns to the correct map", async ({
   page,
 }) => {
@@ -184,6 +210,10 @@ test("lands from the globe with a continuous transition and returns to the corre
   await expect(page.locator(".landing-overlay")).toHaveAttribute(
     "data-phase",
     "approach",
+  );
+  await expect(page.locator(".landing-overlay")).toHaveAttribute(
+    "data-view",
+    "field",
   );
   const field = page.getByRole("main", {
     name: "Exploración en primera persona",

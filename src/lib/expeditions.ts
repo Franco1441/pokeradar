@@ -19,6 +19,7 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'nikko-butterfree', pokemonId: 12, name: 'Butterfree', types: ['bug', 'flying'], coordinates: [139.613, 36.763], rationale: 'Recorre el borde del bosque donde las flores reciben luz.', activity: 'day', safariOnly: true },
       { id: 'nikko-noctowl', pokemonId: 164, name: 'Noctowl', types: ['normal', 'flying'], coordinates: [139.598, 36.755], rationale: 'Se activa entre las copas de los cedros al caer la noche.', activity: 'night', safariOnly: true },
       { id: 'nikko-shroomish', pokemonId: 285, name: 'Shroomish', types: ['grass'], coordinates: [139.611, 36.758], rationale: 'Asoma en la hojarasca húmeda cuando el bosque se enfría.', activity: 'night', safariOnly: true },
+      { id: 'nikko-deerling', pokemonId: 585, name: 'Deerling', types: ['normal', 'grass'], coordinates: [139.5961, 36.7572], rationale: 'Sale al claro a pastar entre los cedros donde llega el sol.', activity: 'day', safariOnly: true },
     ],
   },
   {
@@ -37,6 +38,8 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'reykjanes-rhyhorn', pokemonId: 111, name: 'Rhyhorn', types: ['ground', 'rock'], coordinates: [-22.677, 63.816], rationale: 'Recorre las lomas abiertas de basalto durante el día.', activity: 'day', safariOnly: true },
       { id: 'reykjanes-houndour', pokemonId: 228, name: 'Houndour', types: ['dark', 'fire'], coordinates: [-22.703, 63.813], rationale: 'Sigue rastros entre la roca volcánica cuando baja la luz.', activity: 'night', safariOnly: true },
       { id: 'reykjanes-litwick', pokemonId: 607, name: 'Litwick', types: ['ghost', 'fire'], coordinates: [-22.681, 63.823], rationale: 'Su llama se distingue en los huecos del basalto después del anochecer.', activity: 'night', safariOnly: true },
+      { id: 'reykjanes-rolycoly', pokemonId: 837, name: 'Rolycoly', types: ['rock'], coordinates: [-22.7078, 63.8243], rationale: 'Su ojo brilla al rodar por las grietas oscuras del basalto.', activity: 'night', safariOnly: true },
+      { id: 'reykjanes-torkoal', pokemonId: 324, name: 'Torkoal', types: ['fire'], coordinates: [-22.6792, 63.8242], rationale: 'El humo de su caparazón se mezcla con el vapor de las lomas geotérmicas.', activity: 'day', safariOnly: true },
     ],
   },
   {
@@ -55,6 +58,7 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'namib-helioptile', pokemonId: 694, name: 'Helioptile', types: ['electric', 'normal'], coordinates: [15.311, -24.732], rationale: 'Se asolea en crestas abiertas para aprovechar la luz.', activity: 'day', safariOnly: true },
       { id: 'namib-gligar', pokemonId: 207, name: 'Gligar', types: ['ground', 'flying'], coordinates: [15.275, -24.743], rationale: 'Planea entre las dunas cuando el aire nocturno se enfría.', activity: 'night', safariOnly: true },
       { id: 'namib-umbreon', pokemonId: 197, name: 'Umbreon', types: ['dark'], coordinates: [15.32, -24.736], rationale: 'Sus anillos se distinguen con la luz de la luna sobre la arena.', activity: 'night', safariOnly: true },
+      { id: 'namib-silicobra', pokemonId: 843, name: 'Silicobra', types: ['ground'], coordinates: [15.2811, -24.7251], rationale: 'Sale de la arena al pie de la duna cuando baja la temperatura.', activity: 'night', safariOnly: true },
     ],
   },
   {
@@ -73,6 +77,7 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'zermatt-cubchoo', pokemonId: 613, name: 'Cubchoo', types: ['ice'], coordinates: [7.766, 45.995], rationale: 'Busca pasos entre la nieve y los pequeños afloramientos rocosos.', activity: 'day', safariOnly: true },
       { id: 'zermatt-froslass', pokemonId: 478, name: 'Froslass', types: ['ice', 'ghost'], coordinates: [7.731, 45.979], rationale: 'Surge entre la nieve y los riscos cuando cae la noche.', activity: 'night', safariOnly: true },
       { id: 'zermatt-glalie', pokemonId: 362, name: 'Glalie', types: ['ice'], coordinates: [7.767, 45.986], rationale: 'Recorre el hielo endurecido al descender la temperatura nocturna.', activity: 'night', safariOnly: true },
+      { id: 'zermatt-snom', pokemonId: 872, name: 'Snom', types: ['ice', 'bug'], coordinates: [7.7469, 46.0002], rationale: 'Se alimenta de nieve fresca en los recovecos de la ladera.', activity: 'any', safariOnly: true },
     ],
   },
   {
@@ -91,6 +96,7 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'heron-clamperl', pokemonId: 366, name: 'Clamperl', types: ['water'], coordinates: [151.927, -23.447], rationale: 'Se refugia entre el coral y el fondo arenoso poco profundo.', activity: 'day', safariOnly: true },
       { id: 'heron-chinchou', pokemonId: 170, name: 'Chinchou', types: ['water', 'electric'], coordinates: [151.911, -23.447], rationale: 'Sus antenas luminosas se ven mejor en el arrecife de noche.', activity: 'night', safariOnly: true },
       { id: 'heron-jellicent', pokemonId: 593, name: 'Jellicent', types: ['water', 'ghost'], coordinates: [151.926, -23.442], rationale: 'Se deja llevar por las corrientes del arrecife después del atardecer.', activity: 'night', safariOnly: true },
+      { id: 'heron-lumineon', pokemonId: 457, name: 'Lumineon', types: ['water'], coordinates: [151.9161, -23.4394], rationale: 'Sus aletas luminosas se ven sobre la pradera marina cuando oscurece.', activity: 'night', safariOnly: true },
     ],
   },
   {
@@ -109,6 +115,9 @@ export const EXPEDITIONS: Expedition[] = [
       { id: 'iguazu-lurantis', pokemonId: 754, name: 'Lurantis', types: ['grass'], coordinates: [-54.444, -25.69], rationale: 'Se queda inmóvil entre los brotes y las flores iluminadas.', activity: 'day', safariOnly: true },
       { id: 'iguazu-venonat', pokemonId: 48, name: 'Venonat', types: ['bug', 'poison'], coordinates: [-54.436, -25.686], rationale: 'Sale a buscar insectos bajo el dosel al anochecer.', activity: 'night', safariOnly: true },
       { id: 'iguazu-morelull', pokemonId: 755, name: 'Morelull', types: ['grass', 'fairy'], coordinates: [-54.447, -25.683], rationale: 'Su luz tenue se ve junto a los troncos húmedos de noche.', activity: 'night', safariOnly: true },
+      { id: 'iguazu-crobat', pokemonId: 169, name: 'Crobat', types: ['poison', 'flying'], coordinates: [-54.444, -25.688], rationale: 'Sobrevuela el rocío de las cataratas cuando se apaga la luz.', activity: 'night', safariOnly: true },
+      { id: 'iguazu-noibat', pokemonId: 714, name: 'Noibat', types: ['flying', 'dragon'], coordinates: [-54.4423, -25.6879], rationale: 'Al anochecer vuela desde las grietas que quedan detrás del salto de agua.', activity: 'night', safariOnly: true },
+      { id: 'iguazu-politoed', pokemonId: 186, name: 'Politoed', types: ['water'], coordinates: [-54.4483, -25.6837], rationale: 'Se instala sobre las piedras húmedas de la ribera durante el día.', activity: 'day', safariOnly: true },
     ],
   },
   {

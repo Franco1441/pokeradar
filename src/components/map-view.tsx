@@ -40,7 +40,7 @@ interface MapViewProps {
   landingDuration?: number;
   onSelect: (encounter: Encounter) => void;
   onExpedition: (id: string) => void;
-  onEnterField?: () => void;
+  onEnterField?: (id: string) => void;
   onMapError: (message: string | null) => void;
 }
 
@@ -310,6 +310,7 @@ function createTrailheadMarker(site: FieldSite, onEnter: () => void) {
     event.stopPropagation();
     onEnter();
   });
+  button.addEventListener("dblclick", (event) => event.stopPropagation());
   return new Marker({ element: button, anchor: "bottom" }).setLngLat(
     site.coordinates,
   );
@@ -326,6 +327,7 @@ export default function MapView(props: MapViewProps) {
   const lastConfirmationSequence = useRef<number | undefined>(undefined);
   const previousWorldView = useRef(props.worldView);
   const previousFocusedDestinationId = useRef(props.focusedDestinationId);
+  const clickedWorldMarker = useRef<string | null>(null);
   const activeLanding = useRef<{ map: MapLibreMap; site: FieldSite } | null>(
     null,
   );
@@ -578,9 +580,20 @@ export default function MapView(props: MapViewProps) {
           country.textContent = expedition.name;
           button.append(title, country);
           button.style.setProperty("--expedition-color", expedition.color);
-          button.addEventListener("click", () =>
-            latest.current.onExpedition(expedition.id),
-          );
+          const site = getFieldSite(expedition.id);
+          if (site) button.title = `Doble clic para ${site.action.toLowerCase()}`;
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (event.detail > 1 && site && latest.current.onEnterField) return;
+            clickedWorldMarker.current = expedition.id;
+            latest.current.onExpedition(expedition.id);
+          });
+          button.addEventListener("dblclick", (event) => {
+            if (!site || !latest.current.onEnterField) return;
+            event.preventDefault();
+            event.stopPropagation();
+            latest.current.onEnterField(expedition.id);
+          });
           return new Marker({ element: button, anchor: "bottom" }).setLngLat(
             expedition.coordinates,
           );
@@ -604,7 +617,7 @@ export default function MapView(props: MapViewProps) {
       if (fieldSite) {
         retainMarker(`trailhead:${props.expedition.id}`, () =>
           createTrailheadMarker(fieldSite, () =>
-            latest.current.onEnterField?.(),
+            latest.current.onEnterField?.(props.expedition.id),
           ),
         );
       }
@@ -700,6 +713,8 @@ export default function MapView(props: MapViewProps) {
     const focusingDestination =
       previousWorldView.current &&
       previousFocusedDestinationId.current !== props.focusedDestinationId;
+    const fromMarker = clickedWorldMarker.current === props.focusedDestinationId;
+    clickedWorldMarker.current = null;
     previousWorldView.current = props.worldView;
     previousFocusedDestinationId.current = props.focusedDestinationId;
     map
@@ -719,6 +734,8 @@ export default function MapView(props: MapViewProps) {
       const solarFocusRequested =
         lastSolarFocusKey.current !== props.solarFocusKey;
       lastSolarFocusKey.current = props.solarFocusKey;
+      // A pin stays under the pointer between both clicks.
+      if (fromMarker && !solarFocusRequested) return;
       const camera = globeCamera(
         element,
         destination ?? props.expedition,

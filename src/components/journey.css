@@ -176,6 +176,9 @@
   inset: -7%;
   background: radial-gradient(ellipse at 52% 46%, color-mix(in srgb, var(--arrival-accent, #dce9bd) 28%, #13262a) 2%, #101c22 80%);
 }
+.landing-overlay[data-view="field"] .landing-veil {
+  background: radial-gradient(ellipse at 52% 46%, #f1fff9 2%, var(--arrival-accent, #dce9bd) 57%, color-mix(in srgb, var(--arrival-accent, #dce9bd) 67%, #55766f));
+}
 .landing-destination {
   position: absolute;
   left: 50%;
@@ -196,6 +199,9 @@
 }
 .expedition-app[data-landing="true"] :is(.field-panel, .app-header, .app-footer, .map-toolbar, .detail-dialog) {
   animation: hide-flight-chrome 190ms ease-out both;
+}
+.expedition-app[data-landing="true"][data-landing-view="field"] :is(.field-panel, .app-header, .app-footer, .map-toolbar, .detail-dialog) {
+  animation-duration: 330ms;
 }
 @keyframes hide-flight-chrome { to { opacity: 0; } }
 .landing-overlay[data-phase="covered"] { pointer-events: auto; }

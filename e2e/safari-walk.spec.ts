@@ -5,11 +5,11 @@ test.use({ reducedMotion: "reduce" });
 
 const iguazu = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
 
-test("opens local weather and follows a Safari encounter without losing the route", async ({
+test("tracks Safari signals in other zones and updates the radar after registering", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.clock.setFixedTime(new Date("2026-11-12T15:00:00Z"));
+  await page.clock.install({ time: new Date("2026-11-12T15:00:00Z") });
   await page.route(/api\.open-meteo\.com\/v1\/forecast/, (route) =>
     route.fulfill({
       json: {
@@ -69,19 +69,36 @@ test("opens local weather and follows a Safari encounter without losing the rout
   const walk = page.getByRole("main", { name: "Safari en primera persona" });
   await expect(walk).toBeVisible();
   await expect(page).toHaveURL(/region=iguazu&view=safari$/);
-  await expect(walk.getByText(/^Avistamiento 1 de /)).toBeVisible();
-  await walk.getByRole("button", { name: "Avanzar", exact: true }).click();
-  await expect(walk.getByText(/^Avistamiento 2 de /)).toBeVisible();
-  const encounter = walk.getByRole("button", { name: /^Ver ficha de / });
-  await expect(encounter).toBeVisible();
-  await encounter.click();
+  const radar = walk.getByRole("complementary", { name: "Radar de campo" });
+  const mirador = radar.getByRole("button", { name: /^Mirador de las cataratas,/ });
+  const claro = radar.getByRole("button", { name: /^Claro de los helechos,/ });
+  await expect(mirador).toHaveAttribute("aria-pressed", "true");
+  await expect(claro).toHaveAccessibleName(/2 señales, 2 sin registrar/);
+  await expect(radar.getByText("4 sin registrar en otras zonas", { exact: true })).toBeVisible();
+  await expect(walk.getByRole("button", { name: /^Ver ficha de / })).toHaveCount(2);
+
+  await claro.click();
+  await expect(claro).toHaveAttribute("aria-pressed", "true");
+  await expect(walk.getByRole("heading", { name: "Claro de los helechos" })).toBeVisible();
+  const previousSignals = await mirador.getAttribute("title");
+  await page.clock.fastForward(60_000);
+  await expect(mirador).not.toHaveAttribute("title", previousSignals!);
+  await expect(radar.getByRole("status")).toContainText(/nueva señal en Mirador de las cataratas/);
+  await expect(walk.getByRole("button", { name: "Ver ficha de Yanma" })).toBeVisible();
+  await expect(walk.getByRole("button", { name: "Ver ficha de Leavanny" })).toBeVisible();
+  await walk.getByRole("button", { name: "Ver ficha de Yanma" }).click();
 
   const detail = page.getByRole("dialog", { name: /^Ficha de / });
   await expect(detail.getByText("Estadísticas base")).toBeVisible();
-  await expect(page).toHaveURL(/region=iguazu&view=safari&encounter=iguazu-/);
+  await expect(page).toHaveURL(/region=iguazu&view=safari&encounter=iguazu-yanma/);
+  await detail.getByRole("button", { name: "Registrar avistamiento" }).click();
   await detail.getByRole("button", { name: "Volver a explorar" }).click();
   await expect(page).toHaveURL(/region=iguazu&view=safari$/);
   await expect(walk).toBeVisible();
+  await expect(claro).toHaveAccessibleName(/2 señales, 1 sin registrar/);
+  await expect(claro).toHaveAttribute("aria-pressed", "true");
+  await mirador.click();
+  await expect(radar.getByText("3 sin registrar en otras zonas", { exact: true })).toBeVisible();
   await walk.getByRole("button", { name: "Ver radar en el mapa" }).click();
   await expect(page).toHaveURL(/region=iguazu&view=radar$/);
   await expect(

@@ -50,11 +50,16 @@ void main() {
     vec3 water = vec3(0.080, 0.157, 0.222) + waterRelief * vec3(0.25, 0.31, 0.34);
     ground = mix(ground, water, ocean * 0.88);
     float radiance = texture(u_night, v_texture).r;
+    // A coarser mip level spreads the same light sources into a soft glow.
+    float scatteredRadiance = texture(u_night, v_texture, 1.8).r;
     vec3 daylight = pow(ground, vec3(0.89)) * mix(0.83, 1.09, smoothstep(-0.07, 0.78, light));
     vec3 night = ground * vec3(0.25, 0.29, 0.40) + vec3(0.012, 0.018, 0.030);
-    float city = pow(clamp((radiance - 0.048) / 0.952, 0.0, 1.0), 1.15);
-    night += vec3(1.0, 0.80, 0.52) * city;
+    float city = pow(max(0.0, radiance - 0.022), 0.86);
+    float cityGlow = pow(max(0.0, scatteredRadiance - 0.016), 0.79);
+    vec3 cityLights = vec3(1.0, 0.84, 0.56) * city * 1.24
+        + vec3(0.82, 0.43, 0.17) * cityGlow * 0.66;
     vec3 color = mix(night, daylight, day);
+    color += cityLights * (1.0 - smoothstep(-0.23, 0.06, light));
     float rim = exp(-altitude * 12.0) * mix(0.17, 0.45, blueHour);
     float edge = exp(-altitude * 54.0) * mix(0.47, 0.65, blueHour);
     float atmosphere = clamp(rim + edge, 0.0, 0.96) * u_projection_transition;

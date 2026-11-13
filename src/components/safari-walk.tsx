@@ -8,14 +8,10 @@ import {
   type PointerEvent,
 } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
-  ArrowUp,
   ArrowUpRight,
-  Binoculars,
   CloudSun,
   MapPin,
-  Radar,
   Sun,
   Moon,
   Radio,
@@ -24,7 +20,8 @@ import type { FieldSite } from "@/lib/field-sites";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
 import type { SafariMode, SafariSnapshot } from "@/lib/safari";
 import type { Expedition } from "@/lib/types";
-import { createSafariWorld } from "./safari-world";
+import SafariFieldRadar from "./safari-field-radar";
+import { createSafariWorld, safariPanorama } from "./safari-world";
 import "./safari-walk.css";
 
 interface SafariWalkProps {
@@ -43,7 +40,7 @@ interface SafariWalkProps {
 
 type WalkController = {
   setScene: (
-    step: number,
+    zone: number,
     signals: SafariSnapshot["signals"],
     isDay: boolean,
   ) => void;
@@ -69,10 +66,9 @@ export default function SafariWalk({
   registeredIds,
   detailOpen,
 }: SafariWalkProps) {
-  const [index, setIndex] = useState(0);
+  const [zoneIndex, setZoneIndex] = useState(0);
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
-  const step = Math.min(index, Math.max(0, snapshot.signals.length - 1));
-  const signal = snapshot.signals[step];
+  const zone = snapshot.zones[zoneIndex];
   const exit = useRef<HTMLButtonElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -126,36 +122,37 @@ export default function SafariWalk({
 
     function draw(time: number) {
       frame = 0;
-      const progress =
-        !start || motion.matches ? 1 : Math.min((time - start) / 780, 1);
+      const duration = 580 + Math.abs(target - from) * 85;
+      const progress = !start || motion.matches ? 1 : Math.min((time - start) / duration, 1);
       const ease = progress * progress * (3 - 2 * progress);
       current = from + (target - from) * ease;
       world.draw(current, turn, progress < 1);
-      const offset = turn * -9 + Math.sin(current * 1.8) * -1.7;
-      stage.style.setProperty("--walk-offset", `${offset}%`);
-      stage.style.setProperty("--walk-scale", String(1.075 + current * 0.035));
-      for (const [station, { encounter }] of signals.entries()) {
+      const background = safariPanorama(current, turn);
+      stage.style.setProperty("--walk-offset-x", `${background.x}%`);
+      stage.style.setProperty("--walk-offset-y", `${background.y}%`);
+      stage.style.setProperty("--walk-scale", String(background.scale));
+      for (const [slot, { encounter }] of signals.entries()) {
         const marker = markers.current.get(encounter.id);
         if (!marker) continue;
-        const location = world.locate(encounter, station);
+        const location = world.locate(encounter, target, slot, target);
         marker.style.visibility = location ? "visible" : "hidden";
         if (!location) continue;
         marker.style.setProperty("--sighting-x", `${location.x}px`);
         marker.style.setProperty("--sighting-y", `${location.y}px`);
         marker.style.setProperty("--sighting-size", `${location.size}px`);
-        marker.style.opacity = String(location.opacity);
+        marker.style.opacity = String(location.opacity * Math.max(0, (progress - 0.5) * 2));
       }
       if (progress < 1) schedule();
       finishArrival();
     }
 
     controller.current = {
-      setScene(nextStep, nextSignals, isDay) {
+      setScene(nextZone, nextSignals, isDay) {
         signals = nextSignals;
         world.light(isDay);
-        if (nextStep !== target) {
+        if (nextZone !== target) {
           from = current;
-          target = nextStep;
+          target = nextZone;
           turn = 0;
           start = performance.now();
         }
@@ -187,14 +184,8 @@ export default function SafariWalk({
   }, [expedition.id]);
 
   useEffect(() => {
-    controller.current?.setScene(step, snapshot.signals, snapshot.isDay);
-  }, [step, snapshot.signals, snapshot.isDay]);
-
-  function walk(direction: number) {
-    setIndex(
-      Math.max(0, Math.min(step + direction, snapshot.signals.length - 1)),
-    );
-  }
+    controller.current?.setScene(zoneIndex, zone.signals, snapshot.isDay);
+  }, [zoneIndex, zone.signals, snapshot.isDay]);
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
     if (
@@ -205,16 +196,6 @@ export default function SafariWalk({
     )
       return;
     switch (event.key.toLowerCase()) {
-      case "w":
-      case "arrowup":
-        event.preventDefault();
-        walk(1);
-        break;
-      case "s":
-      case "arrowdown":
-        event.preventDefault();
-        walk(-1);
-        break;
       case "a":
       case "arrowleft":
         event.preventDefault();
@@ -261,6 +242,7 @@ export default function SafariWalk({
       className="safari-walk"
       aria-labelledby="safari-walk-title"
       data-night={!snapshot.isDay}
+      data-active-zone={zone.id}
       inert={detailOpen}
       onKeyDown={handleKey}
     >
@@ -286,7 +268,7 @@ export default function SafariWalk({
         <div className="safari-walk-world" ref={host} aria-hidden="true" />
         <div className="safari-walk-vignette" aria-hidden="true" />
         <div className="safari-walk-sightings">
-          {snapshot.signals.map(({ encounter }, station) => (
+          {zone.signals.map(({ encounter }) => (
             <button
               key={encounter.id}
               ref={(element) => {
@@ -295,7 +277,6 @@ export default function SafariWalk({
               }}
               type="button"
               className="safari-walk-sighting"
-              tabIndex={station === step ? 0 : -1}
               aria-label={`Observar a ${encounter.name}`}
               onClick={() => onObserve(encounter.id)}
             >
@@ -329,16 +310,6 @@ export default function SafariWalk({
             <ArrowLeft size={17} aria-hidden="true" />
             <span className="safari-walk-map-label">Volver al mapa</span>
           </button>
-          {onOpenRadar && (
-            <button
-              type="button"
-              className="safari-walk-glass safari-walk-radar"
-              onClick={onOpenRadar}
-              aria-label="Ver radar en el mapa"
-            >
-              <Radar size={17} aria-hidden="true" /> <span>Radar</span>
-            </button>
-          )}
         </div>
         <div className="safari-walk-location">
           <p>
@@ -374,58 +345,36 @@ export default function SafariWalk({
       </header>
 
       <div className="safari-walk-footer">
-        {hasWebGL === false && (
-          <p className="safari-walk-instructions" role="status">
-            Safari en vista panorámica
+        <section className="safari-walk-local" aria-label="Avistamientos de la zona actual">
+          <h3><MapPin size={16} aria-hidden="true" /> {zone.name}</h3>
+          <div className="safari-walk-local-signals">
+            {zone.signals.map(({ encounter }) => (
+              <button
+                key={encounter.id}
+                type="button"
+                className="safari-walk-observe"
+                onClick={() => onObserve(encounter.id)}
+                aria-label={`Ver ficha de ${encounter.name}`}
+              >
+                <span className="safari-walk-signal-key" data-unregistered={!registeredIds.includes(encounter.pokemonId)} />
+                {encounter.name}
+                <ArrowUpRight size={13} aria-hidden="true" />
+              </button>
+            ))}
+            {zone.signals.length === 0 && <span>Sin señales por ahora.</span>}
+          </div>
+          <p className="safari-walk-instructions">
+            {hasWebGL === false ? "Vista panorámica · " : ""}Arrastrá para mirar alrededor.
           </p>
-        )}
-        <div className="safari-walk-route">
-          <div className="safari-walk-route-context">
-            <span>{site.name}</span>
-            {snapshot.signals.length > 0 && (
-              <small>
-                Avistamiento {step + 1} de {snapshot.signals.length}
-              </small>
-            )}
-          </div>
-          <div className="safari-walk-movement">
-            <button
-              className="safari-walk-glass"
-              type="button"
-              onClick={() => walk(-1)}
-              disabled={step === 0}
-            >
-              <ArrowDown size={17} aria-hidden="true" /> Retroceder
-            </button>
-            <button
-              className="safari-walk-glass"
-              type="button"
-              onClick={() => walk(1)}
-              disabled={step >= snapshot.signals.length - 1}
-            >
-              <ArrowUp size={17} aria-hidden="true" /> Avanzar
-            </button>
-          </div>
-        </div>
-        {signal && (
-          <button
-            type="button"
-            className="safari-walk-observe"
-            onClick={() => onObserve(signal.encounter.id)}
-            aria-label={`Ver ficha de ${signal.encounter.name}`}
-          >
-            <Binoculars size={20} aria-hidden="true" />
-            <span>
-              <strong aria-live="polite">{signal.encounter.name}</strong>
-              <small>
-                {registeredIds.includes(signal.encounter.pokemonId)
-                  ? "Registrado en tu atlas"
-                  : signal.reason}
-              </small>
-            </span>
-            <ArrowUpRight size={18} aria-hidden="true" />
-          </button>
-        )}
+        </section>
+        <SafariFieldRadar
+          expedition={expedition}
+          zones={snapshot.zones}
+          activeZone={zoneIndex}
+          registeredIds={registeredIds}
+          onTravel={setZoneIndex}
+          onOpenRadar={onOpenRadar}
+        />
       </div>
     </section>
   );

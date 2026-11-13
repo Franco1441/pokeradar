@@ -138,7 +138,12 @@ export default function WorldDirectory({
             Elegí un destino para seguir sus pistas o ver sus avistamientos.
           </p>
         ) : (
-          <p>Girá el globo o elegí un destino.</p>
+          <p>
+            Girá el globo o elegí un destino.
+            <span className="world-marker-hint">
+              {" "}Doble clic en un marcador para entrar.
+            </span>
+          </p>
         )}
       </div>
 

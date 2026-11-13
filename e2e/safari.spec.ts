@@ -49,7 +49,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   const radar = page.getByRole("complementary", { name: "Radar Safari" });
   await expect(radar.getByText("Día local")).toBeVisible();
   await expect(radar.getByText("Lluvia", { exact: true })).toBeVisible();
-  await expect(radar.getByRole("listitem")).toHaveCount(4);
+  await expect(radar.getByRole("listitem")).toHaveCount(6);
 
   await radar.getByRole("button", { name: "Día", exact: true }).click();
   await expect(radar.getByText("Día de prueba")).toBeVisible();

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EXPEDITIONS } from "./expeditions";
 import { getSafariSnapshot, SAFARI_INTERVAL_MS } from "./safari";
 import type {
   Encounter,
@@ -59,6 +60,33 @@ const biome: Expedition = {
 };
 
 describe("safari radar", () => {
+  it("keeps two eligible sightings in each destination zone and rotates at least one pair in each phase", () => {
+    for (const expedition of EXPEDITIONS) {
+      for (const mode of ["day", "night"] as const) {
+        const snapshots = [0, 1, 2, 3].map((minute) => getSafariSnapshot(expedition, {
+          mode,
+          now: now + minute * SAFARI_INTERVAL_MS,
+          weather,
+        }));
+        const configurations = new Set<string>();
+        for (const { zones, signals } of snapshots) {
+          expect(zones, expedition.id).toHaveLength(3);
+          expect(new Set(signals.map(({ encounter }) => encounter.id)).size).toBe(6);
+          for (const zone of zones) {
+            expect(zone.signals, zone.id).toHaveLength(2);
+            expect(zone.signals.every(({ encounter }) =>
+              !encounter.activity || encounter.activity === "any" || encounter.activity === mode,
+            )).toBe(true);
+          }
+          configurations.add(zones.map(({ signals }) =>
+            signals.map(({ encounter }) => encounter.id).sort().join(","),
+          ).join("|"));
+        }
+        expect(configurations.size, `${expedition.id} ${mode}`).toBeGreaterThan(1);
+      }
+    }
+  });
+
   it("prefers observed daylight over the approximate local schedule", () => {
     const snapshot = getSafariSnapshot(biome, {
       mode: "live",
