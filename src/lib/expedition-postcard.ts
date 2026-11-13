@@ -1,4 +1,5 @@
 import { expeditionProgress } from "./research";
+import { getExpeditionCatalog } from "./safari-roster";
 import type {
   Encounter,
   Expedition,
@@ -22,7 +23,7 @@ export function buildExpeditionPostcard(
   progress: ResearchProgress,
 ): ExpeditionPostcardData | null {
   const encountersById = new Map(
-    expedition.encounters.map((encounter) => [encounter.id, encounter]),
+    getExpeditionCatalog(expedition).map((encounter) => [encounter.id, encounter]),
   );
   const chronologicalRecords = progress.records
     .filter((record) => {

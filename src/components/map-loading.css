@@ -52,6 +52,17 @@
   animation: none;
 }
 
+.map-loading[data-fullscreen="true"] {
+  position: fixed;
+  z-index: 100;
+  background: radial-gradient(ellipse at 50% 46%, #16313b, #09131c 52%, #03070c);
+  color: #edf2e9;
+}
+
+.map-loading[data-fullscreen="true"] .map-loading-content {
+  margin: 0;
+}
+
 @keyframes map-loading-sweep {
   to { transform: rotate(360deg); }
 }

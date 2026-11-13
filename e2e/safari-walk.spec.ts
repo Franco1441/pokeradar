@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { EXPEDITIONS } from "../src/lib/expeditions";
+import { getSafariEncounters } from "../src/lib/safari-roster";
 import { getSafariSnapshot, SAFARI_RESPAWN_MS } from "../src/lib/safari";
 
 test.use({ reducedMotion: "reduce" });
@@ -44,7 +45,7 @@ test("tracks Safari signals in other zones and updates the radar after registeri
     const id = Number(
       new URL(route.request().url()).pathname.split("/").filter(Boolean).at(-1),
     );
-    const encounter = iguazu.encounters.find(
+    const encounter = getSafariEncounters(iguazu).find(
       ({ pokemonId }) => pokemonId === id,
     );
     if (!encounter) return route.fallback();
@@ -81,7 +82,7 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   await weather.getByRole("button", { name: "Cerrar clima" }).click();
   await expect(climate).toBeFocused();
 
-  await page.getByRole("button", { name: "Safari", exact: true }).click();
+  await page.getByRole("button", { name: /^Safari Avistamientos rotativos$/ }).click();
   const walk = page.getByRole("main", { name: "Safari en primera persona" });
   await expect(walk).toBeVisible();
   await expect(page).toHaveURL(/region=iguazu&view=safari$/);
@@ -112,7 +113,7 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   await expect(mirador).not.toHaveAttribute("title", new RegExp(arrived.encounter.name));
   const nearby = walk.getByRole("button", { name: /^Ver ficha de / }).first();
   const nearbyName = (await nearby.getAttribute("aria-label"))!.replace("Ver ficha de ", "");
-  const nearbyEncounter = iguazu.encounters.find(({ name }) => name === nearbyName)!;
+  const nearbyEncounter = getSafariEncounters(iguazu).find(({ name }) => name === nearbyName)!;
   await nearby.click();
 
   const detail = page.getByRole("dialog", { name: /^Ficha de / });

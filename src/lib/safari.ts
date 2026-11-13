@@ -1,5 +1,6 @@
 import type { Encounter, Expedition, WeatherSnapshot } from "./types";
 import { SAFARI_ZONES, type SafariZone } from "./safari-zones";
+import { getSafariEncounters } from "./safari-roster";
 import { weatherInfo } from "./weather";
 
 export type SafariMode = "live" | "day" | "night";
@@ -140,7 +141,8 @@ export function getSafariSnapshot(
   // A stable offset lets each destination rotate its own catalog without changing encounter IDs.
   const destinationOffset = safariSeed(expedition.id);
   const offset = tick + destinationOffset;
-  const eligible = expedition.encounters.filter(
+  const exclusive = getSafariEncounters(expedition);
+  const eligible = (exclusive.length ? exclusive : expedition.encounters).filter(
     ({ activity }) => !activity || activity === "any" || activity === period,
   );
 

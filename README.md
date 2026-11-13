@@ -18,7 +18,7 @@ Elegí la idea de un diario de expedición para darle un propósito a cada movim
 
 **Explorar a pie** lleva al punto de entrada de la expedición desde la tarjeta del globo, el marcador del sendero o con doble clic en el marcador del destino. La cámara se acerca y el fundido da paso a una escena panorámica con entre doce y quince Pokémon por región. Tres se descubren al examinar pistas del entorno. Cada avistamiento presenta un dato de la especie antes de abrir su ficha. Podés recorrer la escena con arrastre o teclado y pasar a la siguiente pista después de registrar un hallazgo.
 
-**Safari** agrega tres zonas por expedición. Cada una de las 21 zonas tiene su propio paisaje ilustrativo. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
+**Safari** se abre desde la misma tarjeta de destino que **Explorar a pie**. Tiene 84 especies propias que rotan en tres zonas por expedición. Cada una de las 21 zonas tiene un panorama esférico distinto. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
 
 Los paneles se adaptan a escritorio y móvil. La preferencia de movimiento reducido acorta o desactiva las transiciones. Si falla el mapa, podés elegir una expedición y consultar la lista de avistamientos. Si falla WebGL en Safari, el paisaje, el radar y las fichas siguen disponibles en la vista panorámica.
 
@@ -36,7 +36,7 @@ Los paneles se adaptan a escritorio y móvil. La preferencia de movimiento reduc
 
 PokéAPI aporta los nombres, tipos, estadísticas, medidas, ilustraciones, descripciones y sonidos. Open-Meteo aporta el tiempo meteorológico y la fase del día en el destino. Las coordenadas de los avistamientos y la relación de cada especie con su hábitat forman parte de la simulación y se identifican en la interfaz.
 
-El catálogo local contiene 93 especies distribuidas por hábitat. Sus identificadores y tipos se contrastaron con PokéAPI. Los marcadores y filtros pueden mostrarse con ese catálogo mientras las fichas consultan los datos detallados de cada especie.
+El catálogo local contiene 177 especies distribuidas por hábitat: 93 de exploración a pie y 84 exclusivas del Safari. Sus identificadores y tipos se contrastaron con PokéAPI. Los marcadores y filtros pueden mostrarse con ese catálogo mientras las fichas consultan los datos detallados de cada especie.
 
 ### Referencias de experiencia
 
@@ -77,7 +77,7 @@ public/
 e2e/             Pruebas de navegación en Chromium
 ```
 
-[`page.tsx`](src/app/page.tsx) y [`layout.tsx`](src/app/layout.tsx) son Server Components. [`explorer.tsx`](src/components/explorer.tsx) es el límite cliente que coordina la selección y el progreso. Importa MapLibre mediante `next/dynamic` con `ssr: false`, de modo que el mapa se inicializa con acceso a las APIs del navegador. Una instancia conserva la cámara al cambiar de escala o abrir una escena. La exploración a pie y Safari se cargan al entrar a cada vista. Safari decodifica el paisaje de la zona elegida y cambia la textura durante el fundido.
+[`page.tsx`](src/app/page.tsx) y [`layout.tsx`](src/app/layout.tsx) son Server Components. [`explorer.tsx`](src/components/explorer.tsx) es el límite cliente que coordina la selección y el progreso. Importa MapLibre mediante `next/dynamic` con `ssr: false`, de modo que el mapa se inicializa con acceso a las APIs del navegador. Una instancia conserva la cámara al cambiar de escala o abrir una escena. Al entrar por el mapa, el radar de pantalla completa permanece dos segundos como mínimo y se retira cuando el mapa está listo. La exploración a pie y Safari se cargan al entrar a cada vista. Safari decodifica el panorama de la zona elegida y cambia la textura durante el fundido. La vista 360° proyecta cada panorama equirectangular completo con muestreo continuo en la unión. Si no hay WebGL, una vista plana conserva el giro horizontal, el radar y las fichas.
 
 El ID de `Encounter` identifica el lugar del hallazgo y el ID de PokéAPI identifica la especie. [`safari.ts`](src/lib/safari.ts) calcula los avistamientos a partir del destino, la fase y el reloj, y ambas vistas de radar comparten el resultado. Los Pokémon que siguen activos conservan su posición al cambiar las señales.
 
@@ -125,7 +125,7 @@ Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación 
 
 ## 3. Uso de inteligencia artificial (AI-Native Workflow)
 
-Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. Son recreaciones ilustrativas de los biomas.
+Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. En el Safari reemplacé los fondos reflejados por panoramas esféricos, ajusté su unión en la imagen y verifiqué el giro en el navegador. Son recreaciones ilustrativas de los biomas.
 
 ### Correcciones y comprobaciones durante el trabajo
 

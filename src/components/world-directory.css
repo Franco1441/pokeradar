@@ -255,7 +255,7 @@
 
 .world-preview-actions {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr 1fr;
   gap: 7px;
   padding: 9px;
 }
@@ -290,6 +290,11 @@
 
 .world-preview-actions > .world-preview-land:hover {
   background: #193f46;
+}
+
+@media (max-width: 450px) {
+  .world-preview-actions > button { padding-inline: 5px; }
+  .world-preview-land > svg:last-child { display: none; }
 }
 
 .world-preview-actions button:focus-visible,

@@ -43,6 +43,7 @@ interface MapViewProps {
   onExpedition: (id: string) => void;
   onEnterField?: (id: string) => void;
   onMapError: (message: string | null) => void;
+  onInitialMapReady: () => void;
 }
 
 function visiblePanel(container: HTMLElement, detailOpen: boolean) {
@@ -553,6 +554,11 @@ export default function MapView(props: MapViewProps) {
     if (ready && props.worldView) installGlobe.current?.();
   }, [ready, attempt, props.worldView]);
 
+  const loading = !error && (!ready || (startingInWorld && props.worldView && !globeReady));
+  useEffect(() => {
+    if (!loading) latest.current.onInitialMapReady();
+  }, [loading]);
+
   const safariOpen = Boolean(props.safariPeriod);
   const fieldSite = props.onEnterField
     ? getFieldSite(props.expedition.id)
@@ -769,7 +775,7 @@ export default function MapView(props: MapViewProps) {
     lastRecenterKey.current = props.recenterKey;
     const selected = recenterRequested
       ? undefined
-      : props.expedition.encounters.find(
+      : latest.current.encounters.find(
           (encounter) => encounter.id === props.selectedId,
         );
     if (!selected) {
@@ -910,7 +916,7 @@ export default function MapView(props: MapViewProps) {
       <div ref={container} className="map-canvas" />
       <MapLoading
         world={props.worldView}
-        active={!error && (!ready || (startingInWorld && props.worldView && !globeReady))}
+        active={loading}
       />
       {error && (
         <div className="map-retry" role="status">

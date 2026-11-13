@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { Encounter } from "@/lib/types";
 
 const FULL_TURN = Math.PI * 2;
+const MAX_RENDER_PIXELS = 4_200_000;
 
 const STATIONS = [
   {
@@ -44,13 +45,14 @@ function stationFrames(position: number) {
   };
 }
 
-export function safariPanorama(heading: number) {
-  const rear = (1 - Math.cos(heading)) / 2;
-  return {
-    x: -17 * Math.sin(heading) + rear * 5,
-    y: rear * -8,
-    scale: 1.46 + rear * 0.15,
-  };
+export function safariFallbackPanorama(heading: number, width: number, height: number) {
+  const size = Math.max(width * 3, height * 2.8);
+  const turn = ((heading / FULL_TURN) % 1 + 1) % 1;
+  return { size, left: (width - size) / 2 - turn * size };
+}
+
+export function isSafariPanorama(source: string) {
+  return /-360\.webp(?:[?#]|$)/i.test(source);
 }
 
 export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
@@ -59,44 +61,34 @@ export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
 }
 
 const panoramaVertex = `
-varying vec3 vRay;
+varying vec2 screenPosition;
 
 void main() {
-  vRay = position;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  screenPosition = position.xy;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
 }
 `;
 
 const panoramaFragment = `
 uniform sampler2D photo;
 uniform float daylight;
-uniform vec2 photoExtent;
-uniform bool equirectangular;
-varying vec3 vRay;
-
-// Fold the photo at its edges to make the full turn continuous. Round the
-// fold over a small interval so it does not create a hard crease while turning.
-float mirror(float coordinate) {
-  float distanceToCenter = abs(mod(coordinate, 2.0) - 1.0);
-  float edgeDistance = min(distanceToCenter, 1.0 - distanceToCenter);
-  float feather = 0.022;
-  if (edgeDistance >= feather) return 1.0 - distanceToCenter;
-  float edge = edgeDistance / feather;
-  float rounded = feather * (0.5 + edge * edge * 0.5);
-  return distanceToCenter < 0.5 ? 1.0 - rounded : rounded;
-}
+uniform mat3 cameraRotation;
+uniform vec2 projectionScale;
+varying vec2 screenPosition;
 
 void main() {
-  vec3 ray = normalize(vRay);
-  float angle = atan(ray.x, -ray.z);
-  float elevation = atan(ray.y, length(ray.xz));
-  float x = equirectangular
-    ? angle / 6.28318530
-    : mirror(0.5 + angle / photoExtent.x);
-  float y = equirectangular
-    ? 0.5 + elevation / 3.14159265
-    : clamp(0.54 + elevation / photoExtent.y, 0.001, 0.999);
-  vec3 color = texture2D(photo, vec2(x, y)).rgb;
+  vec3 ray = cameraRotation * vec3(screenPosition * projectionScale, -1.0);
+  vec2 uv = vec2(
+    0.5 + atan(ray.x, -ray.z) / 6.28318530,
+    0.5 + atan(ray.y, length(ray.xz)) / 3.14159265
+  );
+  // Longitude wraps at the back of the panorama. Subtract a whole turn from
+  // the gradient there so the seam samples the same mip level as its neighbors.
+  vec2 across = dFdx(uv);
+  vec2 down = dFdy(uv);
+  across.x -= round(across.x);
+  down.x -= round(down.x);
+  vec3 color = textureGrad(photo, uv, across, down).rgb;
   vec3 night = mix(vec3(dot(color, vec3(0.28, 0.57, 0.15))), color, 0.66);
   night *= vec3(0.30, 0.41, 0.57);
   gl_FragColor = vec4(mix(night, color, daylight), 1.0);
@@ -114,23 +106,27 @@ export function createSafariWorld(
   const camera = new THREE.PerspectiveCamera(55, 1, 0.12, 76);
   const projected = new THREE.Vector3();
   const cameraSpace = new THREE.Vector3();
-  const skyGeometry = new THREE.SphereGeometry(58, 48, 24);
+  const skyGeometry = new THREE.BufferGeometry();
+  skyGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3),
+  );
+  const cameraRotation = new THREE.Matrix3();
+  const projectionScale = new THREE.Vector2();
   const skyMaterial = new THREE.ShaderMaterial({
     uniforms: {
       photo: { value: null as THREE.Texture | null },
       daylight: { value: 1 },
-      photoExtent: { value: new THREE.Vector2() },
-      equirectangular: { value: false },
+      cameraRotation: { value: cameraRotation },
+      projectionScale: { value: projectionScale },
     },
     vertexShader: panoramaVertex,
     fragmentShader: panoramaFragment,
-    side: THREE.BackSide,
     depthWrite: false,
     depthTest: false,
   });
   const sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.visible = false;
-  sky.renderOrder = -10;
   sky.frustumCulled = false;
   scene.add(sky);
   let renderer: THREE.WebGLRenderer | null = null;
@@ -154,13 +150,17 @@ export function createSafariWorld(
   }
 
   function preparePanorama(image: HTMLImageElement) {
-    if (!renderer || panoramaTexture?.image === image || preparedTexture?.image === image) return;
+    if (
+      !renderer ||
+      !isSafariPanorama(image.src) ||
+      panoramaTexture?.image === image ||
+      preparedTexture?.image === image
+    ) return;
     preparedTexture?.dispose();
     preparedTexture = new THREE.Texture(image);
     preparedTexture.colorSpace = THREE.SRGBColorSpace;
-    if (/-360\.webp(?:[?#]|$)/i.test(image.src)) {
-      preparedTexture.wrapS = THREE.RepeatWrapping;
-    }
+    preparedTexture.wrapS = THREE.RepeatWrapping;
+    preparedTexture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     preparedTexture.needsUpdate = true;
     if (canRender) renderer.initTexture(preparedTexture);
   }
@@ -169,16 +169,13 @@ export function createSafariWorld(
   try {
     const context = canvas.getContext("webgl2", {
       alpha: true,
-      antialias: true,
+      depth: false,
     });
     if (context) {
       renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
         context,
         canvas,
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setClearColor("#000000", 0);
       renderer.setSize(1, 1, false);
       host.append(canvas);
@@ -202,19 +199,11 @@ export function createSafariWorld(
       if (!renderer || panoramaTexture?.image === image) return;
       preparePanorama(image);
       panoramaTexture?.dispose();
-      panoramaTexture = preparedTexture;
+      panoramaTexture = preparedTexture?.image === image ? preparedTexture : null;
+      if (!panoramaTexture) preparedTexture?.dispose();
       preparedTexture = null;
       skyMaterial.uniforms.photo.value = panoramaTexture;
-      skyMaterial.uniforms.equirectangular.value =
-        panoramaTexture?.wrapS === THREE.RepeatWrapping;
-
-      // Each repeated half-turn covers a whole landscape. The angular extent
-      // in each axis follows the source aspect ratio, with extra vertical room
-      // for narrow, tall viewports and wide fallback images.
-      const aspect = image.naturalWidth / image.naturalHeight;
-      const verticalExtent = Math.max(1.5, Math.PI / aspect);
-      skyMaterial.uniforms.photoExtent.value.set(Math.PI, verticalExtent);
-      sky.visible = true;
+      sky.visible = Boolean(panoramaTexture);
     },
     resize(nextWidth: number, nextHeight: number) {
       width = Math.max(1, nextWidth);
@@ -222,7 +211,17 @@ export function createSafariWorld(
       camera.aspect = width / height;
       camera.fov = camera.aspect < 0.75 ? 69 : 55;
       camera.updateProjectionMatrix();
-      renderer?.setSize(width, height, false);
+      const projection = camera.projectionMatrix.elements;
+      projectionScale.set(1 / projection[0], 1 / projection[5]);
+      if (renderer) {
+        const pixelRatio = Math.min(
+          window.devicePixelRatio || 1,
+          2,
+          Math.sqrt(MAX_RENDER_PIXELS / (width * height)),
+        );
+        renderer.setPixelRatio(pixelRatio);
+        renderer.setSize(width, height, false);
+      }
     },
     light(isDay: boolean) {
       skyMaterial.uniforms.daylight.value = isDay ? 1 : 0;
@@ -242,8 +241,8 @@ export function createSafariWorld(
         0,
         "YXZ",
       );
-      sky.position.copy(camera.position);
       camera.updateMatrixWorld();
+      cameraRotation.setFromMatrix4(camera.matrixWorld);
       if (canRender) renderer?.render(scene, camera);
     },
     locate(

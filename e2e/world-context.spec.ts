@@ -12,16 +12,30 @@ test("reveals the globe after the Earth textures are ready", async ({ page }) =>
     await route.continue();
   });
 
+  const loader = page.locator('.map-loading[data-fullscreen="true"]');
+  const app = page.locator(".expedition-app");
+  const startedAt = Date.now();
   try {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator(".maplibregl-canvas")).toBeAttached();
-    await expect(page.getByText("Cargando el globo…", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+    await expect(loader.getByRole("status")).toHaveText("Preparando la expedición…");
+    expect(await loader.boundingBox()).toEqual({
+      x: 0, y: 0, ...page.viewportSize(),
+    });
+    await expect(app).toHaveAttribute("inert", "");
   } finally {
     releaseTextures();
   }
   await expect(page.locator(".maplibregl-ctrl-attrib-inner")).toContainText("NASA Earth Observatory");
-  await expect(page.getByText("Cargando el globo…", { exact: true })).toBeHidden();
+  await expect(loader).toHaveAttribute("data-active", "false");
+  await expect(app).not.toHaveAttribute("inert", "");
+  expect(Date.now() - startedAt).toBeGreaterThanOrEqual(2_000);
+  await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegación principal" }).getByRole("button", { name: "Safari" })).toHaveCount(0);
+  const modes = page.locator(".world-preview-actions");
+  await expect(modes.getByRole("button", { name: "Explorar a pie" })).toBeVisible();
+  await modes.getByRole("button", { name: "Safari", exact: true }).click();
+  await expect(page).toHaveURL(/view=safari$/);
 });
 
 test("keeps regional and globe zoom limits in their own views", async ({

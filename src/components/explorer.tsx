@@ -55,6 +55,7 @@ import { EXPEDITIONS } from "@/lib/expeditions";
 import { buildExpeditionPostcard } from "@/lib/expedition-postcard";
 import { getFieldSite } from "@/lib/field-sites";
 import { SAFARI_ZONES } from "@/lib/safari-zones";
+import { getExpeditionCatalog } from "@/lib/safari-roster";
 import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
@@ -154,12 +155,11 @@ function subscribeToClock(onChange: () => void) {
 const inactiveClock = () => () => {};
 const serverClock = () => null;
 const CATALOG_SIZE = EXPEDITIONS.reduce(
-  (total, region) => total + region.encounters.length,
+  (total, region) => total + getExpeditionCatalog(region).length,
   0,
 );
 const NAV = [
   { id: "explore" as const, label: "Mapa", icon: Compass },
-  { id: "safari" as const, label: "Safari", icon: Binoculars },
   { id: "atlas" as const, label: "Mi atlas", icon: BookOpen },
 ];
 
@@ -191,7 +191,7 @@ function ExpeditionApp() {
     EXPEDITIONS.find((item) => item.id === params.get("region")) ??
     EXPEDITIONS[0];
   const selected =
-    expedition.encounters.find((item) => item.id === params.get("encounter")) ??
+    getExpeditionCatalog(expedition).find((item) => item.id === params.get("encounter")) ??
     null;
   const { progress, update, storageError } = useResearch();
   const [activeTab, setTab] = useState<Exclude<Tab, "radar">>("explore");
@@ -199,6 +199,13 @@ function ExpeditionApp() {
   const tab = view === "radar" ? "radar" : activeTab;
   const terrainView = view === "field" || view === "safari" ? view : undefined;
   const safariOpen = terrainView === "safari";
+  const [entryElapsed, setEntryElapsed] = useState(false);
+  const [initialMapReady, setInitialMapReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setEntryElapsed(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const entryActive = !terrainView && (!entryElapsed || !initialMapReady);
   const [safariMode, setSafariMode] = useState<SafariMode>("live");
   const [search, setSearch] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
@@ -372,7 +379,7 @@ function ExpeditionApp() {
   const allEncounters = useMemo(
     () =>
       EXPEDITIONS.flatMap((region) =>
-        region.encounters.map((encounter) => ({ encounter, region })),
+        getExpeditionCatalog(region).map((encounter) => ({ encounter, region })),
       ),
     [],
   );
@@ -561,7 +568,7 @@ function ExpeditionApp() {
     setTeamOpen(false);
   }
   function observeInTerrain(encounterId: string) {
-    const encounter = expedition.encounters.find(
+    const encounter = getExpeditionCatalog(expedition).find(
       (item) => item.id === encounterId,
     );
     if (encounter) selectEncounter(encounter);
@@ -644,7 +651,7 @@ function ExpeditionApp() {
     <MotionConfig reducedMotion="user">
       <div
         className="expedition-app"
-        inert={fieldOpen || landingBusy}
+        inert={fieldOpen || landingBusy || entryActive}
         data-landing={currentLanding?.phase === "approach"}
         data-landing-view={currentLanding?.view}
       >
@@ -669,10 +676,7 @@ function ExpeditionApp() {
             {NAV.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => {
-                  if (id === "safari") enterField(expedition.id, "safari");
-                  else changeTab(id);
-                }}
+                onClick={() => changeTab(id)}
                 aria-current={
                   tab === id || (tab === "radar" && id === "explore")
                     ? "page"
@@ -732,6 +736,7 @@ function ExpeditionApp() {
             }
             landingDuration={currentLanding?.duration}
             onMapError={setMapError}
+            onInitialMapReady={() => setInitialMapReady(true)}
             onEnterField={fieldSite && tab !== "radar" ? enterField : undefined}
           />
           <div className="map-toolbar">
@@ -803,6 +808,7 @@ function ExpeditionApp() {
                 onFocusDestination={focusDestination}
                 onChoose={openDestinationFromGlobe}
                 onLand={(id) => enterField(id)}
+                onSafari={(id) => enterField(id, "safari")}
                 weather={currentWeather}
                 weatherPending={weather.isPending}
                 localTime={localTime}
@@ -857,24 +863,34 @@ function ExpeditionApp() {
                 </div>
                 <div className="panel-body">
                   {fieldSite && (
-                    <button
-                      className="field-enter"
-                      onPointerEnter={() => prepareField(expedition.id)}
-                      onFocus={() => prepareField(expedition.id)}
-                      onClick={() => enterField()}
-                    >
-                      <span className="field-enter-icon">
-                        <Binoculars size={22} />
-                      </span>
-                      <span>
-                        <strong>{fieldSite.action}</strong>
-                        <small>
-                          {fieldSite.name} · {expedition.encounters.length}{" "}
-                          avistamientos
-                        </small>
-                      </span>
-                      <ArrowRight size={17} />
-                    </button>
+                    <div className="regional-mode-actions">
+                      <button
+                        type="button"
+                        className="field-enter"
+                        onPointerEnter={() => prepareField(expedition.id)}
+                        onFocus={() => prepareField(expedition.id)}
+                        onClick={() => enterField()}
+                      >
+                        <Binoculars size={20} aria-hidden="true" />
+                        <span>
+                          <strong>{fieldSite.action}</strong>
+                          <small>Encuentros fijos</small>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="field-enter"
+                        onPointerEnter={() => prepareField(expedition.id, "safari")}
+                        onFocus={() => prepareField(expedition.id, "safari")}
+                        onClick={() => enterField(expedition.id, "safari")}
+                      >
+                        <Radar size={20} aria-hidden="true" />
+                        <span>
+                          <strong>Safari</strong>
+                          <small>Avistamientos rotativos</small>
+                        </span>
+                      </button>
+                    </div>
                   )}
                   <div className="map-side-actions">
                     <button type="button" onClick={openRadar}>
@@ -1064,7 +1080,7 @@ function ExpeditionApp() {
                         }
                         className={`${regionProgress.complete ? "earned" : ""} ${atlasRegion === region.id ? "chosen" : ""}`}
                         title={region.name}
-                        aria-label={`Filtrar atlas por ${region.name}. ${regionProgress.registered} de ${region.encounters.length} registradas`}
+                        aria-label={`Filtrar atlas por ${region.name}. ${regionProgress.registered} de ${getExpeditionCatalog(region).length} registradas`}
                         aria-pressed={atlasRegion === region.id}
                         style={
                           { "--stamp-color": region.color } as CSSProperties
@@ -1073,7 +1089,7 @@ function ExpeditionApp() {
                         <Leaf size={18} />
                         <span>{region.country}</span>
                         <small>
-                          {regionProgress.registered}/{region.encounters.length}
+                          {regionProgress.registered}/{getExpeditionCatalog(region).length}
                         </small>
                         {regionProgress.complete && <Check size={12} />}
                       </button>
@@ -1329,7 +1345,7 @@ function ExpeditionApp() {
                       <span>{region.country}</span>
                       <h3>{region.name}</h3>
                       <p>
-                        {region.encounters.length} especies ·{" "}
+                        {getExpeditionCatalog(region).length} especies ·{" "}
                         {expeditionProgress(region, progress).registered}{" "}
                         registradas
                         <ArrowUpRight size={18} />
@@ -1604,6 +1620,7 @@ function ExpeditionApp() {
           )}
         </div>
       )}
+      <MapLoading world active={entryActive} fullscreen />
     </MotionConfig>
   );
 }

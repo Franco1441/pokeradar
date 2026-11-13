@@ -9,6 +9,7 @@ import {
   List,
   Map,
   MapPin,
+  Radar,
 } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite } from "@/lib/field-sites";
@@ -34,6 +35,7 @@ interface WorldDirectoryProps {
   onFocusDestination: (id: string) => void;
   onChoose: (id: string) => void;
   onLand: (id: string) => void;
+  onSafari: (id: string) => void;
   weather?: WeatherSnapshot;
   weatherPending?: boolean;
   localTime?: string;
@@ -90,6 +92,7 @@ export default function WorldDirectory({
   onFocusDestination,
   onChoose,
   onLand,
+  onSafari,
   weather,
   weatherPending = false,
   localTime,
@@ -221,15 +224,25 @@ export default function WorldDirectory({
             {mapUnavailable ? "Ver avistamientos" : "Ver mapa"}
           </button>
           {site && (
-            <button
-              type="button"
-              className="world-preview-land"
-              onClick={() => onLand(expedition.id)}
-            >
-              <Binoculars size={15} aria-hidden="true" />
-              {site.action}
-              <ArrowUpRight size={14} aria-hidden="true" />
-            </button>
+            <>
+              <button
+                type="button"
+                className="world-preview-land"
+                onClick={() => onLand(expedition.id)}
+                title="Encuentros fijos"
+              >
+                <Binoculars size={15} aria-hidden="true" />
+                {site.action}
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onSafari(expedition.id)}
+                title="Avistamientos rotativos con radar"
+              >
+                <Radar size={15} aria-hidden="true" /> Safari
+              </button>
+            </>
           )}
         </div>
       </article>

@@ -1,9 +1,10 @@
 import { EXPEDITIONS } from './expeditions';
+import { getExpeditionCatalog } from './safari-roster';
 import type { Encounter, Expedition, ResearchProgress, ResearchRecord } from './types';
 
 export const EMPTY_PROGRESS: ResearchProgress = { version: 1, records: [], team: [] };
 const catalog = new Map(EXPEDITIONS.flatMap(expedition =>
-  expedition.encounters.map(encounter => [encounter.id, { expedition, encounter }] as const),
+  getExpeditionCatalog(expedition).map(encounter => [encounter.id, { expedition, encounter }] as const),
 ));
 
 function validRecord(value: unknown): value is ResearchRecord {
@@ -65,7 +66,7 @@ export function toggleTeam(progress: ResearchProgress, pokemonId: number): Resea
 
 export function expeditionProgress(expedition: Expedition, progress: ResearchProgress): { registered: number; typeCount: number; complete: boolean } {
   const registeredIds = new Set(progress.records.filter(record => record.expeditionId === expedition.id).map(record => record.pokemonId));
-  const encounters = expedition.encounters.filter(encounter => registeredIds.has(encounter.pokemonId));
+  const encounters = getExpeditionCatalog(expedition).filter(encounter => registeredIds.has(encounter.pokemonId));
   const typeCount = new Set(encounters.flatMap(encounter => encounter.types)).size;
   return { registered: encounters.length, typeCount, complete: encounters.length >= 3 && typeCount >= 2 };
 }

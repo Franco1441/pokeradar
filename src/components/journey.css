@@ -114,16 +114,6 @@
 .field-enter:hover {
   border-color: #6b8b8d;
 }
-.field-enter-icon {
-  display: grid;
-  place-items: center;
-  width: 45px;
-  height: 45px;
-  border: 1px solid #e8eee329;
-  border-radius: 5px;
-  color: #f1eddf;
-  background: #e7ede312;
-}
 .field-enter strong { display: block; font: 730 17px/1.12 var(--font-heading); }
 .field-enter small { display: block; margin-top: 4px; color: #d7e4df; font-size: 11px; line-height: 1.25; }
 .field-enter > svg { justify-self: end; margin-right: 3px; transition: translate 160ms; }

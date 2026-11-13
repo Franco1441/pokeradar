@@ -258,7 +258,11 @@ button:disabled { cursor: default; }
 .map-stage:not(.map-stage-world) .field-enter:hover {
   background: color-mix(in srgb, var(--expedition-color) 25%, #16363d);
 }
-.map-stage:not(.map-stage-world) .field-enter-icon { color: var(--site-accent, #dcebc0); }
+.regional-mode-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.regional-mode-actions .field-enter { grid-template-columns: 20px minmax(0, 1fr); gap: 7px; min-width: 0; padding: 9px; }
+.regional-mode-actions .field-enter:last-child { background: var(--highlight); border-color: var(--line); color: var(--green); }
+.regional-mode-actions .field-enter:last-child:hover { background: #d8e6dc; }
+.regional-mode-actions .field-enter:last-child small { color: var(--green); }
 .atlas-panel h1 { font-size: clamp(31px, 3vw, 39px); }
 .atlas-total { gap: 12px; margin: 14px 0; padding-block: 13px; }
 .atlas-stamps button { padding: 8px 1px 6px; }

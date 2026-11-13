@@ -23,7 +23,7 @@ import { artworkUrl, spriteUrl } from "@/lib/pokemon";
 import type { SafariMode, SafariSignal, SafariSnapshot } from "@/lib/safari";
 import type { Expedition } from "@/lib/types";
 import SafariFieldRadar from "./safari-field-radar";
-import { createSafariWorld, safariPanorama } from "./safari-world";
+import { createSafariWorld, isSafariPanorama, safariFallbackPanorama } from "./safari-world";
 import "./safari-walk.css";
 
 interface SafariWalkProps {
@@ -163,6 +163,8 @@ export default function SafariWalk({
     let turn = INITIAL_HEADING;
     let targetTurn = turn;
     let lastFrame = 0;
+    let width = 1;
+    let height = 1;
     let zones: SafariSnapshot["zones"] = [];
     type ZoneImage = { zone: number; image: HTMLImageElement | null };
     let pending: ZoneImage | null = null;
@@ -198,6 +200,8 @@ export default function SafariWalk({
       displayedZone = nextZone;
       if (image) {
         backdrop.src = image.src;
+        stage.dataset.spherical = String(isSafariPanorama(image.src));
+        stage.style.setProperty("--walk-panorama", `url(${JSON.stringify(image.src)})`);
         world.setPanorama(image);
       }
       flushSync(() => setZoneIndex(nextZone));
@@ -275,11 +279,10 @@ export default function SafariWalk({
       const veil = advanceTravel(time);
       const current = displayedZone ?? 0;
       world.draw(current, turn);
-      const background = safariPanorama(world.heading);
+      const background = safariFallbackPanorama(world.heading, width, height);
       stage.parentElement?.style.setProperty("--safari-heading", `${world.heading}rad`);
-      stage.style.setProperty("--walk-offset-x", `${background.x}%`);
-      stage.style.setProperty("--walk-offset-y", `${background.y}%`);
-      stage.style.setProperty("--walk-scale", String(background.scale));
+      stage.style.setProperty("--walk-panorama-width", `${background.size}px`);
+      stage.style.setProperty("--walk-panorama-left", `${background.left}px`);
       stage.style.setProperty("--walk-veil", String(veil));
       for (const { encounter, slot } of zones[current]?.signals ?? []) {
         const marker = markers.get(encounter.id);
@@ -314,7 +317,9 @@ export default function SafariWalk({
     };
 
     function resize() {
-      world.resize(stage.clientWidth, stage.clientHeight);
+      width = stage.clientWidth;
+      height = stage.clientHeight;
+      world.resize(width, height);
       schedule();
     }
     const observer = new ResizeObserver(resize);
@@ -407,6 +412,7 @@ export default function SafariWalk({
         onPointerCancel={stopLooking}
         onLostPointerCapture={stopLooking}
       >
+        <div className="safari-walk-flat" aria-hidden="true" />
         {/* eslint-disable-next-line @next/next/no-img-element -- The local WebP is the full-bleed scenery. */}
         <img
           ref={panorama}

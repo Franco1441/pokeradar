@@ -1,3 +1,4 @@
+import { getSafariEncounters } from "./safari-roster";
 import { describe, expect, it } from "vitest";
 import { EXPEDITIONS } from "./expeditions";
 import { getSafariSnapshot, SAFARI_FRESH_MS, SAFARI_RESPAWN_MS } from "./safari";
@@ -62,8 +63,12 @@ const biome: Expedition = {
 describe("safari radar", () => {
   it("keeps two front sightings and rotates in every eligible species", () => {
     for (const expedition of EXPEDITIONS) {
+      const safari = getSafariEncounters(expedition);
+      const walking = new Set(expedition.encounters.map(({ pokemonId }) => pokemonId));
+      expect(safari, expedition.id).toHaveLength(12);
+      expect(safari.some(({ pokemonId }) => walking.has(pokemonId)), expedition.id).toBe(false);
       for (const mode of ["day", "night"] as const) {
-        const eligible = expedition.encounters.filter(({ activity }) =>
+        const eligible = safari.filter(({ activity }) =>
           !activity || activity === "any" || activity === mode,
         );
         const seen = new Set<string>();

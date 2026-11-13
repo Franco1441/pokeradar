@@ -10,7 +10,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   const iguazu = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
   const base = Date.parse("2026-11-11T15:00:30Z");
   const now = Array.from({ length: 12 }, (_, index) => base + index * SAFARI_RESPAWN_MS).find((time) =>
-    getSafariSnapshot(iguazu, { mode: "night", now: time }).signals.some(({ encounter }) => encounter.pokemonId === 48),
+    getSafariSnapshot(iguazu, { mode: "night", now: time }).signals.some(({ encounter }) => encounter.pokemonId === 167),
   )!;
   await page.clock.setFixedTime(new Date(now));
   await page.route(/api\.open-meteo\.com\/v1\/forecast/, (route) =>
@@ -27,11 +27,11 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
       },
     }),
   );
-  await page.route("https://pokeapi.co/api/v2/pokemon/48/", (route) =>
+  await page.route("https://pokeapi.co/api/v2/pokemon/167/", (route) =>
     route.fulfill({
       json: {
-        id: 48,
-        name: "venonat",
+        id: 167,
+        name: "spinarak",
         height: 10,
         weight: 300,
         types: [{ type: { name: "bug" } }, { type: { name: "poison" } }],
@@ -47,7 +47,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
       },
     }),
   );
-  await page.route("https://pokeapi.co/api/v2/pokemon-species/48/", (route) =>
+  await page.route("https://pokeapi.co/api/v2/pokemon-species/167/", (route) =>
     route.fulfill({ json: { flavor_text_entries: [] } }),
   );
 
@@ -60,24 +60,24 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
 
   await radar.getByRole("button", { name: "Día", exact: true }).click();
   await expect(radar.getByText("Día de prueba")).toBeVisible();
-  const venonat = radar.getByRole("button", { name: /Venonat/ });
-  await expect(venonat).toHaveCount(0);
+  const spinarak = radar.getByRole("button", { name: /Spinarak/ });
+  await expect(spinarak).toHaveCount(0);
 
   await radar.getByRole("button", { name: "Noche", exact: true }).click();
   await expect(radar.getByText("Noche de prueba")).toBeVisible();
-  await expect(venonat).toContainText("clima favorable");
-  await venonat.click();
+  await expect(spinarak).toContainText("clima favorable");
+  await spinarak.click();
   await expect(page).toHaveURL(
-    /region=iguazu&view=radar&encounter=iguazu-venonat/,
+    /region=iguazu&view=radar&encounter=iguazu-safari-167/,
   );
-  const detail = page.getByRole("dialog", { name: "Ficha de Venonat" });
+  const detail = page.getByRole("dialog", { name: "Ficha de Spinarak" });
   await expect(detail.getByText("Estadísticas base")).toBeVisible();
   await detail.getByRole("button", { name: "Registrar avistamiento" }).click();
   await detail.getByRole("button", { name: "Volver a explorar" }).click();
   await expect(
     radar.getByRole("button", { name: "Noche", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(venonat.getByLabel("Registrado", { exact: true })).toBeVisible();
+  await expect(spinarak.getByLabel("Registrado", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/region=iguazu&view=radar$/);
 
   await radar.getByRole("button", { name: /Cambiar destino/ }).click();
@@ -93,6 +93,6 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   await page.getByRole("button", { name: "Mi atlas" }).click();
   await page.getByRole("checkbox", { name: "Registrados" }).check();
   await expect(
-    page.getByRole("button", { name: /Venonat.*Registrado/ }),
+    page.getByRole("button", { name: /Spinarak.*Registrado/ }),
   ).toBeVisible();
 });

@@ -44,9 +44,22 @@
   max-width: none;
   object-fit: cover;
   object-position: center center;
-  transform: translate3d(var(--walk-offset-x, 0%), var(--walk-offset-y, 0%), 0)
-    scale(var(--walk-scale, 1.18));
   pointer-events: none;
+}
+
+.safari-walk-flat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.safari-walk-viewport[data-spherical="true"] .safari-walk-panorama {
+  visibility: hidden;
+}
+
+.safari-walk-viewport[data-spherical="true"] .safari-walk-flat {
+  background: var(--walk-panorama) var(--walk-panorama-left) center /
+    var(--walk-panorama-width) auto repeat-x;
 }
 
 .safari-walk-world {
@@ -78,7 +91,7 @@
     radial-gradient(ellipse at 50% 45%, transparent 38%, #10262662);
 }
 
-.safari-walk[data-night="true"] .safari-walk-panorama {
+.safari-walk[data-night="true"] :is(.safari-walk-panorama, .safari-walk-flat) {
   filter: brightness(0.63) saturate(0.68) hue-rotate(5deg);
 }
 
@@ -584,10 +597,6 @@
   .safari-walk-location p,
   .safari-walk-weather {
     justify-content: flex-start;
-  }
-
-  .safari-walk-panorama {
-    object-position: calc(50% - var(--walk-offset-x, 0%) * 2) center;
   }
 
   .safari-walk-header-actions .safari-walk-glass {
