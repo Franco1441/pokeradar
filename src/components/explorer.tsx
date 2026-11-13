@@ -10,6 +10,7 @@ import {
   type CSSProperties,
 } from "react";
 import dynamic from "next/dynamic";
+import { preload } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -75,16 +76,12 @@ import ExpeditionPostcard from "./expedition-postcard";
 import WeatherPanel from "./weather-panel";
 import SafariPanel from "./safari-panel";
 import WorldDirectory from "./world-directory";
+import MapLoading from "./map-loading";
 import "./journey.css";
 
 const MapView = dynamic(() => import("./map-view"), {
   ssr: false,
-  loading: () => (
-    <div className="map-loading">
-      <Radar size={38} />
-      <span>Preparando tu expedición…</span>
-    </div>
-  ),
+  loading: () => <MapLoading world />,
 });
 const FieldScene = dynamic(() => import("./field-scene"), {
   ssr: false,
@@ -215,6 +212,11 @@ function ExpeditionApp() {
   const worldView =
     view === "world" ||
     (!terrainView && view !== "radar" && !params.has("region"));
+  useEffect(() => {
+    if (!worldView) return;
+    preload("/map/earth-day.webp", { as: "image", fetchPriority: "high" });
+    preload("/map/earth-night.webp", { as: "image", fetchPriority: "high" });
+  }, [worldView]);
   const worldDetail = worldView && tab === "explore" ? selected : null;
   const focusedDestinationId =
     worldView && params.has("region") ? expedition.id : undefined;

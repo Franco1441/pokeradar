@@ -213,6 +213,7 @@ function createProgram(
 export function createEarthSurface(
   textures: EarthTextures,
   onFailure: (error: unknown) => void,
+  onFirstFrame: () => void,
 ): CustomLayerInterface {
   type Program = ReturnType<typeof createProgram>;
   let programs = new Map<string, Program>();
@@ -222,6 +223,7 @@ export function createEarthSurface(
   let dayTexture: WebGLTexture | null = null;
   let nightTexture: WebGLTexture | null = null;
   let failed = false;
+  let drewEarth = false;
   let timer = 0;
   let solarMinute = -1;
   let sunDirection: [number, number, number] = [0, 0, 1];
@@ -330,6 +332,10 @@ export function createEarthSurface(
         );
         gl.bindVertexArray(null);
         gl.activeTexture(gl.TEXTURE0);
+        if (!drewEarth) {
+          drewEarth = true;
+          queueMicrotask(onFirstFrame);
+        }
       } catch (error) {
         failed = true;
         queueMicrotask(() => onFailure(error));
@@ -435,10 +441,18 @@ function deferStreetLabels(map: import("maplibre-gl").Map) {
 export function mountPhotographicGlobe(
   map: import("maplibre-gl").Map,
   mountFallback: () => () => void,
+  onReady: () => void,
 ) {
   let disposed = false;
+  let fellBack = false;
   let disposeFallback: (() => void) | undefined;
   let restoreStreetLabels: (() => void) | undefined;
+
+  function ready() {
+    if (disposed) return;
+    window.clearTimeout(textureTimeout);
+    onReady();
+  }
 
   function removePhotographicLayers() {
     if (!map.getStyle()) return;
@@ -450,15 +464,27 @@ export function mountPhotographicGlobe(
   }
 
   function useFallback() {
-    if (disposed || disposeFallback) return;
-    removePhotographicLayers();
-    disposeFallback = mountFallback();
+    if (disposed || fellBack) return;
+    fellBack = true;
+    try {
+      removePhotographicLayers();
+      disposeFallback = mountFallback();
+    } catch {
+      // The base globe is still available if the optional lighting fails.
+    } finally {
+      ready();
+    }
   }
+
+  const textureTimeout = window.setTimeout(() => {
+    // The layer may already be installed while the map is zoomed in.
+    if (!map.getLayer(EARTH_SURFACE_LAYER)) useFallback();
+  }, 6000);
 
   void loadEarthTextures()
     .then((textures) => {
-      if (disposed) return;
-      map.addLayer(createEarthSurface(textures, useFallback));
+      if (disposed || fellBack) return;
+      map.addLayer(createEarthSurface(textures, useFallback, ready));
       restoreStreetLabels = deferStreetLabels(map);
       addEarthLabels(map);
     })
@@ -466,6 +492,7 @@ export function mountPhotographicGlobe(
 
   return () => {
     disposed = true;
+    window.clearTimeout(textureTimeout);
     removePhotographicLayers();
     disposeFallback?.();
   };

@@ -12,6 +12,7 @@
   --map-brass: #e7bd7f;
   --map-shadow: 0 2px 8px #101c221c;
   background: #e7e3d8;
+  isolation: isolate;
 }
 
 .map-surface.has-space {
@@ -64,7 +65,6 @@
     radial-gradient(ellipse at 55% 44%, #080e16, #030509 67%, #020306);
 }
 
-.is-globe .map-loading { color: #e9e5d9; background: transparent; }
 .is-globe .map-canvas .maplibregl-ctrl-top-right { top: 68px; }
 .is-globe .maplibregl-ctrl-compass { display: none; }
 .is-globe .maplibregl-canvas-container.maplibregl-interactive { cursor: grab; }
@@ -324,31 +324,6 @@
 .trailhead-marker:focus-visible { border-color: var(--map-brass); background: #263b44; }
 .trailhead-marker:focus-visible { outline: 2px solid var(--map-ink); outline-offset: 3px; }
 
-.map-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 18px;
-  background: #e7e3d8;
-  color: var(--map-slate);
-  font-size: 13px;
-  pointer-events: none;
-}
-
-.map-loading-ring {
-  width: 42px;
-  height: 42px;
-  border: 2px solid #a3b3b580;
-  border-top-color: #ae7c43;
-  border-radius: 50%;
-  animation: map-spin 1.2s linear infinite;
-}
-
-@keyframes map-spin { to { transform: rotate(360deg); } }
-
 .map-retry {
   position: absolute;
   top: 30px;
@@ -472,7 +447,6 @@
   .is-safari .maplibregl-canvas { transition: none; }
 
   .pokemon-marker.has-confirmation .marker-inner::before,
-  .map-loading-ring,
   .safari-signal-enter .marker-inner,
   .is-safari .pokemon-marker .marker-inner::after { animation: none; }
 }

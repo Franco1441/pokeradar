@@ -1,0 +1,66 @@
+.map-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: #e7e3d8;
+  color: #36484d;
+  pointer-events: none;
+  transition: opacity 240ms ease, visibility 0s linear 240ms;
+}
+
+.map-loading[data-world="true"] {
+  background: radial-gradient(ellipse at 65% 46%, #172b35, #070c13 56%, #030509);
+  color: #e6ede8;
+}
+
+.map-loading[data-active="false"] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.map-loading-content {
+  display: grid;
+  justify-items: center;
+  gap: 13px;
+  margin-inline-start: min(30vw, 410px);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.map-loading-scan {
+  position: relative;
+  display: grid;
+  width: 65px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.map-loading-scan::after {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: conic-gradient(from 30deg, transparent 65%, #90cfb253);
+  animation: map-loading-sweep 1.8s linear infinite;
+  content: "";
+}
+
+.map-loading[data-active="false"] .map-loading-scan::after {
+  animation: none;
+}
+
+@keyframes map-loading-sweep {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 700px) {
+  .map-loading-content { margin: 0 0 min(36vh, 260px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-loading { transition: none; }
+  .map-loading-scan::after { animation: none; }
+}

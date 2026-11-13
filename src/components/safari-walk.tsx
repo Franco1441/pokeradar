@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
+import { flushSync } from "react-dom";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
@@ -40,12 +41,8 @@ interface SafariWalkProps {
 }
 
 type WalkController = {
-  setScene: (
-    zone: number,
-    image: string,
-    signals: SafariSnapshot["signals"],
-    isDay: boolean,
-  ) => void;
+  setScene: (zones: SafariSnapshot["zones"], isDay: boolean) => void;
+  travelTo: (zone: number) => void;
   turnBy: (delta: number) => void;
 };
 
@@ -58,6 +55,8 @@ const MODES = [
 const TURN_PER_VIEWPORT = Math.PI * 0.68;
 const KEY_TURN = 0.12;
 const INITIAL_HEADING = -0.16;
+const COVER_MS = 240;
+const REVEAL_MS = 300;
 
 function loadPanorama(source: string) {
   const image = new Image();
@@ -157,7 +156,6 @@ export default function SafariWalk({
 
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let frame = 0;
-    let current = 0;
     let displayedZone: number | undefined;
     let requestedZone: number | undefined;
     let request = 0;
@@ -165,10 +163,14 @@ export default function SafariWalk({
     let turn = INITIAL_HEADING;
     let targetTurn = turn;
     let lastFrame = 0;
-    let signals: SafariSnapshot["signals"] = [];
+    let zones: SafariSnapshot["zones"] = [];
     type ZoneImage = { zone: number; image: HTMLImageElement | null };
     let pending: ZoneImage | null = null;
-    let travel: (ZoneImage & { start: number; from: number; swapped: boolean }) | null = null;
+    let travel: {
+      destination: ZoneImage;
+      phase: "cover" | "swap" | "reveal";
+      start: number;
+    } | null = null;
     const panoramas = new Map<string, Promise<HTMLImageElement>>();
 
     const world = createSafariWorld(
@@ -184,7 +186,10 @@ export default function SafariWalk({
     function getPanorama(source: string) {
       const cached = panoramas.get(source);
       if (cached) return cached;
-      const loading = loadPanorama(source);
+      const loading = loadPanorama(source).catch((error: unknown) => {
+        panoramas.delete(source);
+        throw error;
+      });
       panoramas.set(source, loading);
       return loading;
     }
@@ -195,10 +200,67 @@ export default function SafariWalk({
         backdrop.src = image.src;
         world.setPanorama(image);
       }
-      if (!reportedReady.current) {
-        reportedReady.current = true;
-        readyCallback.current?.();
+      flushSync(() => setZoneIndex(nextZone));
+    }
+
+    function travelTo(nextZone: number) {
+      const next = zones[nextZone];
+      if (!next || requestedZone === nextZone) return;
+      requestedZone = nextZone;
+      pending = null;
+      const sequence = ++request;
+      if (nextZone === displayedZone && travel?.phase !== "reveal") return;
+
+      for (const { encounter } of next.signals) {
+        const artwork = new Image();
+        artwork.src = artworkUrl(encounter.pokemonId);
       }
+      void getPanorama(next.image)
+        .catch(() => getPanorama(site.image))
+        .catch(() => null)
+        .then((image) => {
+          if (disposed || sequence !== request) return;
+          pending = { zone: nextZone, image };
+          schedule();
+        });
+    }
+
+    function advanceTravel(time: number) {
+      if (!travel) {
+        const destination = pending;
+        pending = null;
+        if (!destination || destination.zone === displayedZone) return 0;
+        if (displayedZone === undefined || motion.matches) {
+          showPanorama(destination);
+          return 0;
+        }
+        if (destination.image) world.preparePanorama(destination.image);
+        // Give the upload its own frame while the outgoing scene is still visible.
+        travel = { destination, phase: "cover", start: performance.now() };
+        return 0;
+      }
+
+      if (travel.phase === "cover") {
+        const progress = motion.matches ? 1 : Math.min((time - travel.start) / COVER_MS, 1);
+        if (progress === 1) travel.phase = "swap";
+        return progress * progress * (3 - 2 * progress);
+      }
+
+      if (travel.phase === "swap") {
+        // The previous frame fully covered both the landscape and its Pokémon.
+        const destination = pending ?? travel.destination;
+        if (destination.zone === requestedZone && destination.zone !== displayedZone) {
+          showPanorama(destination);
+          pending = null;
+        }
+        travel.phase = "reveal";
+        travel.start = performance.now();
+        return 1;
+      }
+
+      const progress = motion.matches ? 1 : Math.min((time - travel.start) / REVEAL_MS, 1);
+      if (progress === 1) travel = null;
+      return 1 - progress * progress * (3 - 2 * progress);
     }
 
     function draw(time: number) {
@@ -210,29 +272,8 @@ export default function SafariWalk({
         ? targetTurn
         : turn + (targetTurn - turn) * (1 - Math.exp(-elapsed / 57));
 
-      if (!travel && pending) {
-        if (displayedZone === undefined || motion.matches) {
-          current = pending.zone;
-          showPanorama(pending);
-        } else if (displayedZone !== pending.zone) {
-          travel = { ...pending, start: time, from: current, swapped: false };
-        }
-        pending = null;
-      }
-
-      let veil = 0;
-      if (travel) {
-        const progress = motion.matches ? 1 : Math.min((time - travel.start) / 670, 1);
-        const ease = progress * progress * (3 - 2 * progress);
-        current = travel.from + (travel.zone - travel.from) * ease;
-        veil = Math.min(1, progress * 2.5, (1 - progress) * 2.5);
-        if (progress >= 0.5 && !travel.swapped) {
-          showPanorama(travel);
-          travel.swapped = true;
-        }
-        if (progress === 1) travel = null;
-      }
-
+      const veil = advanceTravel(time);
+      const current = displayedZone ?? 0;
       world.draw(current, turn);
       const background = safariPanorama(world.heading);
       stage.parentElement?.style.setProperty("--safari-heading", `${world.heading}rad`);
@@ -240,12 +281,10 @@ export default function SafariWalk({
       stage.style.setProperty("--walk-offset-y", `${background.y}%`);
       stage.style.setProperty("--walk-scale", String(background.scale));
       stage.style.setProperty("--walk-veil", String(veil));
-      for (const { encounter, slot } of signals) {
+      for (const { encounter, slot } of zones[current]?.signals ?? []) {
         const marker = markers.get(encounter.id);
         if (!marker) continue;
-        const location = displayedZone === requestedZone && requestedZone !== undefined
-          ? world.locate(encounter, requestedZone, slot, requestedZone)
-          : null;
+        const location = world.locate(encounter, current, slot, current);
         marker.style.visibility = location ? "visible" : "hidden";
         if (!location) continue;
         marker.style.setProperty("--sighting-x", `${location.x}px`);
@@ -253,28 +292,21 @@ export default function SafariWalk({
         marker.style.setProperty("--sighting-size", `${location.size}px`);
         marker.style.setProperty("--sighting-presence", String(location.opacity));
       }
+      if (!reportedReady.current && displayedZone !== undefined) {
+        reportedReady.current = true;
+        readyCallback.current?.();
+      }
       if (travel || pending || rotationPending) schedule();
     }
 
     controller.current = {
-      setScene(nextZone, source, nextSignals, isDay) {
-        signals = nextSignals;
+      setScene(nextZones, isDay) {
+        zones = nextZones;
         world.light(isDay);
-        if (nextZone !== requestedZone) {
-          requestedZone = nextZone;
-          pending = null;
-          const sequence = ++request;
-          void getPanorama(source)
-            .catch(() => getPanorama(site.image))
-            .catch(() => null)
-            .then((image) => {
-              if (disposed || sequence !== request) return;
-              pending = { zone: nextZone, image };
-              schedule();
-            });
-        }
+        if (requestedZone === undefined) travelTo(0);
         schedule();
       },
+      travelTo,
       turnBy(delta) {
         targetTurn += delta;
         schedule();
@@ -302,8 +334,8 @@ export default function SafariWalk({
   }, [expedition.id, markers, site.image]);
 
   useEffect(() => {
-    controller.current?.setScene(zoneIndex, zone.image, zone.signals, snapshot.isDay);
-  }, [zoneIndex, zone.image, zone.signals, snapshot.isDay]);
+    controller.current?.setScene(snapshot.zones, snapshot.isDay);
+  }, [snapshot.zones, snapshot.isDay]);
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
     if (
@@ -474,7 +506,7 @@ export default function SafariWalk({
           nextRefreshAt={snapshot.nextRefreshAt}
           activeZone={zoneIndex}
           registeredIds={registeredIds}
-          onTravel={setZoneIndex}
+          onTravel={(nextZone) => controller.current?.travelTo(nextZone)}
           onOpenRadar={onOpenRadar}
         />
       </div>

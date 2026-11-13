@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
+import { getPokemonPreview } from "@/lib/pokemon-previews";
 import type { FieldSite } from "@/lib/field-sites";
 import type { Expedition } from "@/lib/types";
 import "./field-scene.css";
@@ -84,7 +85,7 @@ export default function FieldScene({
     const visibleSpots = site.sightings.flatMap(([encounterId, x, y]) => {
       const encounter = encounters.get(encounterId);
       return encounter
-        ? [{ ...encounter, x, y, label: encounter.name, observation: encounter.rationale, hidden: false }]
+        ? [{ ...encounter, x, y, label: encounter.name, hidden: false as const }]
         : [];
     });
     return [...hiddenSpots, ...visibleSpots].sort((left, right) => left.x - right.x);
@@ -147,6 +148,8 @@ export default function FieldScene({
     registeredIds.includes(spot.pokemonId),
   ).length;
   const revealed = revealedIndex === null ? null : spots[revealedIndex];
+  const preview = revealed && (getPokemonPreview(revealed.pokemonId)
+    ?? ("observation" in revealed ? revealed.observation : undefined));
   const revealedIsRegistered = Boolean(
     revealed && registeredIds.includes(revealed.pokemonId),
   );
@@ -503,7 +506,7 @@ export default function FieldScene({
               </p>
             )}
             <h3>{revealed.name}</h3>
-            <p>{revealed.observation}</p>
+            {preview && <p>{preview}</p>}
           </div>
           <div className="field-discovery-actions">
             <button

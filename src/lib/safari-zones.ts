@@ -21,7 +21,7 @@ export const SAFARI_ZONES: Readonly<Partial<Record<string, readonly SafariZone[]
   namib: [
     { id: "pie", name: "Pie de la duna", coordinates: [15.28, -24.724], image: "/safari/namib-pie.webp" },
     { id: "cresta", name: "Cresta de arena", coordinates: [15.315, -24.73], image: "/safari/namib-cresta.webp" },
-    { id: "cuenca", name: "Cuenca seca", coordinates: [15.28, -24.743], image: "/safari/namib-cuenca.webp" },
+    { id: "cuenca", name: "Cuenca seca", coordinates: [15.28, -24.743], image: "/safari/namib-cuenca-360.webp" },
   ],
   zermatt: [
     { id: "glaciar", name: "Borde del glaciar", coordinates: [7.733, 45.988], image: "/safari/zermatt-glaciar.webp" },

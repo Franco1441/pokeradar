@@ -2,6 +2,28 @@ import { expect, test } from "@playwright/test";
 
 test.use({ reducedMotion: "reduce" });
 
+test("reveals the globe after the Earth textures are ready", async ({ page }) => {
+  let releaseTextures = () => {};
+  const textureGate = new Promise<void>((resolve) => {
+    releaseTextures = resolve;
+  });
+  await page.route(/\/map\/earth-(day|night)\.webp$/, async (route) => {
+    await textureGate;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".maplibregl-canvas")).toBeAttached();
+    await expect(page.getByText("Cargando el globo…", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+  } finally {
+    releaseTextures();
+  }
+  await expect(page.locator(".maplibregl-ctrl-attrib-inner")).toContainText("NASA Earth Observatory");
+  await expect(page.getByText("Cargando el globo…", { exact: true })).toBeHidden();
+});
+
 test("keeps regional and globe zoom limits in their own views", async ({
   page,
 }) => {

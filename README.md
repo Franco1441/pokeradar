@@ -16,7 +16,7 @@ Elegí la idea de un diario de expedición para darle un propósito a cada movim
 
 ### Dos formas de explorar el terreno
 
-**Explorar a pie** lleva al punto de entrada de la expedición desde la tarjeta del globo, el marcador del sendero o con doble clic en el marcador del destino. La cámara se acerca y el fundido da paso a una escena panorámica con entre doce y quince Pokémon por región. Tres se descubren al examinar pistas del entorno. Podés recorrerla con arrastre o teclado y pasar a la siguiente pista después de registrar un hallazgo.
+**Explorar a pie** lleva al punto de entrada de la expedición desde la tarjeta del globo, el marcador del sendero o con doble clic en el marcador del destino. La cámara se acerca y el fundido da paso a una escena panorámica con entre doce y quince Pokémon por región. Tres se descubren al examinar pistas del entorno. Cada avistamiento presenta un dato de la especie antes de abrir su ficha. Podés recorrer la escena con arrastre o teclado y pasar a la siguiente pista después de registrar un hallazgo.
 
 **Safari** agrega tres zonas por expedición. Cada una de las 21 zonas tiene su propio paisaje ilustrativo. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
 
@@ -55,7 +55,7 @@ El catálogo local contiene 93 especies distribuidas por hábitat. Sus identific
 | TypeScript estricto | Contratos de datos, estados y límites entre componentes |
 | Tailwind CSS y CSS | Estilos globales y utilidades accesibles, con hojas específicas para las vistas |
 | MapLibre GL JS y OpenFreeMap | Cartografía vectorial, marcadores y movimientos de cámara |
-| Three.js | Cámara, recorrido y geometría de Safari |
+| Three.js | Cámara panorámica y proyección de los avistamientos de Safari |
 | Framer Motion, hoy Motion para React | Transiciones de paneles, estadísticas y registro con `motion/react` |
 | TanStack Query | Caché de datos remotos, cancelación, carga y reintentos |
 | Radix UI | Primitivas accesibles para diálogos |
@@ -121,7 +121,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 18 pruebas de navegador recorren los 93 avistamientos de campo y verifican los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
+Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 19 pruebas de navegador recorren los 93 avistamientos de campo y verifican la aparición del globo al cargar sus texturas, los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
 
 ## 3. Uso de inteligencia artificial (AI-Native Workflow)
 
@@ -142,10 +142,11 @@ Con una semana adicional ampliaría el trabajo en estas direcciones.
 2. Medir el tiempo hasta que el mapa se puede usar y los cambios de zona en celulares de gama media. Usar esas mediciones para ajustar el peso de las texturas y el momento de su carga.
 3. Validar en CI que los identificadores y las imágenes de cada expedición sigan disponibles. Agregar pruebas de teclado y conexión intermitente antes de ampliar el catálogo.
 4. Diseñar sincronización opcional entre dispositivos y una migración que conserve el diario local existente.
+5. Ampliar el catálogo y definir probabilidades de aparición por zona, con un tratamiento específico para Pokémon variocolor y legendarios.
 
 ## Fuentes y créditos
 
-- Datos y recursos de Pokémon mediante PokéAPI y su repositorio de sprites. [PokéAPI](https://pokeapi.co/docs/v2) · [Sprites](https://github.com/PokeAPI/sprites)
+- Datos y recursos de Pokémon mediante PokéAPI y su repositorio de sprites. Los textos breves de campo adaptan descripciones de la Pokédex. [PokéAPI](https://pokeapi.co/docs/v2) · [Sprites](https://github.com/PokeAPI/sprites)
 - Cartografía vectorial mediante OpenFreeMap y datos de OpenStreetMap. Las atribuciones se conservan en el mapa. [OpenFreeMap](https://openfreemap.org/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
 - Texturas del globo de NASA Earth Observatory. Blue Marble Next Generation aporta color natural, topografía y batimetría. Black Marble 2016 aporta las luces nocturnas, con imágenes de Joshua Stevens y datos Suomi NPP VIIRS de Miguel Román, NASA Goddard Space Flight Center. [Blue Marble](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography-bathymetry/) · [Black Marble](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/)
 - Datos meteorológicos de Open-Meteo. [Open-Meteo](https://open-meteo.com/)

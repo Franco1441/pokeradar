@@ -155,10 +155,14 @@ for (const destination of EXPEDITIONS) {
       await field
         .getByRole("button", { name: /^(Examinar|Observar) pista enfocada/ })
         .click();
-      const name = await field
-        .getByRole("region", { name: /^Avistamiento de / })
+      const discovery = field.getByRole("region", { name: /^Avistamiento de / });
+      const name = await discovery
         .getByRole("heading", { level: 3 })
         .textContent();
+      await expect(discovery.getByRole("paragraph")).toHaveText(/\S/);
+      if (name === "Snover") {
+        await expect(discovery.getByText(/bayas en el vientre/)).toBeVisible();
+      }
       if (name) seen.add(name);
     }
     expect([...seen].sort()).toEqual(

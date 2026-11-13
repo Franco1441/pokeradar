@@ -16,6 +16,7 @@ import { getFieldSite, type FieldSite } from "@/lib/field-sites";
 import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
 import { mountGlobeLighting, solarBoundaryCenter } from "./map-lighting";
+import MapLoading from "./map-loading";
 import {
   EARTH_SURFACE_FADE_END,
   loadEarthTextures,
@@ -332,6 +333,8 @@ export default function MapView(props: MapViewProps) {
     null,
   );
   const [ready, setReady] = useState(false);
+  const [globeReady, setGlobeReady] = useState(false);
+  const [startingInWorld, setStartingInWorld] = useState(props.worldView);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [showSpace, setShowSpace] = useState(props.worldView);
@@ -422,7 +425,11 @@ export default function MapView(props: MapViewProps) {
 
     mapRef.current = map;
     installGlobe.current = () => {
-      disposeGlobe ??= mountPhotographicGlobe(map, () => mountGlobeLighting(map));
+      disposeGlobe ??= mountPhotographicGlobe(
+        map,
+        () => mountGlobeLighting(map),
+        () => setGlobeReady(true),
+      );
     };
     let space: boolean | undefined;
     function updateBackdrop() {
@@ -466,7 +473,9 @@ export default function MapView(props: MapViewProps) {
 
     const loadingTimeout = window.setTimeout(reportFailure, 18000);
     map.once("style.load", () => {
-      if (!disposed) colorMap(map);
+      if (disposed) return;
+      colorMap(map);
+      if (latest.current.worldView) installGlobe.current?.();
     });
     map.once("load", () => {
       if (disposed) return;
@@ -899,12 +908,10 @@ export default function MapView(props: MapViewProps) {
       className={`map-surface${props.worldView ? " is-globe" : ""}${showSpace ? " has-space" : ""}${props.landingSite ? " is-descending" : ""}${props.safariPeriod ? ` is-safari is-safari-${props.safariPeriod}` : ""}`}
     >
       <div ref={container} className="map-canvas" />
-      {!ready && !error && (
-        <div className="map-loading" role="status">
-          <span className="map-loading-ring" />
-          <span>Preparando tu expedición…</span>
-        </div>
-      )}
+      <MapLoading
+        world={props.worldView}
+        active={!error && (!ready || (startingInWorld && props.worldView && !globeReady))}
+      />
       {error && (
         <div className="map-retry" role="status">
           <span>No pudimos cargar parte del mapa.</span>
@@ -912,6 +919,8 @@ export default function MapView(props: MapViewProps) {
             type="button"
             onClick={() => {
               setReady(false);
+              setGlobeReady(false);
+              setStartingInWorld(props.worldView);
               setError(false);
               setAttempt((value) => value + 1);
             }}

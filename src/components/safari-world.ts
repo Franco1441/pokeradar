@@ -1,8 +1,6 @@
 import * as THREE from "three";
 import type { Encounter } from "@/lib/types";
 
-const PATH_NEAR = 8;
-const PATH_LENGTH = 30;
 const FULL_TURN = Math.PI * 2;
 
 const STATIONS = [
@@ -12,8 +10,6 @@ const STATIONS = [
     yaw: 0.16,
     pitch: -0.066,
     elevation: 1.56,
-    width: 5.6,
-    curve: 0.9,
   },
   {
     x: 0,
@@ -21,8 +17,6 @@ const STATIONS = [
     yaw: 0.02,
     pitch: -0.074,
     elevation: 1.62,
-    width: 4.2,
-    curve: -0.7,
   },
   {
     x: 7,
@@ -30,8 +24,6 @@ const STATIONS = [
     yaw: -0.33,
     pitch: -0.053,
     elevation: 1.53,
-    width: 6.8,
-    curve: 1.45,
   },
 ] as const;
 
@@ -66,16 +58,6 @@ export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
   return -station.yaw + (SIGHTING_POSITIONS[slotIndex]?.bearing ?? 0);
 }
 
-const PROFILES = {
-  nikko: ["#594432", "#aa8765", "#305c38", "#777c65"],
-  iguazu: ["#51432c", "#93704c", "#386948", "#77876a"],
-  reykjanes: ["#343638", "#777369", "#666e46", "#696b69"],
-  namib: ["#915531", "#d09a62", "#9b8860", "#a87851"],
-  zermatt: ["#919b9c", "#d8dcda", "#738583", "#697b82"],
-  heron: ["#466766", "#a0b798", "#347b73", "#81a6a2"],
-  everglades: ["#5d5541", "#a99468", "#778044", "#787963"],
-} as const;
-
 const panoramaVertex = `
 varying vec3 vRay;
 
@@ -88,25 +70,33 @@ void main() {
 const panoramaFragment = `
 uniform sampler2D photo;
 uniform float daylight;
-uniform vec2 relief;
+uniform vec2 photoExtent;
+uniform bool equirectangular;
 varying vec3 vRay;
+
+// Fold the photo at its edges to make the full turn continuous. Round the
+// fold over a small interval so it does not create a hard crease while turning.
+float mirror(float coordinate) {
+  float distanceToCenter = abs(mod(coordinate, 2.0) - 1.0);
+  float edgeDistance = min(distanceToCenter, 1.0 - distanceToCenter);
+  float feather = 0.022;
+  if (edgeDistance >= feather) return 1.0 - distanceToCenter;
+  float edge = edgeDistance / feather;
+  float rounded = feather * (0.5 + edge * edge * 0.5);
+  return distanceToCenter < 0.5 ? 1.0 - rounded : rounded;
+}
 
 void main() {
   vec3 ray = normalize(vRay);
-  float elevation = asin(ray.y);
-  float angle = mod(atan(ray.x, -ray.z) + 6.28318530, 6.28318530);
-  float side = angle / 3.14159265;
-  float blend = smoothstep(0.39, 0.61, side) - smoothstep(1.39, 1.61, side);
-  float frontAngle = mod(angle + 3.14159265, 6.28318530) - 3.14159265;
-  float rearAngle = angle - 3.14159265;
-  // Two wide projections overlap at both edges. Sample them in their natural
-  // direction and crossfade the overlaps to make the full turn continuous.
-  float frontX = 0.5 + 0.251 * frontAngle + relief.x;
-  float rearX = 0.5 + 0.251 * rearAngle + relief.x;
-  float y = 0.54 + (elevation + relief.y) / 1.04;
-  vec3 front = texture2D(photo, clamp(vec2(frontX, y), 0.001, 0.999)).rgb;
-  vec3 back = texture2D(photo, clamp(vec2(1.0 - rearX, y + 0.025), 0.001, 0.999)).rgb;
-  vec3 color = mix(front, back, blend);
+  float angle = atan(ray.x, -ray.z);
+  float elevation = atan(ray.y, length(ray.xz));
+  float x = equirectangular
+    ? angle / 6.28318530
+    : mirror(0.5 + angle / photoExtent.x);
+  float y = equirectangular
+    ? 0.5 + elevation / 3.14159265
+    : clamp(0.54 + elevation / photoExtent.y, 0.001, 0.999);
+  vec3 color = texture2D(photo, vec2(x, y)).rgb;
   vec3 night = mix(vec3(dot(color, vec3(0.28, 0.57, 0.15))), color, 0.66);
   night *= vec3(0.30, 0.41, 0.57);
   gl_FragColor = vec4(mix(night, color, daylight), 1.0);
@@ -114,331 +104,13 @@ void main() {
 }
 `;
 
-const groundVertex = `
-varying vec2 vUv;
-varying vec3 vWorld;
-
-void main() {
-  vUv = uv;
-  vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
-  gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
-}
-`;
-
-const groundFragment = `
-uniform vec3 soil;
-uniform vec3 highlights;
-uniform float daylight;
-varying vec2 vUv;
-varying vec3 vWorld;
-
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-
-float noise(vec2 p) {
-  vec2 cell = floor(p);
-  vec2 f = fract(p);
-  vec2 blend = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(cell), hash(cell + vec2(1, 0)), blend.x),
-    mix(hash(cell + vec2(0, 1)), hash(cell + vec2(1, 1)), blend.x),
-    blend.y
-  );
-}
-
-void main() {
-  float depth = distance(vWorld.xz, cameraPosition.xz);
-  float texture = noise(vWorld.xz * 2.0) * 0.43 + noise(vWorld.xz * 12.0) * 0.29
-    + noise(vWorld.xz * 42.0) * 0.28;
-  float wear = 1.0 - smoothstep(0.0, 0.44, abs(vUv.x - 0.5));
-  vec3 color = mix(soil, highlights, smoothstep(0.08, 0.95, texture + wear * 0.12));
-  color *= mix(vec3(0.30, 0.48, 0.57), vec3(1.0), daylight);
-
-  float edge = abs(vUv.x - 0.5) + (noise(vWorld.xz * 2.4) - 0.5) * 0.09;
-  float opacity = (1.0 - smoothstep(0.16, 0.48, edge))
-    * (1.0 - smoothstep(3.2, 17.0, depth)) * 0.72;
-  gl_FragColor = vec4(color, opacity);
-  #include <colorspace_fragment>
-}
-`;
-
-const shadowVertex = `
-varying vec2 shadowUv;
-varying float depth;
-
-void main() {
-  vec4 view = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-  shadowUv = 2.0 * uv - 1.0;
-  depth = -view.z;
-  gl_Position = projectionMatrix * view;
-}
-`;
-
-const shadowFragment = `
-varying vec2 shadowUv;
-varying float depth;
-
-void main() {
-  float edge = 1.0 - smoothstep(0.24, 1.0, length(shadowUv));
-  float fade = smoothstep(0.85, 2.9, depth) * (1.0 - smoothstep(6.0, 13.5, depth));
-  gl_FragColor = vec4(0.08, 0.06, 0.05, edge * fade * 0.34);
-}
-`;
-
-function pathCenter(z: number, curve: number) {
-  return (
-    (Math.sin(-z * 0.16) * 1.22 + Math.sin(-z * 0.068) * 0.56) * curve
-  );
-}
-
-function pathHeight(z: number) {
-  return Math.sin(z * 0.24) * 0.13;
-}
-
-function pathGeometry(station: (typeof STATIONS)[number]) {
-  const rows = 42;
-  const geometry = new THREE.PlaneGeometry(station.width, PATH_LENGTH, 4, rows);
-  const points = geometry.getAttribute("position");
-  for (let i = 0; i < points.count; i++) {
-    const z = PATH_NEAR - (PATH_LENGTH * ((i / 5) | 0)) / rows;
-    const offset = points.getX(i);
-    points.setXYZ(i, pathCenter(z, station.curve) + offset, pathHeight(z), z);
-  }
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function grassGeometry() {
-  const points: number[] = [];
-  for (let i = 0; i < 5; i++) {
-    const angle = i * 2.39996;
-    const lean = 0.28 + i * 0.051;
-    const x = Math.cos(angle);
-    const z = Math.sin(angle);
-    const height = 0.51 + (i % 3) * 0.16;
-    points.push(
-      -z * 0.065,
-      0,
-      x * 0.065,
-      z * 0.065,
-      0,
-      -x * 0.065,
-      x * lean,
-      height,
-      z * lean,
-    );
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(points, 3),
-  );
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function scatter(
-  station: (typeof STATIONS)[number],
-  random: () => number,
-  geometry: THREE.BufferGeometry,
-  material: THREE.MeshStandardMaterial,
-  count: number,
-  baseColor: THREE.Color,
-  size: [number, number],
-  edgeSpread: number,
-  shadows?: THREE.InstancedMesh,
-) {
-  const object = new THREE.Object3D();
-  const instances = new THREE.InstancedMesh(geometry, material, count);
-  for (let i = 0; i < count; i++) {
-    const around = i % 3 === 0;
-    const z = PATH_NEAR - PATH_LENGTH * random();
-    const lateral = station.width * 0.3 + edgeSpread * random();
-    const side = i % 2 ? 1 : -1;
-    const scale = size[0] + (size[1] - size[0]) * random();
-    if (around) {
-      const bearing = random() * FULL_TURN;
-      const distance = 3.5 + random() * 9.5;
-      const perimeterZ = Math.cos(bearing) * distance;
-      object.position.set(
-        Math.sin(bearing) * distance,
-        pathHeight(perimeterZ),
-        perimeterZ,
-      );
-    } else {
-      object.position.set(
-        pathCenter(z, station.curve) + lateral * side,
-        pathHeight(z),
-        z,
-      );
-    }
-    object.rotation.set(0, random() * Math.PI * 2, 0);
-    object.scale.set(scale, scale * (0.64 + random() * 0.52), scale);
-    object.updateMatrix();
-    instances.setMatrixAt(i, object.matrix);
-    instances.setColorAt(
-      i,
-      baseColor.clone().multiplyScalar(0.72 + random() * 0.6),
-    );
-    if (shadows) {
-      object.position.y += 0.015;
-      object.scale.set(scale * 1.19, 1, scale * 0.98);
-      object.updateMatrix();
-      shadows.setMatrixAt(i, object.matrix);
-    }
-  }
-  return instances;
-}
-
-function rockGeometry() {
-  const geometry = new THREE.IcosahedronGeometry(0.34, 1);
-  const points = geometry.getAttribute("position");
-  for (let i = 0; i < points.count; i++) {
-    const x = points.getX(i);
-    const y = points.getY(i);
-    const z = points.getZ(i);
-    const shape = 1 + Math.sin(x * 19 + y * 14) * Math.cos(z * 17) * 0.19;
-    points.setXYZ(i, x * shape, y * shape * 0.66 + 0.12, z * shape);
-  }
-  return geometry;
-}
-
-function blendScenery(material: THREE.MeshStandardMaterial, isRock: boolean) {
-  material.onBeforeCompile = (shader) => {
-    if (isRock) {
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nvarying vec3 vStone;")
-        .replace(
-          "#include <begin_vertex>",
-          "#include <begin_vertex>\nvStone = position;",
-        );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <common>",
-        "#include <common>\nvarying vec3 vStone;",
-      );
-    }
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <color_fragment>",
-      `#include <color_fragment>
-      diffuseColor.a *= smoothstep(0.85, 2.9, vViewPosition.z)
-        * (1.0 - smoothstep(6.0, 13.5, vViewPosition.z));
-      ${isRock ? "float grain = fract(sin(dot(floor(vStone * 145.0), vec3(13.21, 71.7, 9.85))) * 4375.28); diffuseColor.rgb *= 0.80 + grain * 0.34;" : ""}`,
-    );
-  };
-  material.customProgramCacheKey = () =>
-    isRock ? "safari-stone" : "safari-grass";
-}
-
-function createScene(destination: string) {
-  const palette =
-    PROFILES[destination as keyof typeof PROFILES] ?? PROFILES.nikko;
-  const scene = new THREE.Scene();
-  let seed =
-    [...destination].reduce(
-      (value, letter) => 31 * value + letter.charCodeAt(0),
-      69,
-    ) >>> 0;
-  const random = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-  const fog = new THREE.Fog("#53665e", 3, 28);
-  scene.fog = fog;
-  const ground = new THREE.ShaderMaterial({
-    vertexShader: groundVertex,
-    fragmentShader: groundFragment,
-    uniforms: {
-      soil: { value: new THREE.Color(palette[0]) },
-      highlights: { value: new THREE.Color(palette[1]) },
-      daylight: { value: 1 },
-    },
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const plant = new THREE.MeshStandardMaterial({
-    side: THREE.DoubleSide,
-    roughness: 1,
-    flatShading: true,
-    transparent: true,
-    depthWrite: false,
-  });
-  const stone = new THREE.MeshStandardMaterial({
-    roughness: 1,
-    transparent: true,
-    depthWrite: false,
-  });
-  const contactShadow = new THREE.ShaderMaterial({
-    vertexShader: shadowVertex,
-    fragmentShader: shadowFragment,
-    transparent: true,
-    depthWrite: false,
-  });
-  blendScenery(plant, false);
-  blendScenery(stone, true);
-  const open =
-    destination === "namib" ||
-    destination === "zermatt" ||
-    destination === "reykjanes";
-  const grass = grassGeometry();
-  const rock = rockGeometry();
-  const shadow = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-  const plantColor = new THREE.Color(palette[2]);
-  const stoneColor = new THREE.Color(palette[3]);
-  for (const [index, station] of STATIONS.entries()) {
-    const group = new THREE.Group();
-    group.position.set(station.x, 0, station.z);
-    group.rotation.y = station.yaw;
-    const stones = 23 - index * 4;
-    const shadows = new THREE.InstancedMesh(shadow, contactShadow, stones);
-    shadows.renderOrder = 1;
-    const boulders = scatter(
-      station,
-      random,
-      rock,
-      stone,
-      stones,
-      stoneColor,
-      [0.13, open ? 0.94 : 0.75],
-      index === 2 ? 2.75 : 1.55,
-      shadows,
-    );
-    boulders.renderOrder = 2;
-    group.add(
-      new THREE.Mesh(pathGeometry(station), ground),
-      scatter(
-        station,
-        random,
-        grass,
-        plant,
-        (open ? 14 : 45) + index * 8,
-        plantColor,
-        [0.17, 0.72],
-        index === 1 ? 1.55 : 2.3,
-      ),
-      shadows,
-      boulders,
-    );
-    scene.add(group);
-  }
-  const ambient = new THREE.HemisphereLight("#f2edd7", "#37473f", 1.65);
-  const sun = new THREE.DirectionalLight("#fff5d7", 2);
-  sun.position.set(-8, 12, -10);
-  scene.add(ambient, sun);
-  return { scene, ground, plant, stone, contactShadow, fog, ambient, sun };
-}
-
 export function createSafariWorld(
   host: HTMLDivElement,
   destination: string,
   onRendererChange: (active: boolean) => void,
   redraw: () => void,
 ) {
-  const { scene, ground, plant, stone, contactShadow, fog, ambient, sun } =
-    createScene(destination);
+  const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, 1, 0.12, 76);
   const projected = new THREE.Vector3();
   const cameraSpace = new THREE.Vector3();
@@ -447,7 +119,8 @@ export function createSafariWorld(
     uniforms: {
       photo: { value: null as THREE.Texture | null },
       daylight: { value: 1 },
-      relief: { value: new THREE.Vector2() },
+      photoExtent: { value: new THREE.Vector2() },
+      equirectangular: { value: false },
     },
     vertexShader: panoramaVertex,
     fragmentShader: panoramaFragment,
@@ -461,7 +134,8 @@ export function createSafariWorld(
   sky.frustumCulled = false;
   scene.add(sky);
   let renderer: THREE.WebGLRenderer | null = null;
-  let panoramaTexture: THREE.Texture | null = null;
+  let panoramaTexture: THREE.Texture<HTMLImageElement> | null = null;
+  let preparedTexture: THREE.Texture<HTMLImageElement> | null = null;
   let canRender = false;
   let width = 1;
   let height = 1;
@@ -477,6 +151,18 @@ export function createSafariWorld(
     canRender = true;
     onRendererChange(true);
     redraw();
+  }
+
+  function preparePanorama(image: HTMLImageElement) {
+    if (!renderer || panoramaTexture?.image === image || preparedTexture?.image === image) return;
+    preparedTexture?.dispose();
+    preparedTexture = new THREE.Texture(image);
+    preparedTexture.colorSpace = THREE.SRGBColorSpace;
+    if (/-360\.webp(?:[?#]|$)/i.test(image.src)) {
+      preparedTexture.wrapS = THREE.RepeatWrapping;
+    }
+    preparedTexture.needsUpdate = true;
+    if (canRender) renderer.initTexture(preparedTexture);
   }
 
   const canvas = document.createElement("canvas");
@@ -511,13 +197,23 @@ export function createSafariWorld(
     get heading() {
       return heading;
     },
+    preparePanorama,
     setPanorama(image: HTMLImageElement) {
       if (!renderer || panoramaTexture?.image === image) return;
+      preparePanorama(image);
       panoramaTexture?.dispose();
-      panoramaTexture = new THREE.Texture(image);
-      panoramaTexture.colorSpace = THREE.SRGBColorSpace;
-      panoramaTexture.needsUpdate = true;
+      panoramaTexture = preparedTexture;
+      preparedTexture = null;
       skyMaterial.uniforms.photo.value = panoramaTexture;
+      skyMaterial.uniforms.equirectangular.value =
+        panoramaTexture?.wrapS === THREE.RepeatWrapping;
+
+      // Each repeated half-turn covers a whole landscape. The angular extent
+      // in each axis follows the source aspect ratio, with extra vertical room
+      // for narrow, tall viewports and wide fallback images.
+      const aspect = image.naturalWidth / image.naturalHeight;
+      const verticalExtent = Math.max(1.5, Math.PI / aspect);
+      skyMaterial.uniforms.photoExtent.value.set(Math.PI, verticalExtent);
       sky.visible = true;
     },
     resize(nextWidth: number, nextHeight: number) {
@@ -529,13 +225,7 @@ export function createSafariWorld(
       renderer?.setSize(width, height, false);
     },
     light(isDay: boolean) {
-      ground.uniforms.daylight.value = isDay ? 1 : 0;
       skyMaterial.uniforms.daylight.value = isDay ? 1 : 0;
-      ambient.intensity = isDay ? 1.65 : 0.88;
-      ambient.color.set(isDay ? "#f2edd7" : "#a3c5ee");
-      sun.intensity = isDay ? 2 : 0.38;
-      sun.color.set(isDay ? "#fff5d7" : "#b1c9ff");
-      fog.color.set(isDay ? "#53665e" : "#273f52");
     },
     draw(position: number, bearing: number) {
       cameraPosition = position;
@@ -553,10 +243,6 @@ export function createSafariWorld(
         "YXZ",
       );
       sky.position.copy(camera.position);
-      skyMaterial.uniforms.relief.value.set(
-        camera.position.x * 0.0032,
-        (camera.position.y - 1.56) * 0.045,
-      );
       camera.updateMatrixWorld();
       if (canRender) renderer?.render(scene, camera);
     },
@@ -599,18 +285,10 @@ export function createSafariWorld(
     dispose() {
       canvas.removeEventListener("webglcontextlost", loseContext);
       canvas.removeEventListener("webglcontextrestored", restoreContext);
-      const geometries = new Set<THREE.BufferGeometry>();
-      scene.traverse((node) => {
-        if (node instanceof THREE.Mesh) geometries.add(node.geometry);
-        if (node instanceof THREE.InstancedMesh) node.dispose();
-      });
-      for (const geometry of geometries) geometry.dispose();
-      ground.dispose();
-      plant.dispose();
-      stone.dispose();
-      contactShadow.dispose();
+      skyGeometry.dispose();
       skyMaterial.dispose();
       panoramaTexture?.dispose();
+      preparedTexture?.dispose();
       renderer?.dispose();
       renderer?.forceContextLoss();
       canvas.remove();
