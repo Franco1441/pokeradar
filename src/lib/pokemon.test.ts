@@ -23,6 +23,12 @@ describe('PokéAPI details', () => {
     await expect(fetchPokemon(25)).rejects.toThrow('incompletos');
   });
 
+  it('rejects a payload that repeats one base stat and omits another', async () => {
+    const stats = [...pokemon.stats.slice(0, 5), pokemon.stats[0]];
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...pokemon, stats })));
+    await expect(fetchPokemon(25)).rejects.toThrow('incompletos');
+  });
+
   it('propagates cancellation so a stale selection can be abandoned', async () => {
     const controller = new AbortController();
     const request = vi.fn().mockImplementation((_url: string, options: RequestInit) => new Promise((_resolve, reject) => {

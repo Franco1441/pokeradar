@@ -1275,7 +1275,7 @@ function ExpeditionApp() {
               <WeatherPanel
                 expedition={expedition}
                 weather={weather.data}
-                isLoading={weather.isPending}
+                isLoading={weather.isFetching}
                 error={weather.isError}
                 onRetry={() => void weather.refetch()}
               />

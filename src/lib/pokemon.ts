@@ -58,15 +58,24 @@ export async function fetchPokemon(id: number, signal?: AbortSignal): Promise<Po
   const types = Array.isArray(data.types)
     ? data.types.map((entry: unknown) => object(object(entry).type).name).filter(isPokemonType)
     : [];
-  const stats = Array.isArray(data.stats) ? data.stats.map((entry: unknown) => {
+  if (data.id !== id || typeof data.name !== 'string' || types.length === 0 ||
+      typeof data.height !== 'number' || !Number.isFinite(data.height) ||
+      typeof data.weight !== 'number' || !Number.isFinite(data.weight)) {
+    throw new Error('Los datos del Pokémon llegaron incompletos. Intentá de nuevo.');
+  }
+
+  const stats = new Map<string, number>();
+  const entries: unknown[] = Array.isArray(data.stats) ? data.stats : [];
+  for (const entry of entries) {
     const item = object(entry);
     const name = object(item.stat).name;
-    return { name: typeof name === 'string' ? STAT_LABELS[name] : undefined, value: item.base_stat };
-  }) : [];
-
-  if (data.id !== id || typeof data.name !== 'string' || types.length === 0 || stats.length !== 6 ||
-      !stats.every(stat => typeof stat.name === 'string' && typeof stat.value === 'number' && Number.isFinite(stat.value)) ||
-      typeof data.height !== 'number' || typeof data.weight !== 'number') {
+    const value = item.base_stat;
+    if (typeof name === 'string' && Object.hasOwn(STAT_LABELS, name) &&
+        typeof value === 'number' && Number.isFinite(value)) {
+      stats.set(STAT_LABELS[name], value);
+    }
+  }
+  if (stats.size !== Object.keys(STAT_LABELS).length) {
     throw new Error('Los datos del Pokémon llegaron incompletos. Intentá de nuevo.');
   }
 
@@ -81,7 +90,7 @@ export async function fetchPokemon(id: number, signal?: AbortSignal): Promise<Po
     artwork: imageUrl(object(other['official-artwork']).front_default),
     sprite: imageUrl(sprites.front_default),
     cry: imageUrl(object(data.cries).latest),
-    stats: stats.map(stat => ({ name: stat.name as string, value: stat.value as number })),
+    stats: Array.from(stats, ([name, value]) => ({ name, value })),
   };
 }
 

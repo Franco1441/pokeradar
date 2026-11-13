@@ -1,16 +1,26 @@
 # PokéRadar · Diario de expedición
 
-Explorá siete hábitats del mundo, investigá Pokémon y construí tu propio diario de campo. Proyecto realizado para el desafío técnico Frontend Engineer Junior de DataInt.
+Explorá siete hábitats del mundo, descubrí Pokémon y registrá tus hallazgos en un diario de campo. Proyecto para el desafío técnico Frontend Engineer Junior de DataInt.
+
+[Guía de exploración](#1-concepto-y-narrativa) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA](#3-uso-de-inteligencia-artificial-ai-native-workflow)
 
 ## 1. Concepto y narrativa
 
-PokéRadar propone un recorrido de investigación con 93 especies repartidas entre siete expediciones. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en el mapa regional y entre doce y quince en la exploración a pie. El Safari reparte los encuentros activos entre tres zonas por destino.
+Elegí la idea de un diario de expedición para darle un propósito a cada movimiento en el mapa. El globo sirve para elegir un hábitat, el mapa regional ubica el encuentro y la ficha explica por qué esa especie encaja allí. El atlas guarda lo que encontraste y permite retomar el recorrido.
 
-El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
+### Cómo explorar
 
-El globo muestra el día, el crepúsculo y la noche según la posición aproximada del sol. El botón **Ver día y noche** centra la cámara en el límite entre ambos. Las luces representan observaciones satelitales de NASA Black Marble de 2016 y se atenúan hacia la zona iluminada. Una capa de MapLibre renderiza las texturas satelitales, mezcla la sombra solar de forma continua y dibuja el halo de la atmósfera. Al acercar la cámara, la capa se funde con la cartografía regional.
+1. **Elegí un destino en el globo.** Giralo o seleccioná una región desde el panel. La vista muestra el día, el crepúsculo y las luces nocturnas según la posición aproximada del sol. **Ver día y noche** lleva la cámara al límite entre las dos zonas.
+2. **Abrí el mapa y seleccioná un Pokémon.** Cada región tiene seis marcadores con sprites. Al seleccionar uno, la cámara deja espacio para la ficha y confirma la llegada con un anillo. La ficha consulta PokéAPI en el momento y muestra nombre, tipos, ilustración, estadísticas base y sonido cuando está disponible. Durante la consulta muestra un esqueleto de carga y, si falla, permite reintentar.
+3. **Registrá el avistamiento.** Encontrar tres especies y conocer dos tipos distintos completa el objetivo de una expedición y desbloquea su postal. Podés agregar hasta seis favoritos a tu equipo. El progreso queda guardado en el navegador.
 
-Cada expedición tiene un punto de entrada georreferenciado a una vista panorámica en primera persona. Podés entrar con doble clic sobre un destino del globo o con el botón de exploración de su tarjeta. En el mapa regional también podés tocar el marcador del sendero. Al seleccionar un destino se empieza a cargar su panorama. La cámara se acerca al punto de entrada y la transición espera a que la escena esté lista para disipar la neblina. Con movimiento reducido la entrada es directa. Arrastrá el paisaje o usá las flechas para recorrer los avistamientos. Tres Pokémon por destino se revelan al examinar una pista marcada. Los demás están a la vista. Después de registrar una especie, podés enfocar la siguiente pista pendiente con un botón. Las fichas comparten el catálogo y el progreso del mapa. El globo muestra clima, hora local y dos especies del destino enfocado. Al consultar una de esas especies, la ficha se abre en el mismo panel y se puede volver al destino con el globo en la misma posición. Si el globo no carga, podés elegir un destino y abrir sus avistamientos o su panorama.
+### Dos formas de explorar el terreno
+
+**Explorar a pie** lleva al punto de entrada de la expedición desde la tarjeta del globo, el marcador del sendero o con doble clic en el marcador del destino. La cámara se acerca y el fundido da paso a una escena panorámica con entre doce y quince Pokémon por región. Tres se descubren al examinar pistas del entorno. Podés recorrerla con arrastre o teclado y pasar a la siguiente pista después de registrar un hallazgo.
+
+**Safari** agrega tres zonas por expedición. Cada una de las 21 zonas tiene su propio paisaje ilustrativo. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
+
+Los paneles se adaptan a escritorio y móvil. La preferencia de movimiento reducido acorta o desactiva las transiciones. Si falla el mapa, podés elegir una expedición y consultar la lista de avistamientos. Si falla WebGL en Safari, el paisaje, el radar y las fichas siguen disponibles en la vista panorámica.
 
 | Destino | Escena | Pistas |
 | --- | --- | --- |
@@ -22,15 +32,11 @@ Cada expedición tiene un punto de entrada georreferenciado a una vista panorám
 | Iguazú | Sendero de las cataratas | Aipom, Lotad y Tropius |
 | Everglades | Canal de los cipreses | Totodile, Croagunk y Ducklett |
 
-Desde el mapa regional podés abrir **Clima local** para consultar las condiciones y los tipos favorecidos. Cada ficha explica la relación propuesta entre especie y hábitat.
-
-Safari permite moverse entre tres zonas de cada expedición. Al tocar una zona en el radar de campo, la cámara se desplaza y conserva tu orientación. Podés girar 360° con un arrastre o con las flechas. Cada una de las 21 zonas tiene un paisaje propio generado con IA e inspirado en su hábitat. La vista de Safari proyecta el paisaje alrededor de la cámara y carga los fondos a medida que los necesitás. Los avistamientos cambian cada 30 segundos y algunos aparecen a un costado o detrás. La fase del día determina qué especies pueden aparecer y el radar destaca los tipos favorecidos por el clima. El radar indica hacia dónde mirás, cuánto falta para el próximo cambio y en qué zona se detectó una especie que todavía no registraste. **En vivo** usa el dato de luz de Open-Meteo y estima la fase mediante la hora local si el servicio falla. **Día** y **Noche** permiten probar ambas fases conservando la lectura meteorológica del lugar. Podés abrir una ficha y registrar el encuentro sin perder tu zona. Si WebGL falla, el radar, las fichas y el cambio de zona siguen disponibles en una vista panorámica. El mapa mide el espacio libre junto a la ficha y confirma la llegada con un anillo anclado al marcador. Al completar una expedición, el atlas guarda una postal del primer hallazgo que cumplió los dos objetivos, con el panorama y la fecha local.
-
 ### Datos reales y simulación
 
-Los nombres, tipos, estadísticas, medidas, imágenes, descripciones y sonidos provienen de PokéAPI. Las condiciones meteorológicas provienen de Open-Meteo. Las coordenadas de los avistamientos y sus asociaciones con los destinos son una curaduría ficticia del proyecto, identificada en la interfaz.
+PokéAPI aporta los nombres, tipos, estadísticas, medidas, ilustraciones, descripciones y sonidos. Open-Meteo aporta el tiempo meteorológico y la fase del día en el destino. Las coordenadas de los avistamientos y la relación de cada especie con su hábitat forman parte de la simulación y se identifican en la interfaz.
 
-Los 93 identificadores y tipos del catálogo fueron contrastados con PokéAPI. El catálogo local permite dibujar el mapa y ofrecer filtros inmediatamente. Al abrir una ficha, la aplicación consulta los datos detallados de la especie en la API.
+El catálogo local contiene 93 especies distribuidas por hábitat. Sus identificadores y tipos se contrastaron con PokéAPI. Los marcadores y filtros pueden mostrarse con ese catálogo mientras las fichas consultan los datos detallados de cada especie.
 
 ### Referencias de experiencia
 
@@ -38,7 +44,7 @@ Los 93 identificadores y tipos del catálogo fueron contrastados con PokéAPI. E
 - Pokémon GO inspiró el mapa protagonista, los avistamientos y la relación visible entre clima y tipos. [Mapa](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1084-what-is-the-map-view/) · [Clima](https://scopelyexplore.helpshift.com/hc/en/5-pokemon-go/faq/1099-what-are-weather-boosts/)
 - Cobblemon sirvió como referencia para la jerarquía de las fichas y la identidad visual de un instrumento de exploración Pokémon. [Galería](https://modrinth.com/mod/cobblemon/gallery)
 - Alba aportó una referencia de exploración tranquila, observación de fauna y descubrimiento. [Proceso de diseño](https://ustwogames.co.uk/news/the-environment-art-of-alba-a-wildlife-adventure/)
-- Redline, el prompt de MotionSites compartido por Franco, inspiró la secuencia continua de globo, descenso y paisaje. PokéRadar usa esa estructura para cambiar de escala en un mapa real. [Referencia](https://motionsites.ai/?prompt=redline-mars-hero)
+- Redline inspiró la secuencia de globo, descenso y paisaje. PokéRadar aplica ese recorrido a un mapa navegable. [MotionSites](https://motionsites.ai/?prompt=redline-mars-hero)
 - Merlin sirvió como referencia para organizar una guía de especies y una colección personal. [Merlin Bird ID](https://www.merlinbirds.org/)
 
 ## 2. Arquitectura y stack
@@ -47,31 +53,35 @@ Los 93 identificadores y tipos del catálogo fueron contrastados con PokéAPI. E
 | --- | --- |
 | Next.js App Router y React | Composición de la aplicación y renderizado inicial |
 | TypeScript estricto | Contratos de datos, estados y límites entre componentes |
-| Tailwind CSS y CSS | Sistema visual, estilos y adaptación responsive |
+| Tailwind CSS y CSS | Estilos globales y utilidades accesibles, con hojas específicas para las vistas |
 | MapLibre GL JS y OpenFreeMap | Cartografía vectorial, marcadores y movimientos de cámara |
 | Three.js | Cámara, recorrido y geometría de Safari |
-| Motion para React, antes Framer Motion | Transiciones de paneles, estadísticas y registro |
+| Framer Motion, hoy Motion para React | Transiciones de paneles, estadísticas y registro con `motion/react` |
 | TanStack Query | Caché de datos remotos, cancelación, carga y reintentos |
 | Radix UI | Primitivas accesibles para diálogos |
 | Lucide | Iconografía de navegación y acciones |
-| Vitest | Pruebas de reglas de dominio y adaptación de APIs |
+| Vitest y Playwright | Pruebas de las reglas de dominio y del recorrido en Chromium |
 
 ### Organización
 
 ```text
 src/
   app/           Página, layout, metadatos y estilos globales
-  components/    Explorador, mapa, ficha Pokémon y observatorio
-  lib/           Catálogo, contratos, APIs, progreso y sincronización
+  components/    Explorador, mapa, fichas, escenas, radar y atlas
+  lib/           Catálogo, reglas de Safari, adaptadores de API y progreso
 public/
-  destinations/  Imágenes de los destinos
+  destinations/  Fotografías de portada
+  expeditions/   Panoramas de la exploración a pie
+  safari/        Paisajes de las 21 zonas de Safari
+  map/           Texturas y datos para la vista del globo
+e2e/             Pruebas de navegación en Chromium
 ```
 
-La página y el layout son Server Components. El explorador es el límite cliente que contiene el estado interactivo. La importación dinámica del mapa usa `ssr: false` desde ese componente cliente, porque MapLibre necesita las APIs del navegador. Una sola instancia del mapa conserva el contexto durante los cambios de escala y permanece montada al entrar al claro. La escena panorámica se importa y carga al abrir el modo de campo. Los puntos interactivos se vinculan por ID a los avistamientos existentes.
+[`page.tsx`](src/app/page.tsx) y [`layout.tsx`](src/app/layout.tsx) son Server Components. [`explorer.tsx`](src/components/explorer.tsx) es el límite cliente que coordina la selección y el progreso. Importa MapLibre mediante `next/dynamic` con `ssr: false`, de modo que el mapa se inicializa con acceso a las APIs del navegador. Una instancia conserva la cámara al cambiar de escala o abrir una escena. La exploración a pie y Safari se cargan al entrar a cada vista. Safari decodifica el paisaje de la zona elegida y cambia la textura durante el fundido.
 
-El modelo distingue `Expedition`, `Encounter`, `PokemonDetail`, `WeatherSnapshot` y `ResearchProgress`. El ID del avistamiento identifica el lugar del encuentro y el ID del Pokémon identifica la especie consultada en PokéAPI.
+El ID de `Encounter` identifica el lugar del hallazgo y el ID de PokéAPI identifica la especie. [`safari.ts`](src/lib/safari.ts) calcula los avistamientos a partir del destino, la fase y el reloj, y ambas vistas de radar comparten el resultado. Los Pokémon que siguen activos conservan su posición al cambiar las señales.
 
-Las fichas y descripciones se consultan de manera independiente. Una descripción que falla permite conservar los datos principales de la criatura. Las consultas reciben `AbortSignal` para cancelar trabajo obsoleto y comparten caché por especie. El clima se consulta por destino, con una vigencia de 15 minutos antes de volver a considerarse desactualizado.
+Los adaptadores validan los datos externos en tiempo de ejecución. Las consultas de ficha y descripción usan caché por especie y `AbortSignal`. La ficha puede mostrar sus datos principales aunque falle la descripción. El clima se consulta y se cachea por destino.
 
 El progreso se guarda en `localStorage` bajo `pokeradar.research.v1`. Su lectura valida la versión, los IDs del catálogo, las fechas y el límite del equipo. Los registros duplicados y las referencias inválidas se descartan. Si el almacenamiento falla, la experiencia puede continuar en memoria durante la sesión.
 
@@ -79,7 +89,7 @@ La URL conserva el destino, la vista y el avistamiento seleccionado. `/?region=n
 
 ### Ejecutar localmente
 
-Requiere Node.js 20.19 o posterior y npm. La aplicación consume servicios públicos sin claves de API.
+Usá Node.js 24 LTS y npm. Los servicios que consume la aplicación funcionan sin claves de API.
 
 ```bash
 npm ci
@@ -96,7 +106,11 @@ npm run build
 npm start
 ```
 
-`npm start` sirve el build de producción después de ejecutar `npm run build`. Vercel detecta Next.js al importar el repositorio. Usá `npm run build` como comando de compilación para generar también el worker de MapLibre.
+`npm start` sirve el build de producción después de ejecutar `npm run build`.
+
+### Despliegue en Vercel
+
+Importá el repositorio con el preset de Next.js y mantené `npm run build` como comando de compilación. El script `prebuild` copia a `public/vendor/` el worker de la versión instalada de MapLibre para que pueda cargarse desde el mismo origen. No se requieren variables de entorno. [Guía de Next.js en Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
 
 ### Validación
 
@@ -107,34 +121,27 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además del ciclo de aparición y retiro de cada señal.
+Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 18 pruebas de navegador recorren los 93 avistamientos de campo y verifican los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
 
-Pasaron TypeScript, ESLint, 58 pruebas unitarias, 18 pruebas E2E y la compilación de producción. Las pruebas E2E recorren los 93 avistamientos de campo, verifican el descenso directo a Heron y el doble clic, prueban el cambio de zona y la actualización del radar al aparecer, retirarse o registrar un Pokémon y comprueban el acceso a las fichas sin WebGL. También verifican los límites de zoom, el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
+## 3. Uso de inteligencia artificial (AI-Native Workflow)
 
-## 3. Uso de inteligencia artificial
-
-Se utilizó Codex para analizar la consigna, investigar referencias, proponer alternativas de producto, implementar componentes y revisar casos de error. Franco dirigió la elección del producto mediante decisiones explícitas de experiencia y diseño.
-
-Una primera propuesta se centraba en Argentina. Franco pidió explorar otras direcciones, incorporó Cobblemon y Pokémon GO como referencias y eligió combinar expediciones, atlas y observatorio. También definió una estética natural y luminosa, investigación y colección, y un clima que destaca actividad manteniendo disponibles los avistamientos.
+Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. Son recreaciones ilustrativas de los biomas.
 
 ### Correcciones y comprobaciones durante el trabajo
 
-- La primera consulta de validación a PokéAPI se hizo mediante `urllib` sin la barra final y devolvió HTTP 403. Se probó la ruta canónica terminada en `/` y un agente de usuario explícito, y las 30 consultas devolvieron datos válidos. Los adaptadores de la aplicación usan las rutas canónicas. La prueba permitió corregir la integración y evitó interpretar esa respuesta como ausencia de las especies.
-- El primer build de producción no cargó el worker de MapLibre. Una prueba en Chromium reprodujo el error que las pruebas con la lista de avistamientos habían pasado por alto. El build ahora copia el worker de la versión instalada y el mapa lo carga desde el mismo origen.
-- Al definir la expedición de Heron se detectó que cinco especies comparten únicamente el tipo Agua. Corsola aporta Agua y Roca, por lo que el segundo objetivo depende de descubrirla. Se añadió una prueba que verifica que registrar tres especies de Agua deja la expedición en progreso y que registrar Corsola satisface la diversidad requerida.
-- Los datos guardados se trataron como entrada externa. Las pruebas comprobaron JSON inválido, registros duplicados, especies ajenas al catálogo, fechas inválidas y equipos con más de seis miembros. Esto concretó una validación más completa que asumir que cada lectura de `localStorage` contendría el estado esperado.
-
-Los siete panoramas se generaron con ImageGen a la altura de los ojos y se optimizaron a WebP. Cada escena usa sus propios elementos del bioma para ubicar las pistas. Se revisaron la composición, el encuadre en pantallas chicas y el contraste de los controles. Los paisajes son recreaciones ilustrativas de los biomas.
+- **El mapa fallaba en la compilación de producción.** La primera implementación dejaba sin resolver el worker de MapLibre. La lista alternativa seguía funcionando, así que pedí verificar el mapa real en Chromium. El build pasó a copiar el worker de la versión instalada y servirlo desde el mismo origen.
+- **El zoom dejaba ver el globo cartográfico anterior.** Lo encontré al alejar por completo el mapa regional. Pedí separar sus límites de zoom de los del globo y verificamos el recorrido en escritorio y móvil.
+- **El primer Safari era un camino lineal.** Pedí elegir zonas desde un radar siempre visible y poder detectar especies sin registrar en otras zonas. Probé el giro, marqué que era demasiado rápido y definí una renovación cada 30 segundos. Las pruebas comprueban que el radar conserve las señales justo antes del límite y las actualice al alcanzarlo.
+- **Una consulta de validación devolvió HTTP 403.** La prueba inicial de PokéAPI omitía la barra final. Repetimos la consulta con la ruta canónica y un agente de usuario explícito antes de dar por válidos los datos. Los adaptadores usan las rutas canónicas y comprueban el formato de las respuestas.
 
 ## 4. Próximos pasos
 
 Con una semana adicional ampliaría el trabajo en estas direcciones.
 
-1. Probar el recorrido con usuarios y ajustar la visibilidad de objetivos, filtros y registro según sus dificultades reales.
-2. Incorporar más expediciones y especies mediante una validación automatizada del catálogo y sus recursos.
-3. Añadir sincronización opcional del diario entre dispositivos, con una migración del progreso local existente.
-4. Mejorar el comportamiento con conexión intermitente y la conservación de los últimos datos consultados.
-5. Ampliar las pruebas de integración de mapa, teclado, selección rápida y navegación móvil, y medir rendimiento sobre dispositivos de gama media.
+1. Observar a usuarios que llegan por primera vez. Medir cuánto tardan en encontrar y registrar su primer Pokémon, y ajustar las instrucciones o controles donde se traben.
+2. Medir el tiempo hasta que el mapa se puede usar y los cambios de zona en celulares de gama media. Usar esas mediciones para ajustar el peso de las texturas y el momento de su carga.
+3. Validar en CI que los identificadores y las imágenes de cada expedición sigan disponibles. Agregar pruebas de teclado y conexión intermitente antes de ampliar el catálogo.
+4. Diseñar sincronización opcional entre dispositivos y una migración que conserve el diario local existente.
 
 ## Fuentes y créditos
 
@@ -143,6 +150,6 @@ Con una semana adicional ampliaría el trabajo en estas direcciones.
 - Texturas del globo de NASA Earth Observatory. Blue Marble Next Generation aporta color natural, topografía y batimetría. Black Marble 2016 aporta las luces nocturnas, con imágenes de Joshua Stevens y datos Suomi NPP VIIRS de Miguel Román, NASA Goddard Space Flight Center. [Blue Marble](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography-bathymetry/) · [Black Marble](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/)
 - Datos meteorológicos de Open-Meteo. [Open-Meteo](https://open-meteo.com/)
 - Pokémon y los nombres de sus personajes pertenecen a sus respectivos titulares. Este proyecto es una demostración técnica de exploración geoespacial.
-
-- Fotografías ilustrativas de hábitats en Unsplash. [Bosque](https://images.unsplash.com/photo-1448375240586-882707db888b) · [Islandia](https://images.unsplash.com/photo-1476610182048-b716b8518aae) · [Namib](https://unsplash.com/photos/nt66_G8DCBM) · [Zermatt, Manuel Hodel](https://unsplash.com/photos/HVB2Mwj_txQ) · [Gran Barrera de Coral, GeoNadir](https://unsplash.com/photos/b78E12dTxlo)
+- Fotografías de portada de Unsplash. [Bosque](https://images.unsplash.com/photo-1448375240586-882707db888b) · [Islandia](https://images.unsplash.com/photo-1476610182048-b716b8518aae) · [Namib](https://unsplash.com/photos/nt66_G8DCBM) · [Zermatt, Manuel Hodel](https://unsplash.com/photos/HVB2Mwj_txQ) · [Gran Barrera de Coral, GeoNadir](https://unsplash.com/photos/b78E12dTxlo)
+- Paisajes ilustrativos generados con ImageGen. [Exploración a pie](public/expeditions) · [Safari](public/safari)
 - Tipografía de sistema Helvetica Neue, con Helvetica y Arial como alternativas según el dispositivo.
