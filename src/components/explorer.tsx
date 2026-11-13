@@ -57,6 +57,7 @@ import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
   getSafariSnapshot,
+  SAFARI_CLOCK_MS,
   SAFARI_INTERVAL_MS,
   type SafariMode,
 } from "@/lib/safari";
@@ -143,6 +144,10 @@ function getClockWindow() {
   return Math.floor(Date.now() / SAFARI_INTERVAL_MS) * SAFARI_INTERVAL_MS;
 }
 
+function getSafariClock() {
+  return Math.floor(Date.now() / SAFARI_CLOCK_MS) * SAFARI_CLOCK_MS;
+}
+
 function subscribeToClock(onChange: () => void) {
   const timer = window.setInterval(onChange, 1000);
   return () => window.clearInterval(timer);
@@ -212,11 +217,12 @@ function ExpeditionApp() {
   const worldDetail = worldView && tab === "explore" ? selected : null;
   const focusedDestinationId =
     worldView && params.has("region") ? expedition.id : undefined;
+  const trackingSafari = tab === "radar" || safariOpen;
   const clockWindow = useSyncExternalStore<number | null>(
-    (worldView && tab === "explore") || tab === "radar" || safariOpen
+    (worldView && tab === "explore") || trackingSafari
       ? subscribeToClock
       : inactiveClock,
-    getClockWindow,
+    trackingSafari ? getSafariClock : getClockWindow,
     serverClock,
   );
   const localTime =
@@ -1228,7 +1234,12 @@ function ExpeditionApp() {
                 onInteractOutside={(event) => event.preventDefault()}
                 onCloseAutoFocus={(event) => {
                   event.preventDefault();
-                  originFocus.current?.focus();
+                  const trigger = originFocus.current;
+                  if (trigger?.isConnected && !trigger.matches(":disabled")) {
+                    trigger.focus();
+                  } else if (safariOpen) {
+                    document.querySelector<HTMLElement>(".safari-walk-viewport")?.focus();
+                  }
                 }}
               >
                 <Dialog.Title className="sr-only">

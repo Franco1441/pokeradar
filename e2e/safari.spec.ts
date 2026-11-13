@@ -1,11 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { EXPEDITIONS } from "../src/lib/expeditions";
+import { getSafariSnapshot } from "../src/lib/safari";
 
 test.use({ reducedMotion: "reduce" });
 
 test("scans by local conditions and registers a nocturnal sighting", async ({
   page,
 }) => {
-  await page.clock.setFixedTime(new Date("2026-11-11T15:00:30Z"));
+  const iguazu = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
+  const base = Date.parse("2026-11-11T15:00:30Z");
+  const now = Array.from({ length: 90 }, (_, index) => base + index * 1_000).find((time) =>
+    getSafariSnapshot(iguazu, { mode: "night", now: time }).signals.some(({ encounter }) => encounter.pokemonId === 48),
+  )!;
+  await page.clock.setFixedTime(new Date(now));
   await page.route(/api\.open-meteo\.com\/v1\/forecast/, (route) =>
     route.fulfill({
       json: {
@@ -49,7 +56,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
   const radar = page.getByRole("complementary", { name: "Radar Safari" });
   await expect(radar.getByText("Día local")).toBeVisible();
   await expect(radar.getByText("Lluvia", { exact: true })).toBeVisible();
-  await expect(radar.getByRole("listitem")).toHaveCount(6);
+  await expect.poll(() => radar.getByRole("listitem").count()).toBeGreaterThanOrEqual(6);
 
   await radar.getByRole("button", { name: "Día", exact: true }).click();
   await expect(radar.getByText("Día de prueba")).toBeVisible();

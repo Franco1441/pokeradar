@@ -3,6 +3,7 @@ import type { Encounter } from "@/lib/types";
 
 const PATH_NEAR = 8;
 const PATH_LENGTH = 30;
+const FULL_TURN = Math.PI * 2;
 
 const STATIONS = [
   {
@@ -10,41 +11,35 @@ const STATIONS = [
     z: 4,
     yaw: 0.16,
     pitch: -0.066,
+    elevation: 1.56,
     width: 5.6,
     curve: 0.9,
-    cropX: 5,
-    cropY: 0,
-    scale: 1.18,
   },
   {
     x: 0,
     z: -3,
     yaw: 0.02,
-    pitch: -0.11,
+    pitch: -0.074,
+    elevation: 1.62,
     width: 4.2,
     curve: -0.7,
-    cropX: 0,
-    cropY: -3,
-    scale: 1.30,
   },
   {
     x: 7,
     z: -4,
     yaw: -0.33,
     pitch: -0.053,
+    elevation: 1.53,
     width: 6.8,
     curve: 1.45,
-    cropX: -8,
-    cropY: 2,
-    scale: 1.32,
   },
 ] as const;
 
 const SIGHTING_POSITIONS = [
-  { bearing: -0.37, distance: 7.3 },
-  { bearing: 0.32, distance: 8.4 },
-  { bearing: -0.73, distance: 10.1 },
-  { bearing: 0.67, distance: 10.8 },
+  { bearing: -0.196, distance: 7.3 },
+  { bearing: 0.184, distance: 8.4 },
+  { bearing: -0.99, distance: 8.1 },
+  { bearing: 2.23, distance: 9.2 },
 ] as const;
 
 function stationFrames(position: number) {
@@ -59,14 +54,18 @@ function stationFrames(position: number) {
 
 export function safariPanorama(position: number, turn: number) {
   const { from, to, blend } = stationFrames(position);
-  const scale = THREE.MathUtils.lerp(from.scale, to.scale, blend);
-  const x = THREE.MathUtils.lerp(from.cropX, to.cropX, blend) - turn * 12;
-  const margin = (scale - 1) * 49;
+  const heading = turn - THREE.MathUtils.lerp(from.yaw, to.yaw, blend);
+  const rear = (1 - Math.cos(heading)) / 2;
   return {
-    x: THREE.MathUtils.clamp(x, -margin, margin),
-    y: THREE.MathUtils.lerp(from.cropY, to.cropY, blend),
-    scale,
+    x: -17 * Math.sin(heading) + rear * 5,
+    y: rear * -8,
+    scale: 1.46 + rear * 0.15,
   };
+}
+
+export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
+  const station = STATIONS[zoneIndex] ?? STATIONS[0];
+  return -station.yaw + (SIGHTING_POSITIONS[slotIndex]?.bearing ?? 0);
 }
 
 const PROFILES = {
@@ -78,6 +77,44 @@ const PROFILES = {
   heron: ["#466766", "#a0b798", "#347b73", "#81a6a2"],
   everglades: ["#5d5541", "#a99468", "#778044", "#787963"],
 } as const;
+
+const panoramaVertex = `
+varying vec3 vRay;
+
+void main() {
+  vRay = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const panoramaFragment = `
+uniform sampler2D photo;
+uniform float daylight;
+uniform vec2 relief;
+varying vec3 vRay;
+
+void main() {
+  vec3 ray = normalize(vRay);
+  float elevation = asin(ray.y);
+  float angle = mod(atan(ray.x, -ray.z) + 6.28318530, 6.28318530);
+  float side = angle / 3.14159265;
+  float blend = smoothstep(0.39, 0.61, side) - smoothstep(1.39, 1.61, side);
+  float frontAngle = mod(angle + 3.14159265, 6.28318530) - 3.14159265;
+  float rearAngle = angle - 3.14159265;
+  // Two wide projections overlap at both edges. Sample them in their natural
+  // direction and crossfade the overlaps to make the full turn continuous.
+  float frontX = 0.5 + 0.251 * frontAngle + relief.x;
+  float rearX = 0.5 + 0.251 * rearAngle + relief.x;
+  float y = 0.54 + (elevation + relief.y) / 1.04;
+  vec3 front = texture2D(photo, clamp(vec2(frontX, y), 0.001, 0.999)).rgb;
+  vec3 back = texture2D(photo, clamp(vec2(1.0 - rearX, y + 0.025), 0.001, 0.999)).rgb;
+  vec3 color = mix(front, back, blend);
+  vec3 night = mix(vec3(dot(color, vec3(0.28, 0.57, 0.15))), color, 0.66);
+  night *= vec3(0.30, 0.41, 0.57);
+  gl_FragColor = vec4(mix(night, color, daylight), 1.0);
+  #include <colorspace_fragment>
+}
+`;
 
 const groundVertex = `
 varying vec2 vUv;
@@ -219,15 +256,27 @@ function scatter(
   const object = new THREE.Object3D();
   const instances = new THREE.InstancedMesh(geometry, material, count);
   for (let i = 0; i < count; i++) {
-    const z = 5 - (PATH_LENGTH - 3) * random();
+    const around = i % 3 === 0;
+    const z = PATH_NEAR - PATH_LENGTH * random();
     const lateral = station.width * 0.3 + edgeSpread * random();
     const side = i % 2 ? 1 : -1;
     const scale = size[0] + (size[1] - size[0]) * random();
-    object.position.set(
-      pathCenter(z, station.curve) + lateral * side,
-      pathHeight(z),
-      z,
-    );
+    if (around) {
+      const bearing = random() * FULL_TURN;
+      const distance = 3.5 + random() * 9.5;
+      const perimeterZ = Math.cos(bearing) * distance;
+      object.position.set(
+        Math.sin(bearing) * distance,
+        pathHeight(perimeterZ),
+        perimeterZ,
+      );
+    } else {
+      object.position.set(
+        pathCenter(z, station.curve) + lateral * side,
+        pathHeight(z),
+        z,
+      );
+    }
     object.rotation.set(0, random() * Math.PI * 2, 0);
     object.scale.set(scale, scale * (0.64 + random() * 0.52), scale);
     object.updateMatrix();
@@ -389,17 +438,39 @@ export function createSafariWorld(
   destination: string,
   onRendererChange: (active: boolean) => void,
   redraw: () => void,
+  panoramaUrl?: string,
 ) {
   const { scene, ground, plant, stone, contactShadow, fog, ambient, sun } =
     createScene(destination);
   const camera = new THREE.PerspectiveCamera(55, 1, 0.12, 76);
   const projected = new THREE.Vector3();
   const cameraSpace = new THREE.Vector3();
+  const skyGeometry = new THREE.SphereGeometry(58, 48, 24);
+  const skyMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      photo: { value: null as THREE.Texture | null },
+      daylight: { value: 1 },
+      relief: { value: new THREE.Vector2() },
+    },
+    vertexShader: panoramaVertex,
+    fragmentShader: panoramaFragment,
+    side: THREE.BackSide,
+    depthWrite: false,
+    depthTest: false,
+  });
+  const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+  sky.visible = false;
+  sky.renderOrder = -10;
+  sky.frustumCulled = false;
+  scene.add(sky);
   let renderer: THREE.WebGLRenderer | null = null;
+  let panoramaTexture: THREE.Texture | null = null;
   let canRender = false;
+  let disposed = false;
   let width = 1;
   let height = 1;
   let cameraPosition = 0;
+  let heading = 0;
 
   function loseContext(event: Event) {
     event.preventDefault();
@@ -432,6 +503,18 @@ export function createSafariWorld(
       canvas.addEventListener("webglcontextlost", loseContext);
       canvas.addEventListener("webglcontextrestored", restoreContext);
       canRender = true;
+      if (panoramaUrl) {
+        panoramaTexture = new THREE.TextureLoader().load(
+          panoramaUrl,
+          (photo) => {
+            if (disposed) return;
+            skyMaterial.uniforms.photo.value = photo;
+            sky.visible = true;
+            redraw();
+          },
+        );
+        panoramaTexture.colorSpace = THREE.SRGBColorSpace;
+      }
     }
   } catch {
     renderer?.dispose();
@@ -441,36 +524,45 @@ export function createSafariWorld(
 
   return {
     active: canRender,
+    get heading() {
+      return heading;
+    },
     resize(nextWidth: number, nextHeight: number) {
       width = Math.max(1, nextWidth);
       height = Math.max(1, nextHeight);
       camera.aspect = width / height;
-      camera.fov = camera.aspect < 0.75 ? 65 : 55;
+      camera.fov = camera.aspect < 0.75 ? 69 : 55;
       camera.updateProjectionMatrix();
       renderer?.setSize(width, height, false);
     },
     light(isDay: boolean) {
       ground.uniforms.daylight.value = isDay ? 1 : 0;
+      skyMaterial.uniforms.daylight.value = isDay ? 1 : 0;
       ambient.intensity = isDay ? 1.65 : 0.88;
       ambient.color.set(isDay ? "#f2edd7" : "#a3c5ee");
       sun.intensity = isDay ? 2 : 0.38;
       sun.color.set(isDay ? "#fff5d7" : "#b1c9ff");
       fog.color.set(isDay ? "#53665e" : "#273f52");
     },
-    draw(position: number, turn: number, moving: boolean) {
+    draw(position: number, turn: number) {
       cameraPosition = position;
       const { from, to, blend } = stationFrames(position);
-      const slide = moving ? Math.sin(blend * Math.PI) : 0;
+      heading = turn - THREE.MathUtils.lerp(from.yaw, to.yaw, blend);
       camera.position.set(
         THREE.MathUtils.lerp(from.x, to.x, blend),
-        1.52 + slide * 0.12,
-        THREE.MathUtils.lerp(from.z, to.z, blend) + slide * 0.65,
+        THREE.MathUtils.lerp(from.elevation, to.elevation, blend),
+        THREE.MathUtils.lerp(from.z, to.z, blend),
       );
       camera.rotation.set(
         THREE.MathUtils.lerp(from.pitch, to.pitch, blend),
-        THREE.MathUtils.lerp(from.yaw, to.yaw, blend) - turn * 0.73,
+        -(heading % FULL_TURN),
         0,
         "YXZ",
+      );
+      sky.position.copy(camera.position);
+      skyMaterial.uniforms.relief.value.set(
+        camera.position.x * 0.0032,
+        (camera.position.y - 1.56) * 0.045,
       );
       camera.updateMatrixWorld();
       if (canRender) renderer?.render(scene, camera);
@@ -486,15 +578,13 @@ export function createSafariWorld(
       const placement = SIGHTING_POSITIONS[slotIndex];
       const arrival = Math.abs(cameraPosition - activeZone);
       if (!station || !placement || arrival >= 0.52) return null;
-      const halfWidth =
-        Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
-      const yaw = station.yaw - Math.atan(placement.bearing * halfWidth);
+      const bearing = getSafariSignalBearing(zoneIndex, slotIndex);
       const suspended =
         destination === "heron" || encounter.types.includes("flying");
       projected.set(
-        station.x - Math.sin(yaw) * placement.distance,
+        station.x + Math.sin(bearing) * placement.distance,
         suspended ? 0.58 : 0.19,
-        station.z - Math.cos(yaw) * placement.distance,
+        station.z - Math.cos(bearing) * placement.distance,
       );
       cameraSpace.copy(projected).applyMatrix4(camera.matrixWorldInverse);
       const depth = -cameraSpace.z;
@@ -514,6 +604,7 @@ export function createSafariWorld(
       };
     },
     dispose() {
+      disposed = true;
       canvas.removeEventListener("webglcontextlost", loseContext);
       canvas.removeEventListener("webglcontextrestored", restoreContext);
       const geometries = new Set<THREE.BufferGeometry>();
@@ -526,6 +617,8 @@ export function createSafariWorld(
       plant.dispose();
       stone.dispose();
       contactShadow.dispose();
+      skyMaterial.dispose();
+      panoramaTexture?.dispose();
       renderer?.dispose();
       renderer?.forceContextLoss();
       canvas.remove();

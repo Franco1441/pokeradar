@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react";
 import type { FieldSite } from "@/lib/field-sites";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
-import type { SafariMode, SafariSnapshot } from "@/lib/safari";
+import type { SafariMode, SafariSignal, SafariSnapshot } from "@/lib/safari";
 import type { Expedition } from "@/lib/types";
 import SafariFieldRadar from "./safari-field-radar";
 import { createSafariWorld, safariPanorama } from "./safari-world";
@@ -53,6 +54,56 @@ const MODES = [
   { value: "night", label: "Noche", Icon: Moon },
 ] as const;
 
+const TURN_PER_VIEWPORT = Math.PI * 1.35;
+
+function SafariSighting({
+  signal,
+  markers,
+  onObserve,
+}: {
+  signal: SafariSignal;
+  markers: Map<string, HTMLButtonElement>;
+  onObserve: (encounterId: string) => void;
+}) {
+  const { encounter } = signal;
+  const present = useIsPresent();
+  const reduced = useReducedMotion();
+  return (
+    <motion.button
+      ref={(element) => {
+        if (element) markers.set(encounter.id, element);
+        else markers.delete(encounter.id);
+      }}
+      type="button"
+      className="safari-walk-sighting"
+      aria-label={`Observar a ${encounter.name}`}
+      aria-hidden={!present}
+      disabled={!present}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduced ? 0 : present ? 0.38 : 0.27 }}
+      onClick={() => onObserve(encounter.id)}
+    >
+      <span className="safari-walk-sighting-content">
+        {/* eslint-disable-next-line @next/next/no-img-element -- Preserve transparent artwork and its sprite fallback. */}
+        <img
+          src={artworkUrl(encounter.pokemonId)}
+          alt=""
+          draggable={false}
+          onError={(event) => {
+            const image = event.currentTarget;
+            const fallback = spriteUrl(encounter.pokemonId);
+            if (image.src !== fallback) image.src = fallback;
+            else image.hidden = true;
+          }}
+        />
+        <span className="safari-walk-sighting-label">{encounter.name}</span>
+      </span>
+    </motion.button>
+  );
+}
+
 export default function SafariWalk({
   expedition,
   site,
@@ -73,7 +124,7 @@ export default function SafariWalk({
   const viewport = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const panorama = useRef<HTMLImageElement>(null);
-  const markers = useRef(new Map<string, HTMLButtonElement>());
+  const [markers] = useState(() => new Map<string, HTMLButtonElement>());
   const controller = useRef<WalkController | null>(null);
   const readyCallback = useRef(onReady);
   const reportedReady = useRef(false);
@@ -111,10 +162,16 @@ export default function SafariWalk({
     let current = 0;
     let target = 0;
     let turn = 0;
+    let targetTurn = 0;
+    let lastFrame = 0;
     let signals: SafariSnapshot["signals"] = [];
 
-    const world = createSafariWorld(mount, expedition.id, setHasWebGL, () =>
-      schedule(),
+    const world = createSafariWorld(
+      mount,
+      expedition.id,
+      setHasWebGL,
+      schedule,
+      site.image,
     );
     function schedule() {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -122,17 +179,26 @@ export default function SafariWalk({
 
     function draw(time: number) {
       frame = 0;
-      const duration = 580 + Math.abs(target - from) * 85;
-      const progress = !start || motion.matches ? 1 : Math.min((time - start) / duration, 1);
+      const elapsed = Math.min(40, Math.max(8, time - lastFrame));
+      lastFrame = time;
+      const rotationPending = Math.abs(targetTurn - turn) > 0.0008;
+      turn = motion.matches || !rotationPending
+        ? targetTurn
+        : turn + (targetTurn - turn) * (1 - Math.exp(-elapsed / 38));
+      const duration = 460 + Math.abs(target - from) * 100;
+      const progress = !start || motion.matches
+        ? 1
+        : Math.min((time - start) / duration, 1);
       const ease = progress * progress * (3 - 2 * progress);
       current = from + (target - from) * ease;
-      world.draw(current, turn, progress < 1);
+      world.draw(current, turn);
       const background = safariPanorama(current, turn);
+      stage.parentElement?.style.setProperty("--safari-heading", `${world.heading}rad`);
       stage.style.setProperty("--walk-offset-x", `${background.x}%`);
       stage.style.setProperty("--walk-offset-y", `${background.y}%`);
       stage.style.setProperty("--walk-scale", String(background.scale));
-      for (const [slot, { encounter }] of signals.entries()) {
-        const marker = markers.current.get(encounter.id);
+      for (const { encounter, slot } of signals) {
+        const marker = markers.get(encounter.id);
         if (!marker) continue;
         const location = world.locate(encounter, target, slot, target);
         marker.style.visibility = location ? "visible" : "hidden";
@@ -140,9 +206,9 @@ export default function SafariWalk({
         marker.style.setProperty("--sighting-x", `${location.x}px`);
         marker.style.setProperty("--sighting-y", `${location.y}px`);
         marker.style.setProperty("--sighting-size", `${location.size}px`);
-        marker.style.opacity = String(location.opacity * Math.max(0, (progress - 0.5) * 2));
+        marker.style.setProperty("--sighting-presence", String(location.opacity));
       }
-      if (progress < 1) schedule();
+      if (progress < 1 || rotationPending) schedule();
       finishArrival();
     }
 
@@ -153,13 +219,12 @@ export default function SafariWalk({
         if (nextZone !== target) {
           from = current;
           target = nextZone;
-          turn = 0;
           start = performance.now();
         }
         schedule();
       },
       turnBy(delta) {
-        turn = Math.max(-0.76, Math.min(0.76, turn + delta));
+        targetTurn += delta;
         schedule();
       },
     };
@@ -181,7 +246,7 @@ export default function SafariWalk({
       cancelAnimationFrame(initialFrame);
       world.dispose();
     };
-  }, [expedition.id]);
+  }, [expedition.id, markers, site.image]);
 
   useEffect(() => {
     controller.current?.setScene(zoneIndex, zone.signals, snapshot.isDay);
@@ -199,12 +264,12 @@ export default function SafariWalk({
       case "a":
       case "arrowleft":
         event.preventDefault();
-        controller.current?.turnBy(-0.13);
+        controller.current?.turnBy(-0.22);
         break;
       case "d":
       case "arrowright":
         event.preventDefault();
-        controller.current?.turnBy(0.13);
+        controller.current?.turnBy(0.22);
         break;
       case "escape":
         event.preventDefault();
@@ -229,7 +294,7 @@ export default function SafariWalk({
     const delta = pointer.current.x - event.clientX;
     pointer.current.x = event.clientX;
     controller.current?.turnBy(
-      (delta / event.currentTarget.clientWidth) * 1.15,
+      (delta / event.currentTarget.clientWidth) * TURN_PER_VIEWPORT,
     );
   }
 
@@ -249,6 +314,8 @@ export default function SafariWalk({
       <div
         className="safari-walk-viewport"
         ref={viewport}
+        tabIndex={0}
+        aria-label="Vista de Safari. Arrastrá o usá las flechas para girar."
         onPointerDown={startLooking}
         onPointerMove={lookAround}
         onPointerUp={stopLooking}
@@ -268,33 +335,16 @@ export default function SafariWalk({
         <div className="safari-walk-world" ref={host} aria-hidden="true" />
         <div className="safari-walk-vignette" aria-hidden="true" />
         <div className="safari-walk-sightings">
-          {zone.signals.map(({ encounter }) => (
-            <button
-              key={encounter.id}
-              ref={(element) => {
-                if (element) markers.current.set(encounter.id, element);
-                else markers.current.delete(encounter.id);
-              }}
-              type="button"
-              className="safari-walk-sighting"
-              aria-label={`Observar a ${encounter.name}`}
-              onClick={() => onObserve(encounter.id)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- Keep transparency and fall back to the official sprite. */}
-              <img
-                src={artworkUrl(encounter.pokemonId)}
-                alt=""
-                draggable={false}
-                onError={(event) => {
-                  const image = event.currentTarget;
-                  const fallback = spriteUrl(encounter.pokemonId);
-                  if (image.src !== fallback) image.src = fallback;
-                  else image.hidden = true;
-                }}
+          <AnimatePresence key={zone.id} initial={false}>
+            {zone.signals.map((signal) => (
+              <SafariSighting
+                key={signal.encounter.id}
+                signal={signal}
+                markers={markers}
+                onObserve={onObserve}
               />
-              <span>{encounter.name}</span>
-            </button>
-          ))}
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -364,12 +414,13 @@ export default function SafariWalk({
             {zone.signals.length === 0 && <span>Sin señales por ahora.</span>}
           </div>
           <p className="safari-walk-instructions">
-            {hasWebGL === false ? "Vista panorámica · " : ""}Arrastrá para mirar alrededor.
+            {hasWebGL === false ? "Vista panorámica · " : ""}Arrastrá para girar 360°.
           </p>
         </section>
         <SafariFieldRadar
           expedition={expedition}
           zones={snapshot.zones}
+          nextRefreshAt={snapshot.nextRefreshAt}
           activeZone={zoneIndex}
           registeredIds={registeredIds}
           onTravel={setZoneIndex}

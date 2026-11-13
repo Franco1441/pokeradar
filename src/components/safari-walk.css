@@ -30,6 +30,11 @@
   cursor: grabbing;
 }
 
+.safari-walk-viewport:focus-visible {
+  outline: 2px solid var(--walk-accent);
+  outline-offset: -4px;
+}
+
 .safari-walk-panorama {
   position: absolute;
   inset: 0;
@@ -103,6 +108,13 @@
   color: #fffaf0;
 }
 
+.safari-walk-sighting-content {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  opacity: var(--sighting-presence, 0);
+}
+
 .safari-walk-sighting img {
   display: block;
   width: 100%;
@@ -115,7 +127,7 @@
   display: none;
 }
 
-.safari-walk-sighting > span {
+.safari-walk-sighting-label {
   max-width: 100%;
   padding: 4px 8px;
   border-radius: 4px;
@@ -593,6 +605,18 @@
 
   .safari-walk-local {
     gap: 4px;
+  }
+
+  .safari-walk-local-signals {
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    pointer-events: auto;
+  }
+
+  .safari-walk-observe {
+    flex: 0 0 auto;
   }
 
   .safari-walk-instructions {

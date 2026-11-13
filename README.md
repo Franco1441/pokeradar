@@ -4,7 +4,7 @@ Explorá siete hábitats del mundo, investigá Pokémon y construí tu propio di
 
 ## 1. Concepto y narrativa
 
-PokéRadar propone un recorrido de investigación con 79 especies repartidas entre siete expediciones. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en el mapa regional y entre diez y trece en la exploración a pie. El Safari muestra seis encuentros activos en tres zonas.
+PokéRadar propone un recorrido de investigación con 93 especies repartidas entre siete expediciones. El mapa abre como un globo interactivo. Podés girarlo o elegir un destino en el panel para descender a los bosques de Nikkō, Reykjanes, el Namib, Zermatt, el arrecife de Heron, la selva de Iguazú o los humedales de Everglades. Cada destino tiene seis avistamientos en el mapa regional y entre doce y quince en la exploración a pie. El Safari mantiene entre seis y nueve encuentros activos en tres zonas.
 
 El recorrido principal consiste en viajar, encontrar un Pokémon, consultar su ficha y registrar el encuentro. Cada expedición propone registrar tres especies y conocer al menos dos tipos diferentes. Los descubrimientos completan un atlas personal y permiten formar un equipo de seis favoritos.
 
@@ -24,13 +24,13 @@ Cada expedición tiene un punto de entrada georreferenciado a una vista panorám
 
 Desde el mapa regional podés abrir **Clima local** para consultar las condiciones y los tipos favorecidos. Cada ficha explica la relación propuesta entre especie y hábitat.
 
-Safari permite moverse entre tres zonas de cada expedición. Al tocar una zona en el radar de campo, la cámara se desplaza y muestra dos Pokémon en el terreno. El radar permanece visible, indica tu ubicación y marca en dorado los Pokémon que todavía no registraste, incluidos los de otras zonas. La selección se actualiza cada minuto según el bioma, la fase local y el clima. **En vivo** usa el dato de luz de Open-Meteo y estima la fase mediante la hora local si el servicio falla. **Día** y **Noche** permiten probar ambas fases conservando la lectura meteorológica del lugar. Podés abrir una ficha y registrar el encuentro sin perder tu zona. Si WebGL falla, el radar, las fichas y el cambio de zona siguen disponibles en una vista panorámica. El mapa mide el espacio libre junto a la ficha y confirma la llegada con un anillo anclado al marcador. Al completar una expedición, el atlas guarda una postal del primer hallazgo que cumplió los dos objetivos, con el panorama y la fecha local.
+Safari permite moverse entre tres zonas de cada expedición. Al tocar una zona en el radar de campo, la cámara se desplaza y conserva tu orientación. Podés girar 360° con un arrastre o con las flechas. El paisaje envolvente de Safari se construye a partir de las imágenes de cada destino. Los Pokémon entran y salen en distintos momentos y algunos aparecen a un costado o detrás. El radar indica hacia dónde mirás, cuánto falta para el próximo cambio y en qué zona se detectó una especie que todavía no registraste. **En vivo** usa el dato de luz de Open-Meteo y estima la fase mediante la hora local si el servicio falla. **Día** y **Noche** permiten probar ambas fases conservando la lectura meteorológica del lugar. Podés abrir una ficha y registrar el encuentro sin perder tu zona. Si WebGL falla, el radar, las fichas y el cambio de zona siguen disponibles en una vista panorámica. El mapa mide el espacio libre junto a la ficha y confirma la llegada con un anillo anclado al marcador. Al completar una expedición, el atlas guarda una postal del primer hallazgo que cumplió los dos objetivos, con el panorama y la fecha local.
 
 ### Datos reales y simulación
 
 Los nombres, tipos, estadísticas, medidas, imágenes, descripciones y sonidos provienen de PokéAPI. Las condiciones meteorológicas provienen de Open-Meteo. Las coordenadas de los avistamientos y sus asociaciones con los destinos son una curaduría ficticia del proyecto, identificada en la interfaz.
 
-Los 79 identificadores y tipos del catálogo fueron contrastados con PokéAPI. El catálogo local permite dibujar el mapa y ofrecer filtros inmediatamente. Al abrir una ficha, la aplicación consulta los datos detallados de la especie en la API.
+Los 93 identificadores y tipos del catálogo fueron contrastados con PokéAPI. El catálogo local permite dibujar el mapa y ofrecer filtros inmediatamente. Al abrir una ficha, la aplicación consulta los datos detallados de la especie en la API.
 
 ### Referencias de experiencia
 
@@ -107,9 +107,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además de la rotación por minuto.
+Las pruebas unitarias cubren el registro idempotente, la separación entre expediciones, el límite de seis favoritos, la recuperación de datos guardados incompletos, el cumplimiento de objetivos, los códigos meteorológicos, la conversión de medidas de PokéAPI, la cancelación de consultas y la descripción en español. Las reglas del Safari se prueban con cambios de fase, clima y zona horaria, además del ciclo de aparición y retiro de cada señal.
 
-Pasaron TypeScript, ESLint, 56 pruebas unitarias, 18 pruebas E2E y la compilación de producción. Las pruebas E2E recorren los 79 avistamientos de campo, verifican el descenso directo a Heron y el doble clic, prueban el cambio de zona y la actualización del radar al registrar un Pokémon y comprueban el acceso a las fichas sin WebGL. También verifican los límites de zoom, el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
+Pasaron TypeScript, ESLint, 58 pruebas unitarias, 18 pruebas E2E y la compilación de producción. Las pruebas E2E recorren los 93 avistamientos de campo, verifican el descenso directo a Heron y el doble clic, prueban el cambio de zona y la actualización del radar al aparecer, retirarse o registrar un Pokémon y comprueban el acceso a las fichas sin WebGL. También verifican los límites de zoom, el contexto de la ficha en el globo y la reapertura de una postal después de recargar. El globo solar, Safari y las expediciones se verificaron en Chrome, en escritorio y celular, con cartografía, clima y fichas reales.
 
 ## 3. Uso de inteligencia artificial
 
