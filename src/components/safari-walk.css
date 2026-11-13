@@ -14,7 +14,8 @@
 .safari-walk-viewport,
 .safari-walk-world,
 .safari-walk-vignette,
-.safari-walk-sightings {
+.safari-walk-sightings,
+.safari-walk-travel-veil {
   position: absolute;
   inset: 0;
 }
@@ -56,6 +57,12 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.safari-walk-travel-veil {
+  pointer-events: none;
+  background: #101e1e;
+  opacity: var(--walk-veil, 0);
 }
 
 .safari-walk-vignette {

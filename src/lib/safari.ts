@@ -5,11 +5,10 @@ import { weatherInfo } from "./weather";
 export type SafariMode = "live" | "day" | "night";
 export const SAFARI_INTERVAL_MS = 60_000;
 export const SAFARI_CLOCK_MS = 1000;
+export const SAFARI_RESPAWN_MS = 30_000;
 export const SAFARI_FRESH_MS = 8000;
 const MAX_SIGNALS = 4;
-const SIGHTING_INTERVAL_MS = 21_000;
-const BONUS_MARGIN_MS = 6000;
-const FAVORABLE_WEATHER_MARGIN_MS = 3000;
+const VISIT_STEPS = 3;
 
 export interface SafariSignal {
   encounter: Encounter;
@@ -57,10 +56,8 @@ function safariSeed(value: string) {
 
 function getZoneSightings(
   encounters: Encounter[],
-  now: number,
+  tick: number,
   offset: number,
-  visitInterval: (encounter: Encounter) => number,
-  favors: (encounter: Encounter) => boolean,
 ) {
   if (encounters.length <= 2) {
     return {
@@ -69,55 +66,45 @@ function getZoneSightings(
     };
   }
 
-  // An even cycle preserves the same slot during both intervals of a visit.
-  const cycle = encounters.length % 2 === 0 ? encounters : [...encounters, ...encounters];
-  const durations = cycle.map(visitInterval);
-  const cycleDuration = durations.reduce((total, duration) => total + duration, 0);
-  const cycleStart = Math.floor((now - offset) / cycleDuration) * cycleDuration + offset;
-  let current = 0;
-  let startedAt = cycleStart;
-  while (now >= startedAt + durations[current]) {
-    startedAt += durations[current];
-    current++;
-  }
-
-  const prior = (current + cycle.length - 1) % cycle.length;
-  const upcoming = (current + 1) % cycle.length;
-  const endsAt = startedAt + durations[current];
+  const zoneTick = tick + offset;
+  const visit = Math.floor(zoneTick / VISIT_STEPS);
+  const phase = zoneTick - visit * VISIT_STEPS;
+  const startedAt = (tick - phase) * SAFARI_RESPAWN_MS;
+  const visitDuration = VISIT_STEPS * SAFARI_RESPAWN_MS;
+  const endsAt = startedAt + visitDuration;
+  const current = ((visit % encounters.length) + encounters.length) % encounters.length;
+  const prior = (current + encounters.length - 1) % encounters.length;
+  // Alternate the front slot by visit, so the other creature stays in place.
+  const currentSlot = Math.abs(visit % 2);
   const signals = [
     {
-      encounter: cycle[prior],
-      slot: prior % 2,
-      appearedAt: startedAt - durations[prior],
+      encounter: encounters[prior],
+      slot: 1 - currentSlot,
+      appearedAt: startedAt - visitDuration,
       expiresAt: endsAt,
     },
     {
-      encounter: cycle[current],
-      slot: current % 2,
+      encounter: encounters[current],
+      slot: currentSlot,
       appearedAt: startedAt,
-      expiresAt: endsAt + durations[upcoming],
+      expiresAt: endsAt + visitDuration,
     },
   ];
-  // Keep the extra sighting clear of both front slots and allow a grace period
-  // before a creature can return in a different part of the terrain.
-  const bonusIndex = (current + (encounters.length === 3 ? 1 : 2)) % cycle.length;
-  const bonus = cycle[bonusIndex];
-  const bonusStartsAt = startedAt + BONUS_MARGIN_MS;
-  const bonusEndsAt = endsAt - (favors(bonus) ? FAVORABLE_WEATHER_MARGIN_MS : BONUS_MARGIN_MS);
-  let nextRefreshAt = endsAt;
-  if (now < bonusStartsAt) {
-    nextRefreshAt = bonusStartsAt;
-  } else if (now < bonusEndsAt) {
+  // Swap one front sighting, then allow a visitor for one tick before it leaves.
+  if (phase === 1) {
+    const bonusIndex = (current + (encounters.length === 3 ? 1 : 2)) % encounters.length;
     signals.push({
-      encounter: bonus,
-      slot: 2 + (current % 2),
-      appearedAt: bonusStartsAt,
-      expiresAt: bonusEndsAt,
+      encounter: encounters[bonusIndex],
+      slot: 2 + currentSlot,
+      appearedAt: startedAt + SAFARI_RESPAWN_MS,
+      expiresAt: startedAt + 2 * SAFARI_RESPAWN_MS,
     });
-    nextRefreshAt = bonusEndsAt;
   }
 
-  return { signals: signals.sort((first, second) => first.slot - second.slot), nextRefreshAt };
+  return {
+    signals: signals.sort((first, second) => first.slot - second.slot),
+    nextRefreshAt: (tick + 1) * SAFARI_RESPAWN_MS,
+  };
 }
 
 function nearestZone(encounter: Encounter, zones: readonly SafariZone[], scale: number) {
@@ -148,10 +135,11 @@ export function getSafariSnapshot(
   const conditions = weather ? weatherInfo(weather) : undefined;
   const favors = (encounter: Encounter) =>
     encounter.types.some((type) => conditions?.types.includes(type));
-  const slot = Math.floor(now / SAFARI_INTERVAL_MS);
+  const tick = Math.floor(now / SAFARI_RESPAWN_MS);
+  const nextRespawnAt = (tick + 1) * SAFARI_RESPAWN_MS;
   // A stable offset lets each destination rotate its own catalog without changing encounter IDs.
   const destinationOffset = safariSeed(expedition.id);
-  const offset = slot + destinationOffset;
+  const offset = tick + destinationOffset;
   const eligible = expedition.encounters.filter(
     ({ activity }) => !activity || activity === "any" || activity === period,
   );
@@ -205,14 +193,11 @@ export function getSafariSnapshot(
           nearestZone(encounter, definitions, longitudeScale) === zone,
         );
         const seed = safariSeed(`${expedition.id}-${zone.id}`);
-        // The zone index staggers changes so one part of the radar updates at a time.
-        const phaseOffset = (index + 3 * (seed % 11)) * SAFARI_CLOCK_MS;
+        // Every zone updates on the same tick, but each takes a different phase.
         const { signals, nextRefreshAt } = getZoneSightings(
           rotate(encounters, seed),
-          now,
-          phaseOffset,
-          (encounter) => SIGHTING_INTERVAL_MS + (encounter.activity === period ? 3000 : 0),
-          favors,
+          tick,
+          index,
         );
         return {
           ...zone,
@@ -229,23 +214,18 @@ export function getSafariSnapshot(
         id: expedition.id,
         name: expedition.biome,
         coordinates: expedition.coordinates,
+        image: expedition.image,
         signals: detectUngrouped(),
         newSignalIds: [],
-        nextRefreshAt: (slot + 1) * SAFARI_INTERVAL_MS,
+        nextRefreshAt: nextRespawnAt,
       }];
-
-  const nextZoneRefresh = Math.min(...zones.flatMap(({ nextRefreshAt }) =>
-    nextRefreshAt === null ? [] : [nextRefreshAt],
-  ));
 
   return {
     isDay,
     source: mode !== "live" ? "preview" : weather ? "live" : "estimated",
     timeLabel: clock.format(now),
     weatherLabel: conditions?.label ?? "Clima no disponible",
-    nextRefreshAt: Number.isFinite(nextZoneRefresh)
-      ? nextZoneRefresh
-      : (slot + 1) * SAFARI_INTERVAL_MS,
+    nextRefreshAt: nextRespawnAt,
     signals: zones.flatMap((zone) => zone.signals),
     zones,
   };

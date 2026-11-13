@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EXPEDITIONS } from "./expeditions";
-import { getSafariSnapshot, SAFARI_FRESH_MS, SAFARI_INTERVAL_MS } from "./safari";
+import { getSafariSnapshot, SAFARI_FRESH_MS, SAFARI_RESPAWN_MS } from "./safari";
 import type {
   Encounter,
   Expedition,
@@ -70,7 +70,7 @@ describe("safari radar", () => {
         const zonesWithBonus = new Set<string>();
         let snapshot = getSafariSnapshot(expedition, { mode, now, weather });
 
-        while (snapshot.nextRefreshAt <= now + 200_000) {
+        for (let tick = 0; tick < eligible.length * 3; tick++) {
           const { zones, signals } = snapshot;
           expect(zones, expedition.id).toHaveLength(3);
           expect(new Set(signals.map(({ encounter }) => encounter.id)).size).toBe(signals.length);
@@ -88,18 +88,21 @@ describe("safari radar", () => {
     }
   });
 
-  it("changes one zone at a time and keeps ongoing sightings in their original slots", () => {
+  it("updates at 30-second boundaries while ongoing sightings stay in place", () => {
     const expedition = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
     const options = { mode: "day" as const, weather };
     const seenCounts = new Set<number>();
     const bonusSlots = new Set<number>();
     let snapshot = getSafariSnapshot(expedition, { ...options, now });
 
-    for (let event = 0; event < 20; event++) {
+    for (let event = 0; event < 12; event++) {
       const changeAt = snapshot.nextRefreshAt;
+      expect(changeAt).toBe(now + (event + 1) * SAFARI_RESPAWN_MS);
+      const beforeBoundary = getSafariSnapshot(expedition, { ...options, now: changeAt - 1 });
+      expect(beforeBoundary.signals).toEqual(snapshot.signals);
       const next = getSafariSnapshot(expedition, { ...options, now: changeAt });
-      const newSignal = next.signals.find(({ appearedAt }) => appearedAt === changeAt);
-      let changedZones = 0;
+      let arrivals = 0;
+      let departures = 0;
       for (const [index, zone] of snapshot.zones.entries()) {
         const nextZone = next.zones[index];
         const departed = zone.signals.filter(({ encounter }) =>
@@ -108,56 +111,46 @@ describe("safari radar", () => {
         const arrived = nextZone.signals.filter(({ encounter }) =>
           !zone.signals.some((signal) => signal.encounter.id === encounter.id),
         );
-        if (arrived.length || departed.length) changedZones++;
+        expect(nextZone.nextRefreshAt).toBe(changeAt + SAFARI_RESPAWN_MS);
         expect(arrived.length).toBeLessThanOrEqual(1);
         expect(departed.length).toBeLessThanOrEqual(1);
+        expect(arrived.length + departed.length).toBeGreaterThan(0);
         expect(departed.every(({ expiresAt }) => expiresAt === changeAt)).toBe(true);
+        expect(arrived.every(({ appearedAt }) => appearedAt === changeAt)).toBe(true);
+        arrivals += arrived.length;
+        departures += departed.length;
+        seenCounts.add(nextZone.signals.length);
         for (const before of zone.signals) {
           const after = nextZone.signals.find(({ encounter }) => encounter.id === before.encounter.id);
           if (after) expect(after).toEqual(before);
         }
       }
-      expect(changedZones).toBe(1);
-      if (newSignal) {
-        const id = newSignal.encounter.id;
-        expect(next.zones.flatMap(({ newSignalIds }) => newSignalIds)).toContain(id);
-        const later = getSafariSnapshot(expedition, { ...options, now: changeAt + SAFARI_FRESH_MS });
-        expect(later.zones.flatMap(({ newSignalIds }) => newSignalIds)).not.toContain(id);
-        if (newSignal.slot > 1) bonusSlots.add(newSignal.slot);
+      expect(arrivals).toBe(2);
+      expect(departures).toBe(2);
+      const freshIds = next.zones.flatMap(({ newSignalIds }) => newSignalIds);
+      expect(freshIds).toHaveLength(arrivals);
+      const later = getSafariSnapshot(expedition, { ...options, now: changeAt + SAFARI_FRESH_MS });
+      expect(later.zones.flatMap(({ newSignalIds }) => newSignalIds)).toEqual([]);
+      for (const { slot } of next.signals) {
+        if (slot > 1) bonusSlots.add(slot);
       }
-      seenCounts.add(next.signals.length);
       snapshot = next;
     }
 
-    expect(seenCounts.size).toBeGreaterThan(1);
+    expect(seenCounts).toEqual(new Set([2, 3]));
     expect(bonusSlots).toEqual(new Set([2, 3]));
   });
 
-  it("extends a weather-favored visit without moving the front sightings", () => {
+  it("marks weather-favored sightings without changing an active visit", () => {
     const expedition = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
     const options = { mode: "day" as const };
-    const snapshots = Array.from({ length: 40 }, (_, step) => {
-      const time = now + step * 3000;
-      return {
-        dry: getSafariSnapshot(expedition, { ...options, now: time }),
-        rainy: getSafariSnapshot(expedition, { ...options, now: time, weather }),
-      };
-    });
-
-    const matching = snapshots.find(({ dry, rainy }) => dry.signals.some((signal) =>
-      signal.slot > 1 && rainy.signals.some(({ encounter, boosted }) => boosted && encounter === signal.encounter),
-    ));
-    expect(matching).toBeDefined();
-    const { dry, rainy } = matching!;
-    const front = (snapshot: typeof dry) => snapshot.signals.filter(({ slot }) => slot < 2)
+    const dry = getSafariSnapshot(expedition, { ...options, now });
+    const rainy = getSafariSnapshot(expedition, { ...options, now: now + 5000, weather });
+    const positions = (snapshot: typeof dry) => snapshot.signals
       .map(({ encounter, slot, appearedAt, expiresAt }) => ({ encounter, slot, appearedAt, expiresAt }));
-    expect(front(rainy)).toEqual(front(dry));
-    const temporary = dry.signals.find(({ slot, encounter }) => slot > 1 && rainy.signals.some((signal) =>
-      signal.boosted && signal.encounter === encounter,
-    ))!;
-    const favored = rainy.signals.find(({ encounter }) => encounter === temporary.encounter)!;
-    expect(favored.appearedAt).toBe(temporary.appearedAt);
-    expect(favored.expiresAt).toBeGreaterThan(temporary.expiresAt!);
+    expect(positions(rainy)).toEqual(positions(dry));
+    expect(dry.signals.every(({ boosted }) => !boosted)).toBe(true);
+    expect(rainy.signals.some(({ boosted }) => boosted)).toBe(true);
   });
 
   it("prefers observed daylight over the approximate local schedule", () => {
@@ -238,17 +231,17 @@ describe("safari radar", () => {
     ).toBe(true);
   });
 
-  it("keeps positions and identities stable until the next minute, then rotates", () => {
+  it("keeps ungrouped sightings stable until the next 30-second boundary", () => {
     const first = getSafariSnapshot(biome, { mode: "day", now });
     const sameSlot = getSafariSnapshot(biome, {
       mode: "day",
-      now: now + SAFARI_INTERVAL_MS - 1,
+      now: now + SAFARI_RESPAWN_MS - 1,
     });
     const nextSlot = getSafariSnapshot(biome, {
       mode: "day",
-      now: now + SAFARI_INTERVAL_MS,
+      now: now + SAFARI_RESPAWN_MS,
     });
-    expect(first.nextRefreshAt).toBe(now + SAFARI_INTERVAL_MS);
+    expect(first.nextRefreshAt).toBe(now + SAFARI_RESPAWN_MS);
     expect(sameSlot.signals).toEqual(first.signals);
     expect(
       nextSlot.signals.map(({ encounter }) => encounter.id).sort(),

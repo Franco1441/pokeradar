@@ -42,6 +42,7 @@ interface SafariWalkProps {
 type WalkController = {
   setScene: (
     zone: number,
+    image: string,
     signals: SafariSnapshot["signals"],
     isDay: boolean,
   ) => void;
@@ -54,7 +55,15 @@ const MODES = [
   { value: "night", label: "Noche", Icon: Moon },
 ] as const;
 
-const TURN_PER_VIEWPORT = Math.PI * 1.35;
+const TURN_PER_VIEWPORT = Math.PI * 0.68;
+const KEY_TURN = 0.12;
+const INITIAL_HEADING = -0.16;
+
+function loadPanorama(source: string) {
+  const image = new Image();
+  image.src = source;
+  return image.decode().then(() => image);
+}
 
 function SafariSighting({
   signal,
@@ -134,17 +143,6 @@ export default function SafariWalk({
     readyCallback.current = onReady;
   }, [onReady]);
 
-  function finishArrival() {
-    if (
-      reportedReady.current ||
-      !controller.current ||
-      !panorama.current?.complete
-    )
-      return;
-    reportedReady.current = true;
-    readyCallback.current?.();
-  }
-
   useEffect(() => {
     exit.current?.focus({ preventScroll: true });
   }, []);
@@ -152,29 +150,55 @@ export default function SafariWalk({
   useEffect(() => {
     const viewportElement = viewport.current;
     const mount = host.current;
-    if (!viewportElement || !mount) return;
+    const imageElement = panorama.current;
+    if (!viewportElement || !mount || !imageElement) return;
     const stage = viewportElement;
+    const backdrop = imageElement;
 
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let frame = 0;
-    let start = 0;
-    let from = 0;
     let current = 0;
-    let target = 0;
-    let turn = 0;
-    let targetTurn = 0;
+    let displayedZone: number | undefined;
+    let requestedZone: number | undefined;
+    let request = 0;
+    let disposed = false;
+    let turn = INITIAL_HEADING;
+    let targetTurn = turn;
     let lastFrame = 0;
     let signals: SafariSnapshot["signals"] = [];
+    type ZoneImage = { zone: number; image: HTMLImageElement | null };
+    let pending: ZoneImage | null = null;
+    let travel: (ZoneImage & { start: number; from: number; swapped: boolean }) | null = null;
+    const panoramas = new Map<string, Promise<HTMLImageElement>>();
 
     const world = createSafariWorld(
       mount,
       expedition.id,
       setHasWebGL,
       schedule,
-      site.image,
     );
     function schedule() {
       if (!frame) frame = requestAnimationFrame(draw);
+    }
+
+    function getPanorama(source: string) {
+      const cached = panoramas.get(source);
+      if (cached) return cached;
+      const loading = loadPanorama(source);
+      panoramas.set(source, loading);
+      return loading;
+    }
+
+    function showPanorama({ zone: nextZone, image }: ZoneImage) {
+      displayedZone = nextZone;
+      if (image) {
+        backdrop.src = image.src;
+        world.setPanorama(image);
+      }
+      if (!reportedReady.current) {
+        reportedReady.current = true;
+        readyCallback.current?.();
+      }
     }
 
     function draw(time: number) {
@@ -184,23 +208,44 @@ export default function SafariWalk({
       const rotationPending = Math.abs(targetTurn - turn) > 0.0008;
       turn = motion.matches || !rotationPending
         ? targetTurn
-        : turn + (targetTurn - turn) * (1 - Math.exp(-elapsed / 38));
-      const duration = 460 + Math.abs(target - from) * 100;
-      const progress = !start || motion.matches
-        ? 1
-        : Math.min((time - start) / duration, 1);
-      const ease = progress * progress * (3 - 2 * progress);
-      current = from + (target - from) * ease;
+        : turn + (targetTurn - turn) * (1 - Math.exp(-elapsed / 57));
+
+      if (!travel && pending) {
+        if (displayedZone === undefined || motion.matches) {
+          current = pending.zone;
+          showPanorama(pending);
+        } else if (displayedZone !== pending.zone) {
+          travel = { ...pending, start: time, from: current, swapped: false };
+        }
+        pending = null;
+      }
+
+      let veil = 0;
+      if (travel) {
+        const progress = motion.matches ? 1 : Math.min((time - travel.start) / 670, 1);
+        const ease = progress * progress * (3 - 2 * progress);
+        current = travel.from + (travel.zone - travel.from) * ease;
+        veil = Math.min(1, progress * 2.5, (1 - progress) * 2.5);
+        if (progress >= 0.5 && !travel.swapped) {
+          showPanorama(travel);
+          travel.swapped = true;
+        }
+        if (progress === 1) travel = null;
+      }
+
       world.draw(current, turn);
-      const background = safariPanorama(current, turn);
+      const background = safariPanorama(world.heading);
       stage.parentElement?.style.setProperty("--safari-heading", `${world.heading}rad`);
       stage.style.setProperty("--walk-offset-x", `${background.x}%`);
       stage.style.setProperty("--walk-offset-y", `${background.y}%`);
       stage.style.setProperty("--walk-scale", String(background.scale));
+      stage.style.setProperty("--walk-veil", String(veil));
       for (const { encounter, slot } of signals) {
         const marker = markers.get(encounter.id);
         if (!marker) continue;
-        const location = world.locate(encounter, target, slot, target);
+        const location = displayedZone === requestedZone && requestedZone !== undefined
+          ? world.locate(encounter, requestedZone, slot, requestedZone)
+          : null;
         marker.style.visibility = location ? "visible" : "hidden";
         if (!location) continue;
         marker.style.setProperty("--sighting-x", `${location.x}px`);
@@ -208,18 +253,25 @@ export default function SafariWalk({
         marker.style.setProperty("--sighting-size", `${location.size}px`);
         marker.style.setProperty("--sighting-presence", String(location.opacity));
       }
-      if (progress < 1 || rotationPending) schedule();
-      finishArrival();
+      if (travel || pending || rotationPending) schedule();
     }
 
     controller.current = {
-      setScene(nextZone, nextSignals, isDay) {
+      setScene(nextZone, source, nextSignals, isDay) {
         signals = nextSignals;
         world.light(isDay);
-        if (nextZone !== target) {
-          from = current;
-          target = nextZone;
-          start = performance.now();
+        if (nextZone !== requestedZone) {
+          requestedZone = nextZone;
+          pending = null;
+          const sequence = ++request;
+          void getPanorama(source)
+            .catch(() => getPanorama(site.image))
+            .catch(() => null)
+            .then((image) => {
+              if (disposed || sequence !== request) return;
+              pending = { zone: nextZone, image };
+              schedule();
+            });
         }
         schedule();
       },
@@ -239,6 +291,7 @@ export default function SafariWalk({
     motion.addEventListener("change", schedule);
     resize();
     return () => {
+      disposed = true;
       controller.current = null;
       observer.disconnect();
       motion.removeEventListener("change", schedule);
@@ -249,8 +302,8 @@ export default function SafariWalk({
   }, [expedition.id, markers, site.image]);
 
   useEffect(() => {
-    controller.current?.setScene(zoneIndex, zone.signals, snapshot.isDay);
-  }, [zoneIndex, zone.signals, snapshot.isDay]);
+    controller.current?.setScene(zoneIndex, zone.image, zone.signals, snapshot.isDay);
+  }, [zoneIndex, zone.image, zone.signals, snapshot.isDay]);
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
     if (
@@ -264,12 +317,12 @@ export default function SafariWalk({
       case "a":
       case "arrowleft":
         event.preventDefault();
-        controller.current?.turnBy(-0.22);
+        controller.current?.turnBy(-KEY_TURN);
         break;
       case "d":
       case "arrowright":
         event.preventDefault();
-        controller.current?.turnBy(0.22);
+        controller.current?.turnBy(KEY_TURN);
         break;
       case "escape":
         event.preventDefault();
@@ -326,11 +379,8 @@ export default function SafariWalk({
         <img
           ref={panorama}
           className="safari-walk-panorama"
-          src={site.image}
           alt=""
           draggable={false}
-          onLoad={finishArrival}
-          onError={finishArrival}
         />
         <div className="safari-walk-world" ref={host} aria-hidden="true" />
         <div className="safari-walk-vignette" aria-hidden="true" />
@@ -346,6 +396,7 @@ export default function SafariWalk({
             ))}
           </AnimatePresence>
         </div>
+        <div className="safari-walk-travel-veil" aria-hidden="true" />
       </div>
 
       <header className="safari-walk-header">

@@ -31,7 +31,9 @@ function ScanCountdown({ nextRefreshAt }: { nextRefreshAt?: number }) {
     <span
       className="safari-field-radar-countdown"
       role="timer"
-      aria-label={secondsLeft ? `Radar en vivo. Próximo cambio en ${secondsLeft} segundos` : "Radar en vivo"}
+      aria-label={secondsLeft
+        ? `Radar en vivo. Próximo cambio en ${secondsLeft} ${secondsLeft === 1 ? "segundo" : "segundos"}`
+        : "Radar en vivo"}
     >
       En vivo{secondsLeft > 0 && <span aria-hidden="true">{secondsLeft} s</span>}
     </span>

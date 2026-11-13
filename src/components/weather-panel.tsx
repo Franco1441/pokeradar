@@ -66,8 +66,8 @@ export function WeatherPanel({
     <section className="weather-panel" aria-labelledby="weather-panel-title">
       <h2 id="weather-panel-title">Clima local</h2>
       <p className="weather-intro">
-        Estas condiciones influyen en qué Pokémon podés encontrar durante el
-        Safari.
+        La hora local define qué Pokémon aparecen en Safari. El clima indica
+        cuáles de sus tipos están favorecidos.
       </p>
       <div className="weather-location">
         <MapPin size={15} />

@@ -52,9 +52,7 @@ function stationFrames(position: number) {
   };
 }
 
-export function safariPanorama(position: number, turn: number) {
-  const { from, to, blend } = stationFrames(position);
-  const heading = turn - THREE.MathUtils.lerp(from.yaw, to.yaw, blend);
+export function safariPanorama(heading: number) {
   const rear = (1 - Math.cos(heading)) / 2;
   return {
     x: -17 * Math.sin(heading) + rear * 5,
@@ -438,7 +436,6 @@ export function createSafariWorld(
   destination: string,
   onRendererChange: (active: boolean) => void,
   redraw: () => void,
-  panoramaUrl?: string,
 ) {
   const { scene, ground, plant, stone, contactShadow, fog, ambient, sun } =
     createScene(destination);
@@ -466,7 +463,6 @@ export function createSafariWorld(
   let renderer: THREE.WebGLRenderer | null = null;
   let panoramaTexture: THREE.Texture | null = null;
   let canRender = false;
-  let disposed = false;
   let width = 1;
   let height = 1;
   let cameraPosition = 0;
@@ -503,18 +499,6 @@ export function createSafariWorld(
       canvas.addEventListener("webglcontextlost", loseContext);
       canvas.addEventListener("webglcontextrestored", restoreContext);
       canRender = true;
-      if (panoramaUrl) {
-        panoramaTexture = new THREE.TextureLoader().load(
-          panoramaUrl,
-          (photo) => {
-            if (disposed) return;
-            skyMaterial.uniforms.photo.value = photo;
-            sky.visible = true;
-            redraw();
-          },
-        );
-        panoramaTexture.colorSpace = THREE.SRGBColorSpace;
-      }
     }
   } catch {
     renderer?.dispose();
@@ -526,6 +510,15 @@ export function createSafariWorld(
     active: canRender,
     get heading() {
       return heading;
+    },
+    setPanorama(image: HTMLImageElement) {
+      if (!renderer || panoramaTexture?.image === image) return;
+      panoramaTexture?.dispose();
+      panoramaTexture = new THREE.Texture(image);
+      panoramaTexture.colorSpace = THREE.SRGBColorSpace;
+      panoramaTexture.needsUpdate = true;
+      skyMaterial.uniforms.photo.value = panoramaTexture;
+      sky.visible = true;
     },
     resize(nextWidth: number, nextHeight: number) {
       width = Math.max(1, nextWidth);
@@ -544,10 +537,10 @@ export function createSafariWorld(
       sun.color.set(isDay ? "#fff5d7" : "#b1c9ff");
       fog.color.set(isDay ? "#53665e" : "#273f52");
     },
-    draw(position: number, turn: number) {
+    draw(position: number, bearing: number) {
       cameraPosition = position;
       const { from, to, blend } = stationFrames(position);
-      heading = turn - THREE.MathUtils.lerp(from.yaw, to.yaw, blend);
+      heading = bearing;
       camera.position.set(
         THREE.MathUtils.lerp(from.x, to.x, blend),
         THREE.MathUtils.lerp(from.elevation, to.elevation, blend),
@@ -604,7 +597,6 @@ export function createSafariWorld(
       };
     },
     dispose() {
-      disposed = true;
       canvas.removeEventListener("webglcontextlost", loseContext);
       canvas.removeEventListener("webglcontextrestored", restoreContext);
       const geometries = new Set<THREE.BufferGeometry>();

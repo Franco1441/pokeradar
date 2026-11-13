@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { EXPEDITIONS } from "../src/lib/expeditions";
-import { getSafariSnapshot } from "../src/lib/safari";
+import { getSafariSnapshot, SAFARI_RESPAWN_MS } from "../src/lib/safari";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -9,7 +9,7 @@ test("scans by local conditions and registers a nocturnal sighting", async ({
 }) => {
   const iguazu = EXPEDITIONS.find(({ id }) => id === "iguazu")!;
   const base = Date.parse("2026-11-11T15:00:30Z");
-  const now = Array.from({ length: 90 }, (_, index) => base + index * 1_000).find((time) =>
+  const now = Array.from({ length: 12 }, (_, index) => base + index * SAFARI_RESPAWN_MS).find((time) =>
     getSafariSnapshot(iguazu, { mode: "night", now: time }).signals.some(({ encounter }) => encounter.pokemonId === 48),
   )!;
   await page.clock.setFixedTime(new Date(now));

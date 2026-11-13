@@ -53,6 +53,7 @@ import {
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { buildExpeditionPostcard } from "@/lib/expedition-postcard";
 import { getFieldSite } from "@/lib/field-sites";
+import { SAFARI_ZONES } from "@/lib/safari-zones";
 import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
@@ -462,9 +463,10 @@ function ExpeditionApp() {
   function prepareField(id: string, terrain: TerrainView = "field") {
     const site = getFieldSite(id);
     if (!site) return;
-    if (!preparedImage.current?.src.endsWith(site.image)) {
+    const source = terrain === "safari" ? (SAFARI_ZONES[id]?.[0]?.image ?? site.image) : site.image;
+    if (!preparedImage.current?.src.endsWith(source)) {
       const image = new window.Image();
-      image.src = site.image;
+      image.src = source;
       preparedImage.current = image;
     }
     const component =

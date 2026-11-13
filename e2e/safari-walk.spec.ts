@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { EXPEDITIONS } from "../src/lib/expeditions";
-import { getSafariSnapshot } from "../src/lib/safari";
+import { getSafariSnapshot, SAFARI_RESPAWN_MS } from "../src/lib/safari";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -20,11 +20,10 @@ test("tracks Safari signals in other zones and updates the radar after registeri
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const snapshotAt = (now: number) => getSafariSnapshot(iguazu, { mode: "live", weather: rainyDay, now });
-  const start = Array.from({ length: 65 }, (_, index) => daytime + index * 1_000).find((now) => {
+  const start = Array.from({ length: 3 }, (_, index) => daytime + index * SAFARI_RESPAWN_MS).find((now) => {
     const [current] = snapshotAt(now).zones;
-    if (current.signals.length !== 2 || current.nextRefreshAt === null) return false;
-    const [after] = snapshotAt(current.nextRefreshAt).zones;
-    return after.signals.length === 3 && after.signals.some(({ slot }) => slot >= 2);
+    const [after] = snapshotAt(now + SAFARI_RESPAWN_MS).zones;
+    return current.signals.length === 2 && after.signals.length === 3;
   })!;
   await page.clock.setFixedTime(start);
   await page.route(/api\.open-meteo\.com\/v1\/forecast/, (route) =>
@@ -77,7 +76,7 @@ test("tracks Safari signals in other zones and updates the radar after registeri
     name: "Clima local en Selva de Iguazú",
   });
   await expect(
-    weather.getByText(/qué Pokémon podés encontrar durante el Safari/),
+    weather.getByText(/qué Pokémon aparecen en Safari/),
   ).toBeVisible();
   await weather.getByRole("button", { name: "Cerrar clima" }).click();
   await expect(climate).toBeFocused();
@@ -91,6 +90,8 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   const claro = radar.getByRole("button", { name: /^Claro de los helechos,/ });
   await expect(mirador).toHaveAttribute("aria-pressed", "true");
   await expect(claro).toHaveAccessibleName(/[23] señales, [23] sin registrar/);
+  const countdown = radar.getByRole("timer");
+  await expect(countdown).toHaveAccessibleName(/Próximo cambio en 30 segundos/);
   await expect(radar.getByText(/[4-6] sin registrar en otras zonas/, { exact: true })).toBeVisible();
   await expect(walk.getByRole("button", { name: /^Ver ficha de / })).toHaveCount(2);
 
@@ -99,9 +100,14 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   await expect(walk.getByRole("heading", { name: "Claro de los helechos" })).toBeVisible();
   const arrivalAt = snapshotAt(start).zones[0].nextRefreshAt!;
   const arrived = snapshotAt(arrivalAt).zones[0].signals.find(({ slot }) => slot >= 2)!;
+  const remoteSightings = await mirador.getAttribute("title");
+  await page.clock.setFixedTime(arrivalAt - 1_000);
+  await expect(countdown).toHaveAccessibleName(/Próximo cambio en 1 segundo$/);
+  await expect(mirador).toHaveAttribute("title", remoteSightings!);
   await page.clock.setFixedTime(arrivalAt);
   await expect(mirador).toHaveAttribute("title", new RegExp(arrived.encounter.name));
   await expect(radar.getByRole("status")).toContainText(/nueva señal en Mirador de las cataratas/);
+  await expect(countdown).toHaveAccessibleName(/Próximo cambio en 30 segundos/);
   await page.clock.setFixedTime(arrived.expiresAt!);
   await expect(mirador).not.toHaveAttribute("title", new RegExp(arrived.encounter.name));
   const nearby = walk.getByRole("button", { name: /^Ver ficha de / }).first();
