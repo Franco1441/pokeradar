@@ -1,8 +1,9 @@
 import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   Binoculars,
+  ChevronDown,
   Clock3,
   CloudSun,
   Leaf,
@@ -112,6 +113,8 @@ export default function WorldDirectory({
       ? "Consultando…"
       : "No disponible";
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsId = useId();
   const destinations = useRef<HTMLUListElement>(null);
   const showingDetail = Boolean(detail);
   useEffect(() => {
@@ -173,45 +176,58 @@ export default function WorldDirectory({
             <h2>{expedition.name}</h2>
             {site && <span>{site.name}</span>}
           </div>
+          <button
+            className="world-preview-toggle"
+            type="button"
+            aria-label={detailsOpen ? "Ocultar detalles del destino" : "Ver detalles del destino"}
+            aria-expanded={detailsOpen}
+            aria-controls={detailsId}
+            onClick={() => setDetailsOpen((value) => !value)}
+          >
+            <ChevronDown size={16} aria-hidden="true" />
+            <span aria-hidden="true">Detalles</span>
+          </button>
         </div>
 
-        <dl className="world-preview-facts">
-          <div>
-            <dt>
-              <Leaf size={12} aria-hidden="true" />
-              Bioma
-            </dt>
-            <dd title={expedition.biome}>{expedition.biome}</dd>
-          </div>
-          <div>
-            <dt>
-              <CloudSun size={12} aria-hidden="true" />
-              Clima
-            </dt>
-            <dd title={weatherLabel} aria-busy={weatherPending}>
-              {weatherLabel}
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <Clock3 size={12} aria-hidden="true" />
-              Hora local
-            </dt>
-            <dd>{localTime ?? "—"}</dd>
-          </div>
-        </dl>
+        <div className="world-preview-extra" id={detailsId} data-expanded={detailsOpen}>
+          <dl className="world-preview-facts">
+            <div>
+              <dt>
+                <Leaf size={12} aria-hidden="true" />
+                Bioma
+              </dt>
+              <dd title={expedition.biome}>{expedition.biome}</dd>
+            </div>
+            <div>
+              <dt>
+                <CloudSun size={12} aria-hidden="true" />
+                Clima
+              </dt>
+              <dd title={weatherLabel} aria-busy={weatherPending}>
+                {weatherLabel}
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <Clock3 size={12} aria-hidden="true" />
+                Hora local
+              </dt>
+              <dd>{localTime ?? "—"}</dd>
+            </div>
+          </dl>
 
-        <div
-          className="world-preview-species"
-          aria-label="Avistamientos del destino"
-        >
-          {previewEncounters.map((encounter) => (
-            <PreviewSpecies
-              key={encounter.id}
-              encounter={encounter}
-              onSelect={onPreviewEncounter}
-            />
-          ))}
+          <div
+            className="world-preview-species"
+            aria-label="Avistamientos del destino"
+          >
+            {previewEncounters.map((encounter) => (
+              <PreviewSpecies
+                key={encounter.id}
+                encounter={encounter}
+                onSelect={onPreviewEncounter}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="world-preview-actions">

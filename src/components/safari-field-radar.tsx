@@ -107,8 +107,8 @@ export default function SafariFieldRadar({
                       data-fresh={zone.newSignalIds.includes(encounter.id)}
                       title={encounter.name}
                       style={{
-                        "--blip-x": `${Math.sin(bearing) * 16}px`,
-                        "--blip-y": `${-Math.cos(bearing) * 16}px`,
+                        "--blip-x": Math.sin(bearing),
+                        "--blip-y": -Math.cos(bearing),
                       } as CSSProperties}
                     />
                   );
@@ -135,7 +135,8 @@ export default function SafariFieldRadar({
                   {current ? <LocateFixed size={13} /> : index + 1}
                 </span>
                 <span className="safari-field-radar-zone-copy">
-                  {zone.name}
+                  <span className="safari-field-radar-zone-name">{zone.name}</span>
+                  <span className="safari-field-radar-zone-short" aria-hidden="true">{zone.shortName ?? zone.name}</span>
                   {newNames && <small aria-hidden="true">{newNames}</small>}
                 </span>
                 <span

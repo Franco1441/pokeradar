@@ -46,6 +46,13 @@ interface MapViewProps {
   onInitialMapReady: () => void;
 }
 
+const COMPACT_GLOBE_WIDTH = 630;
+const COMPACT_GLOBE_DRAG = { linearity: 0.2, maxSpeed: 280, deceleration: 6200 };
+
+function compactMapControls(width: number, height: number) {
+  return width <= COMPACT_GLOBE_WIDTH || (width <= 899 && height <= 430);
+}
+
 function visiblePanel(container: HTMLElement, detailOpen: boolean) {
   const detail = detailOpen
     ? document.querySelector<HTMLElement>(
@@ -69,10 +76,11 @@ function cameraPadding(
   const bounds = panel?.getBoundingClientRect();
   const width = canvas.width;
   const height = canvas.height;
-  let left = Math.min(globe ? 15 : 38, width * 0.1);
-  const right = Math.min(globe ? 26 : 72, width * 0.17);
+  const compactGlobe = globe && width <= COMPACT_GLOBE_WIDTH;
+  let left = compactGlobe ? 8 : Math.min(globe ? 15 : 38, width * 0.1);
+  const right = compactGlobe ? 8 : Math.min(globe ? 26 : 72, width * 0.17);
   let bottom = Math.min(globe ? 48 : 112, height * 0.13);
-  let top = Math.min(globe ? 25 : 40, height * 0.12);
+  let top = compactGlobe ? 12 : Math.min(globe ? 25 : 40, height * 0.12);
 
   if (bounds && bounds.width && bounds.height) {
     if (bounds.width >= width * 0.65) {
@@ -81,7 +89,12 @@ function cameraPadding(
         Math.max(bottom, canvas.bottom - bounds.top + 12),
         height * 0.93,
       );
-      top = Math.min(globe ? 20 : 78, Math.max(0, height - bottom - 112));
+      const maxTop = compactGlobe ? 12 : globe ? 20 : 78;
+      top = Math.min(maxTop, Math.max(0, height - bottom - 112));
+      if (compactGlobe) {
+        const spareHeight = height - bottom - top - (width - left - right);
+        top += Math.max(0, Math.min(54, spareHeight * 0.65));
+      }
     } else {
       const maxLeft = width - right - Math.min(145, width * 0.35);
       left = Math.min(Math.max(left, bounds.right - canvas.left + 18), maxLeft);
@@ -123,15 +136,17 @@ function observePanelPadding(
 
 function globeViewport(container: HTMLElement) {
   const padding = cameraPadding(container, visiblePanel(container, false), true);
+  const compact = container.clientWidth <= COMPACT_GLOBE_WIDTH;
   const available = Math.min(
     container.clientWidth - padding.left - padding.right,
     container.clientHeight - padding.top - padding.bottom,
   );
-  return { padding, available };
+  return { padding, available, compact };
 }
 
-function globeMinimumZoom(available: number) {
-  const zoom = Math.log2((available * 0.68 * Math.PI) / 512);
+function globeMinimumZoom({ available, compact }: ReturnType<typeof globeViewport>) {
+  const visibleFraction = compact ? 0.84 : 0.68;
+  const zoom = Math.log2((available * visibleFraction * Math.PI) / 512);
   return Math.max(0, Math.min(1.55, zoom));
 }
 
@@ -151,11 +166,11 @@ function globeCamera(
       ? solarBoundaryCenter(104)
       : expedition.coordinates);
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
-  const { padding, available } = globeViewport(container);
+  const { padding, available, compact } = globeViewport(container);
   const baseDiameter = 512 / Math.PI / Math.cos((center[1] * Math.PI) / 180);
   const zoom = Math.min(
     2.2,
-    Math.max(0, Math.log2((available * 0.96) / baseDiameter)),
+    Math.max(0, Math.log2((available * (compact ? 0.99 : 0.96)) / baseDiameter)),
   );
   return { center, zoom, padding, pitch: 0, bearing: 0 };
 }
@@ -322,6 +337,7 @@ export default function MapView(props: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const installGlobe = useRef<(() => void) | null>(null);
+  const updatePanInertia = useRef<(() => void) | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
@@ -405,7 +421,7 @@ export default function MapView(props: MapViewProps) {
           ? globeCamera(element, expedition)
           : { center: expedition.coordinates, zoom: expedition.zoom }),
         minZoom: worldView
-          ? globeMinimumZoom(globeViewport(element).available)
+          ? globeMinimumZoom(globeViewport(element))
           : regionalMinimumZoom(expedition),
         maxZoom: 18,
         attributionControl: false,
@@ -425,6 +441,16 @@ export default function MapView(props: MapViewProps) {
     }
 
     mapRef.current = map;
+    let compactPan = false;
+    updatePanInertia.current = () => {
+      const compact = latest.current.worldView &&
+        compactMapControls(element.clientWidth, element.clientHeight);
+      if (compact === compactPan) return;
+      compactPan = compact;
+      // Keep the drag anchored under the finger and tame the coast after release.
+      map.dragPan.enable(compact ? COMPACT_GLOBE_DRAG : undefined);
+    };
+    updatePanInertia.current();
     installGlobe.current = () => {
       disposeGlobe ??= mountPhotographicGlobe(
         map,
@@ -443,6 +469,13 @@ export default function MapView(props: MapViewProps) {
     map.on("zoom", updateBackdrop);
     map.addControl(new NavigationControl({ showCompass: true }), "top-right");
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+    const fitAttribution = () => {
+      const control = element.querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
+      if (!control?.classList.contains("maplibregl-compact")) return;
+      const compact = compactMapControls(element.clientWidth, element.clientHeight);
+      control.classList.toggle("maplibregl-compact-show", !compact);
+      control.open = true;
+    };
     const zoomOut = element.querySelector<HTMLButtonElement>(
       ".maplibregl-ctrl-zoom-out",
     );
@@ -483,6 +516,7 @@ export default function MapView(props: MapViewProps) {
       window.clearTimeout(loadingTimeout);
       setReady(true);
       updateMapStatus();
+      if (compactMapControls(element.clientWidth, element.clientHeight)) fitAttribution();
     });
     map.on("sourcedata", (event) => {
       if (event.tile) tileReceived = true;
@@ -514,28 +548,55 @@ export default function MapView(props: MapViewProps) {
 
     let viewportWidth = element.clientWidth;
     let viewportHeight = element.clientHeight;
-    const observer = new ResizeObserver(() => {
+    let lastGlobeFrame = globeViewport(element);
+    let panelFramePending = false;
+    const updateViewport = () => {
+      const width = element.clientWidth;
+      const height = element.clientHeight;
       const resized =
-        viewportWidth !== element.clientWidth ||
-        viewportHeight !== element.clientHeight;
-      viewportWidth = element.clientWidth;
-      viewportHeight = element.clientHeight;
-      map.resize();
-      if (latest.current.worldView) {
-        const { available, padding } = globeViewport(element);
-        const minimum = globeMinimumZoom(available);
-        const previousMinimum = map.getMinZoom();
-        const previousZoom = map.getZoom();
-        if (previousMinimum !== minimum) map.setMinZoom(minimum);
-        if (resized && !map.isMoving() && previousZoom < 3) {
-          map.jumpTo({
-            padding,
-            zoom: Math.max(minimum, previousZoom + minimum - previousMinimum),
-          });
-        }
+        viewportWidth !== width || viewportHeight !== height;
+      const crossedCompactControls = compactMapControls(viewportWidth, viewportHeight) !==
+        compactMapControls(width, height);
+      viewportWidth = width;
+      viewportHeight = height;
+      if (resized) map.resize();
+      if (crossedCompactControls) fitAttribution();
+      updatePanInertia.current?.();
+      if (!latest.current.worldView || latest.current.landingSite) return;
+
+      const frame = globeViewport(element);
+      const panelChanged =
+        Math.abs(frame.padding.bottom - lastGlobeFrame.padding.bottom) >= 1;
+      if (!(resized || (frame.compact && (panelChanged || panelFramePending)))) return;
+      if (map.isMoving()) {
+        panelFramePending = true;
+        return;
       }
-    });
+      panelFramePending = false;
+      lastGlobeFrame = frame;
+      const minimum = globeMinimumZoom(frame);
+      const previousMinimum = map.getMinZoom();
+      const previousZoom = map.getZoom();
+      if (previousMinimum !== minimum) map.setMinZoom(minimum);
+      if (previousZoom < 3) {
+        const latitude = Math.min(Math.abs(map.getCenter().lat), 85.051129);
+        const adjustedMinimum = frame.compact
+          ? minimum + Math.log2(Math.cos((latitude * Math.PI) / 180))
+          : minimum;
+        map.jumpTo({
+          padding: frame.padding,
+          zoom: Math.max(adjustedMinimum, previousZoom + minimum - previousMinimum),
+        });
+      }
+    };
+    const observer = new ResizeObserver(updateViewport);
     observer.observe(element);
+    const panel = visiblePanel(element, false);
+    if (panel) observer.observe(panel);
+    function applyPendingFrame() {
+      if (panelFramePending) updateViewport();
+    }
+    map.on("moveend", applyPendingFrame);
 
     return () => {
       disposed = true;
@@ -545,6 +606,7 @@ export default function MapView(props: MapViewProps) {
       attachedMarkers.clear();
       disposeGlobe?.();
       installGlobe.current = null;
+      updatePanInertia.current = null;
       mapRef.current = null;
       map.remove();
     };
@@ -741,8 +803,9 @@ export default function MapView(props: MapViewProps) {
           : "Mapa de avistamientos Pokémon. También podés explorar con la lista de especies.",
       );
     map.stop();
+    updatePanInertia.current?.();
     if (props.worldView) {
-      map.setMinZoom(globeMinimumZoom(globeViewport(element).available));
+      map.setMinZoom(globeMinimumZoom(globeViewport(element)));
       const destination = EXPEDITIONS.find(
         ({ id }) => id === props.focusedDestinationId,
       );

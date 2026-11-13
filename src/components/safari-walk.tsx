@@ -21,6 +21,7 @@ import {
 import type { FieldSite } from "@/lib/field-sites";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
 import type { SafariMode, SafariSignal, SafariSnapshot } from "@/lib/safari";
+import { getSafariPanoramaSource } from "@/lib/safari-zones";
 import type { Expedition } from "@/lib/types";
 import SafariFieldRadar from "./safari-field-radar";
 import { createSafariWorld, isSafariPanorama, safariFallbackPanorama } from "./safari-world";
@@ -53,6 +54,7 @@ const MODES = [
 ] as const;
 
 const TURN_PER_VIEWPORT = Math.PI * 0.68;
+const TOUCH_TURN_PER_VIEWPORT = Math.PI * 0.4;
 const KEY_TURN = 0.12;
 const INITIAL_HEADING = -0.16;
 const COVER_MS = 240;
@@ -187,12 +189,21 @@ export default function SafariWalk({
 
     function getPanorama(source: string) {
       const cached = panoramas.get(source);
-      if (cached) return cached;
-      const loading = loadPanorama(source).catch((error: unknown) => {
+      if (cached) {
         panoramas.delete(source);
+        panoramas.set(source, cached);
+        return cached;
+      }
+      const loading = loadPanorama(source).catch((error: unknown) => {
+        if (panoramas.get(source) === loading) panoramas.delete(source);
         throw error;
       });
       panoramas.set(source, loading);
+      // Keep only the current and most recently requested decoded sources.
+      if (panoramas.size > 2) {
+        const oldest = panoramas.keys().next().value;
+        if (oldest !== undefined) panoramas.delete(oldest);
+      }
       return loading;
     }
 
@@ -219,7 +230,12 @@ export default function SafariWalk({
         const artwork = new Image();
         artwork.src = artworkUrl(encounter.pokemonId);
       }
-      void getPanorama(next.image)
+      const preferredSource = getSafariPanoramaSource(next.image);
+      const preferred = getPanorama(preferredSource);
+      const texture = preferredSource === next.image
+        ? preferred
+        : preferred.catch(() => getPanorama(next.image));
+      void texture
         .catch(() => getPanorama(site.image))
         .catch(() => null)
         .then((image) => {
@@ -383,8 +399,9 @@ export default function SafariWalk({
     if (pointer.current?.id !== event.pointerId) return;
     const delta = pointer.current.x - event.clientX;
     pointer.current.x = event.clientX;
+    const rotation = event.pointerType === "touch" ? TOUCH_TURN_PER_VIEWPORT : TURN_PER_VIEWPORT;
     controller.current?.turnBy(
-      (delta / event.currentTarget.clientWidth) * TURN_PER_VIEWPORT,
+      (delta / event.currentTarget.clientWidth) * rotation,
     );
   }
 
@@ -457,12 +474,14 @@ export default function SafariWalk({
           <h2 id="safari-walk-title">Safari</h2>
           <div className="safari-walk-weather">
             <CloudSun size={14} aria-hidden="true" />
-            {snapshot.source === "preview"
-              ? snapshot.isDay
-                ? "Día de prueba"
-                : "Noche de prueba"
-              : `${snapshot.timeLabel} · Hora local`}
-            <span>{snapshot.weatherLabel}</span>
+            <span className="safari-walk-period">
+              {snapshot.source === "preview"
+                ? snapshot.isDay
+                  ? "Día de prueba"
+                  : "Noche de prueba"
+                : `${snapshot.timeLabel} · Hora local`}
+            </span>
+            <span className="safari-walk-conditions">{snapshot.weatherLabel}</span>
           </div>
         </div>
         <div
@@ -475,9 +494,10 @@ export default function SafariWalk({
               type="button"
               key={value}
               aria-pressed={mode === value}
+              title={label}
               onClick={() => onModeChange(value)}
             >
-              <Icon size={15} aria-hidden="true" /> {label}
+              <Icon size={15} aria-hidden="true" /> <span>{label}</span>
             </button>
           ))}
         </div>

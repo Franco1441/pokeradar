@@ -230,7 +230,7 @@
   font-weight: 650;
 }
 
-.safari-walk-weather > span {
+.safari-walk-conditions {
   border-left: 1px solid var(--walk-border);
   padding-left: 7px;
 }
@@ -581,46 +581,90 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 720px) {
+.safari-field-radar-zone-short {
+  display: none;
+}
+
+@media (max-width: 720px), (max-width: 899px) and (max-height: 480px) {
   .safari-walk-header {
-    inset-inline: 12px;
-    grid-template-columns: 1fr auto;
-    gap: 9px;
+    inset: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) auto max(12px, env(safe-area-inset-left));
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
   }
 
   .safari-walk-location {
-    order: 3;
-    grid-column: 1 / -1;
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    gap: 3px;
     text-align: left;
   }
 
-  .safari-walk-location p,
-  .safari-walk-weather {
-    justify-content: flex-start;
+  .safari-walk-location h2 {
+    grid-row: 1;
+    margin: 0;
+    font-size: 21px;
   }
 
-  .safari-walk-header-actions .safari-walk-glass {
-    padding-inline: 8px;
+  .safari-walk-location p {
+    display: block;
+    overflow: hidden;
     font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .safari-walk-modes button {
-    padding-inline: 6px;
-    min-width: 44px;
-  }
-
-  .safari-walk-modes button > svg {
+  .safari-walk-location p svg {
     display: none;
   }
 
+  .safari-walk-weather,
+  .safari-walk-map-label,
+  .safari-walk-modes button > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .safari-walk-header-actions .safari-walk-glass {
+    padding: 0;
+  }
+
+  .safari-walk-modes {
+    gap: 0;
+    padding: 2px;
+  }
+
+  .safari-walk-modes button {
+    padding: 0;
+    min-width: 44px;
+  }
+
+  .safari-walk-vignette {
+    background: linear-gradient(180deg, #112222d4, transparent 19%, transparent 65%, #111f20e8);
+  }
+
+  .safari-walk[data-night="true"] .safari-walk-vignette {
+    background: linear-gradient(180deg, #101e35ed, transparent 20%, transparent 65%, #0d1827ed), #28446b26;
+  }
+
   .safari-walk-footer {
-    inset-inline: 12px;
+    inset: auto max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
 
   .safari-walk-local {
     gap: 4px;
+  }
+
+  .safari-walk-local h3 {
+    font-size: 17px;
   }
 
   .safari-walk-local-signals {
@@ -633,6 +677,8 @@
 
   .safari-walk-observe {
     flex: 0 0 auto;
+    padding-inline: 8px;
+    font-size: 11px;
   }
 
   .safari-walk-instructions {
@@ -640,37 +686,111 @@
   }
 
   .safari-field-radar {
-    padding: 8px 10px 9px;
-    gap: 5px;
+    --radar-blip-reach: 10px;
+    grid-template-columns: 68px minmax(0, 1fr);
+    grid-template-areas:
+      "scope header"
+      "scope zones"
+      "summary summary";
+    align-items: center;
+    padding: 5px 8px 7px;
+    column-gap: 8px;
+    row-gap: 3px;
+    border-radius: 10px;
   }
 
-  .safari-field-radar-content {
-    grid-template-columns: 120px minmax(0, 1fr);
+  .safari-field-radar .safari-field-radar-header {
+    grid-area: header;
+    min-width: 0;
+    min-height: 22px;
   }
 
-  .safari-field-radar-zones {
-    gap: 0;
+  .safari-field-radar .safari-field-radar-header h3 {
+    font-size: 12px;
   }
 
-  .safari-field-radar-summary {
-    padding-top: 6px;
-  }
-}
-
-@media (max-width: 359px) {
-  .safari-walk-map-label {
+  .safari-field-radar-header h3 svg {
     display: none;
   }
 
+  .safari-field-radar-header button {
+    margin: -10px -2px -10px 0;
+  }
+
   .safari-field-radar-content {
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 5px;
+    display: contents;
+  }
+
+  .safari-field-radar-scope {
+    grid-area: scope;
+  }
+
+  .safari-field-radar-node-label {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+  }
+
+  .safari-field-radar-north {
+    top: 2px;
+    font-size: 7px;
+  }
+
+  .safari-field-radar-zones {
+    grid-area: zones;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .safari-field-radar-zones button {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    gap: 2px 3px;
+    padding: 4px;
+    border-color: var(--radar-line);
+  }
+
+  .safari-field-radar-zone-copy {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 10px;
+  }
+
+  .safari-field-radar-zone-name,
+  .safari-field-radar-zone-copy small {
+    display: none;
+  }
+
+  .safari-field-radar-zone-short {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .safari-field-radar-index {
+    justify-self: end;
+    width: 15px;
+    height: 15px;
+  }
+
+  .safari-field-radar-count {
+    justify-self: start;
+    min-width: 15px;
+    padding-inline: 2px;
+  }
+
+  .safari-field-radar-summary {
+    grid-area: summary;
+    padding-top: 5px;
   }
 }
 
-@media (max-width: 720px) and (max-height: 710px) {
-  .safari-walk-sighting {
-    margin-top: clamp(-75px, calc(100dvh - 710px), 0px);
+@media (max-width: 899px) and (max-height: 480px) and (orientation: landscape) {
+  .safari-walk-footer {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 310px);
   }
 }
 

@@ -240,7 +240,7 @@ button:disabled { cursor: default; }
   :root { --header: 53px; --footer: 0px; --panel-width: 280px; }
   .expedition-app { min-height: 0; }
   .main-nav { position: static; min-height: auto; padding: 3px; border-radius: 10px; border: 0; background: transparent; }
-  .main-nav button { flex-direction: row; min-height: 37px; padding: 0 8px; }
+  .main-nav button { flex: 0 0 auto; flex-direction: row; min-height: 44px; padding: 0 8px; white-space: nowrap; }
   .main-nav .active { background: var(--surface); }
   .field-panel, .field-panel.is-expanded { inset: 8px auto 8px 8px; width: var(--panel-width); height: auto; }
   .field-panel.safari-sheet:not(.is-expanded) { height: auto; }
@@ -272,4 +272,31 @@ button:disabled { cursor: default; }
 .toast.toast-field { top: 150px; bottom: auto; }
 @media (max-width: 899px) {
   .toast.toast-field { top: 136px; }
+}
+
+@media (max-width: 630px) {
+  :root {
+    --header: 52px;
+    --footer: calc(51px + env(safe-area-inset-bottom));
+  }
+  .app-header { padding-inline: 9px; }
+  .regional-mode-actions .field-enter { margin-bottom: 5px; min-height: 50px; }
+  .regional-mode-actions .field-enter strong { font-size: 15px; }
+  .field-panel:not(:has(.world-directory, .atlas-panel)) .panel-body { padding-inline: 12px; }
+  .brand { gap: 7px; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 7px; }
+  .brand-mark svg { width: 20px; }
+  .brand-word { font-size: 22px; }
+  .brand-word small { margin-top: 3px; font-size: 7px; }
+  .team-header { min-height: 44px; padding-inline: 8px; gap: 5px; }
+  .main-nav { gap: 6px; padding: 2px 7px calc(4px + env(safe-area-inset-bottom)); }
+  .main-nav button { min-height: 44px; flex-direction: row; gap: 6px; }
+  .main-nav button svg { width: 17px; }
+  .search-field input, .atlas-filters select { font-size: 16px; }
+  .type-filters button, .change-destination { min-height: 44px; }
+  .field-panel:has(.atlas-panel) { inset: 6px 7px; height: auto; }
+  .field-panel:has(.atlas-panel) .sheet-handle { display: none; }
+  .field-panel:not(:has(.world-directory, .atlas-panel)).is-expanded { height: min(73dvh, calc(100% - 42px)); }
+  .detail-dialog { inset-inline: 7px; height: min(67dvh, calc(100dvh - 115px)); }
+  .detail-dialog.detail-dialog-field { bottom: max(7px, env(safe-area-inset-bottom)); }
 }

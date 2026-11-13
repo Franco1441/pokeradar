@@ -86,6 +86,8 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   const walk = page.getByRole("main", { name: "Safari en primera persona" });
   await expect(walk).toBeVisible();
   await expect(page).toHaveURL(/region=iguazu&view=safari$/);
+  const panorama = walk.locator("img.safari-walk-panorama");
+  await expect(panorama).toHaveJSProperty("naturalWidth", 2560);
   const radar = walk.getByRole("complementary", { name: "Radar de campo" });
   const mirador = radar.getByRole("button", { name: /^Mirador de las cataratas,/ });
   const claro = radar.getByRole("button", { name: /^Claro de los helechos,/ });
@@ -99,6 +101,7 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   await claro.click();
   await expect(claro).toHaveAttribute("aria-pressed", "true");
   await expect(walk.getByRole("heading", { name: "Claro de los helechos" })).toBeVisible();
+  await expect(panorama).toHaveAttribute("src", /iguazu-helechos-360-2560\.webp$/);
   const arrivalAt = snapshotAt(start).zones[0].nextRefreshAt!;
   const arrived = snapshotAt(arrivalAt).zones[0].signals.find(({ slot }) => slot >= 2)!;
   const remoteSightings = await mirador.getAttribute("title");

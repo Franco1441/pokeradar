@@ -54,7 +54,7 @@ import {
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { buildExpeditionPostcard } from "@/lib/expedition-postcard";
 import { getFieldSite } from "@/lib/field-sites";
-import { SAFARI_ZONES } from "@/lib/safari-zones";
+import { getSafariPanoramaSource, SAFARI_ZONES } from "@/lib/safari-zones";
 import { getExpeditionCatalog } from "@/lib/safari-roster";
 import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
@@ -472,7 +472,9 @@ function ExpeditionApp() {
   function prepareField(id: string, terrain: TerrainView = "field") {
     const site = getFieldSite(id);
     if (!site) return;
-    const source = terrain === "safari" ? (SAFARI_ZONES[id]?.[0]?.image ?? site.image) : site.image;
+    const source = terrain === "safari"
+      ? getSafariPanoramaSource(SAFARI_ZONES[id]?.[0]?.image ?? site.image)
+      : site.image;
     if (!preparedImage.current?.src.endsWith(source)) {
       const image = new window.Image();
       image.src = source;
@@ -741,6 +743,7 @@ function ExpeditionApp() {
           />
           <div className="map-toolbar">
             <button
+              className={worldView ? "map-back-to-region selected" : ""}
               title={
                 worldView
                   ? "Volver a la expedición"
@@ -758,7 +761,6 @@ function ExpeditionApp() {
                       changeExpedition(focusedDestinationId ?? expedition.id)
                   : showWorld
               }
-              className={worldView ? "selected" : ""}
             >
               <Globe2 size={20} />
             </button>

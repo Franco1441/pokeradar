@@ -450,3 +450,66 @@
   .safari-signal-enter .marker-inner,
   .is-safari .pokemon-marker .marker-inner::after { animation: none; }
 }
+
+@media (max-width: 630px) {
+  .is-globe .map-canvas .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+    margin: 0 7px 7px 0;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-attrib-button {
+    width: 32px;
+    height: 32px;
+    background-position: center;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-top-right {
+    top: 0;
+    right: 0;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
+    display: flex;
+    margin: 6px 7px 0 0;
+    border: 1px solid #a4b8bd52;
+    border-radius: 7px;
+    background: #15252fdd;
+    box-shadow: none;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-top-right button {
+    background: transparent;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-top-right button:hover,
+  .is-globe .map-canvas .maplibregl-ctrl-top-right button:focus-visible {
+    background: #30424b;
+    outline-color: #f5f2ea;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-group button + button {
+    border-top: 0;
+    border-inline-start: 1px solid #a4b8bd52;
+  }
+
+  .is-globe .map-canvas .maplibregl-ctrl-top-right button .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
+
+  .map-stage-world:has(.world-preview) .map-toolbar {
+    top: 6px;
+    right: auto;
+    left: 7px;
+  }
+
+  .map-stage-world:has(.world-preview) .map-toolbar .map-back-to-region { display: none; }
+
+  .map-stage-world:has(.world-preview) .map-toolbar button {
+    width: 44px;
+    height: 44px;
+    border-color: #a4b8bd52;
+    border-radius: 7px;
+    color: #f5f2ea;
+    background: #15252fdd;
+    box-shadow: none;
+  }
+}

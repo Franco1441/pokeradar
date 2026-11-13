@@ -110,6 +110,10 @@ test("keeps the selected destination, weather, and Pokémon detail in one globe 
 
   await page.goto("/?region=nikko&view=world");
   const panel = page.locator("#expedition-panel");
+  const details = panel.getByRole("button", { name: "Ver detalles del destino" });
+  await expect(details).toHaveAttribute("aria-expanded", "false");
+  await expect(panel.getByText(/12 °C/)).toBeHidden();
+  await details.click();
   await expect(panel.getByText(/12 °C/)).toBeVisible();
   await panel
     .getByRole("button", { name: "Enfocar Selva de Iguazú, Argentina" })

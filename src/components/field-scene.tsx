@@ -412,9 +412,10 @@ export default function FieldScene({
           ref={exit}
           className="field-exit"
           type="button"
+          aria-label="Volver al mapa"
           onClick={onExit}
         >
-          <ArrowLeft size={17} /> Volver al mapa
+          <ArrowLeft size={17} aria-hidden="true" /> <span>Volver al mapa</span>
         </button>
       </header>
 

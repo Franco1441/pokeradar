@@ -3,6 +3,9 @@ import type { Encounter } from "@/lib/types";
 
 const FULL_TURN = Math.PI * 2;
 const MAX_RENDER_PIXELS = 4_200_000;
+const DESKTOP_FOV = 55;
+const MOBILE_HORIZONTAL_FOV = 58;
+const MOBILE_MAX_VERTICAL_FOV = 103;
 
 const STATIONS = [
   {
@@ -46,13 +49,13 @@ function stationFrames(position: number) {
 }
 
 export function safariFallbackPanorama(heading: number, width: number, height: number) {
-  const size = Math.max(width * 3, height * 2.8);
+  const size = Math.max(width * 3, height * (width / height < 0.75 ? 2.15 : 2.8));
   const turn = ((heading / FULL_TURN) % 1 + 1) % 1;
   return { size, left: (width - size) / 2 - turn * size };
 }
 
 export function isSafariPanorama(source: string) {
-  return /-360\.webp(?:[?#]|$)/i.test(source);
+  return /-360-(?:2560|4096)\.webp(?:[?#]|$)/i.test(source);
 }
 
 export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
@@ -209,7 +212,13 @@ export function createSafariWorld(
       width = Math.max(1, nextWidth);
       height = Math.max(1, nextHeight);
       camera.aspect = width / height;
-      camera.fov = camera.aspect < 0.75 ? 69 : 55;
+      if (camera.aspect < 0.75) {
+        const halfHorizontal = THREE.MathUtils.degToRad(MOBILE_HORIZONTAL_FOV / 2);
+        const vertical = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(halfHorizontal) / camera.aspect));
+        camera.fov = Math.min(vertical, MOBILE_MAX_VERTICAL_FOV);
+      } else {
+        camera.fov = DESKTOP_FOV;
+      }
       camera.updateProjectionMatrix();
       const projection = camera.projectionMatrix.elements;
       projectionScale.set(1 / projection[0], 1 / projection[5]);
@@ -270,8 +279,10 @@ export function createSafariWorld(
       projected.project(camera);
       if (Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.08)
         return null;
+      const portrait = camera.aspect < 0.75;
+      const maxFraction = slotIndex < 2 ? 0.265 : 0.175;
       const widthLimit = Math.min(
-        width * (slotIndex < 2 ? 0.265 : 0.175),
+        width * maxFraction * (portrait ? 0.8 : 1),
         width < 600 ? 126 : 176,
       );
       return {
