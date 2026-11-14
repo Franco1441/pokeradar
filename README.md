@@ -2,7 +2,13 @@
 
 Explorá siete hábitats del mundo, descubrí Pokémon y registrá tus hallazgos en un diario de campo. Proyecto para el desafío técnico Frontend Engineer Junior de DataInt.
 
-[Abrir PokéRadar](https://pokeradar-lyart.vercel.app/) · [Guía de exploración](#1-concepto-y-narrativa) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA](#3-uso-de-inteligencia-artificial-ai-native-workflow)
+[Abrir PokéRadar](https://pokeradar-lyart.vercel.app/) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA y correcciones](#3-uso-de-inteligencia-artificial-ai-native-workflow)
+
+### Recorrido rápido para la evaluación
+
+1. **Globo y mapa regional.** En el globo, elegí Nikkō, tocá **Ver mapa** y seleccioná a Pikachu para probar el movimiento de cámara y la carga de la ficha. [Abrir el globo](https://pokeradar-lyart.vercel.app/?region=nikko&view=world)
+2. **Safari.** Elegí otra zona desde el radar y girá para seguir una señal. El contador marca cuándo cambia la actividad. Podés probar **Día** y **Noche** sin esperar a que cambie la hora local. [Entrar al Safari de Iguazú](https://pokeradar-lyart.vercel.app/?region=iguazu&view=safari)
+3. **Registro y persistencia.** Registrá un Pokémon desde su ficha, abrí **Mi atlas** y recargá la página para comprobar que el hallazgo queda guardado en ese navegador. [Abrir la ficha de Pikachu](https://pokeradar-lyart.vercel.app/?region=nikko&encounter=nikko-pikachu)
 
 ## 1. Concepto y narrativa
 
@@ -121,19 +127,22 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 21 pruebas de navegador recorren los 93 avistamientos de campo y verifican la aparición del globo al cargar sus texturas, los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
+Las 59 pruebas unitarias cubren la validación de respuestas de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del Safari. La suite de 21 pruebas de navegador comprueba los 93 avistamientos de exploración a pie y cubre situaciones concretas: que una respuesta lenta no reemplace la ficha seleccionada después, que el radar siga disponible si falla un panorama y que se pueda encontrar un Pokémon detrás de la cámara. [Pruebas de navegador](e2e)
+
+Con Codex también hice una comprobación en producción: el recorrido del globo a la ficha de Pikachu funcionó en Chromium de escritorio y WebKit con tamaño de pantalla móvil, con respuestas reales de PokéAPI y Open-Meteo. Para revisar el giro usé WebKit en los panoramas y probé el arrastre del globo con gestos táctiles simulados en Chromium.
 
 ## 3. Uso de inteligencia artificial (AI-Native Workflow)
 
-Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. En el Safari reemplacé los fondos reflejados por panoramas esféricos. Restauré el detalle con el modelo [Real-ESRGAN General x4v3](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) y verifiqué el giro en el navegador. Las texturas de 4096 píxeles son reescaladas a partir de las fuentes de 1774 píxeles de ancho. Son recreaciones ilustrativas de los biomas.
+Definí la experiencia como un diario de expedición a escala global. Usé Codex para explorar referencias, generar y revisar código y escribir pruebas. Mi parte fue probar las versiones en el navegador, señalar qué fallaba y definir el comportamiento esperado antes de iterar. Usé ImageGen para los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. En el Safari reemplacé los fondos reflejados por panoramas esféricos. Restauré el detalle con el modelo [Real-ESRGAN General x4v3](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) y verifiqué el giro en el navegador. Las texturas de 4096 píxeles son reescaladas a partir de las fuentes de 1774 píxeles de ancho. Son recreaciones ilustrativas de los biomas.
 
 ### Correcciones y comprobaciones durante el trabajo
 
-- **El mapa fallaba en la compilación de producción.** La primera implementación dejaba sin resolver el worker de MapLibre. La lista alternativa seguía funcionando, así que pedí verificar el mapa real en Chromium. El build pasó a copiar el worker de la versión instalada y servirlo desde el mismo origen.
-- **El zoom dejaba ver el globo cartográfico anterior.** Lo encontré al alejar por completo el mapa regional. Pedí separar sus límites de zoom de los del globo y verificamos el recorrido en escritorio y móvil.
-- **El primer Safari era un camino lineal.** Pedí elegir zonas desde un radar siempre visible y poder detectar especies sin registrar en otras zonas. Probé el giro, marqué que era demasiado rápido y definí una renovación cada 30 segundos. Las pruebas comprueban que el radar conserve las señales justo antes del límite y las actualice al alcanzarlo.
-- **La unión de los panoramas mostraba manchas azules.** Las detecté al girar en Iguazú. El ajuste de color podía escribir valores fuera del rango de un canal. Corregimos ese cálculo y comparamos las 21 zonas con los originales en WebKit.
-- **Una consulta de validación devolvió HTTP 403.** La prueba inicial de PokéAPI omitía la barra final. Repetimos la consulta con la ruta canónica y un agente de usuario explícito antes de dar por válidos los datos. Los adaptadores usan las rutas canónicas y comprueban el formato de las respuestas.
+- **El zoom mínimo cambiaba el aspecto del globo.** Lo encontré al alejar por completo el mapa regional: se perdía el fondo de estrellas y reaparecía el globo cartográfico. Pedí separar los límites de zoom de las dos vistas. La prueba lleva ambas hasta su mínimo y comprueba que conserven su contexto. [Prueba del globo y el mapa regional](e2e/world-context.spec.ts)
+- **El primer Safari se sentía lineal y las señales quedaban casi siempre de frente.** Pedí elegir zonas desde un radar siempre visible, desacelerar el giro y actualizar los avistamientos cada 30 segundos. Al probar el giro completo vi que faltaban encuentros detrás. Pedí mantener un avistamiento cerca de la entrada y variar el rumbo de los demás. El radar y la escena comparten ese rumbo, y un encuentro activo conserva su posición. La prueba gira hasta encontrar un Pokémon que empezó fuera del encuadre. [Prueba de un avistamiento detrás de la cámara](e2e/safari-walk.spec.ts#L141)
+- **En el celular, el globo quedaba chico y el giro era demasiado rápido.** Lo señalé con una captura y pedí que la tarjeta cediera espacio al mapa. La versión móvil deja los tres accesos principales a la vista y mueve el clima y los Pokémon de muestra a **Detalles**. En Safari pedí abrir el ángulo de cámara y compactar el radar. Con Codex comprobamos la vista en vertical y horizontal, el arrastre y el zoom con dos dedos.
+- **La unión de los panoramas tenía una línea y, en Iguazú, manchas azules.** Detecté el problema al girar y compartí capturas. El ajuste podía escribir colores fuera de rango. Corregimos el cálculo, procesamos las texturas desde los originales y revisamos el giro en las 21 zonas con WebKit. [Preparación de panoramas](scripts/prepare-safari-panoramas.mjs)
+- **La compilación de producción no cargaba el mapa.** La primera implementación dejaba sin resolver el worker de MapLibre y la lista alternativa podía ocultar el fallo. Pedí probar el mapa real en Chromium. El build ahora copia el worker de la versión instalada para servirlo desde el mismo origen. [Preparación del worker](scripts/prepare-map-worker.mjs)
+- **La validación inicial de PokéAPI devolvió HTTP 403.** Repetimos la consulta con la URL canónica y un agente de usuario explícito. Los adaptadores usan esas rutas y validan la estructura de las respuestas antes de mostrar los datos.
 
 ## 4. Próximos pasos
 
