@@ -10,7 +10,7 @@ Elegí la idea de un diario de expedición para darle un propósito a cada movim
 
 ### Cómo explorar
 
-1. **Elegí un destino en el globo.** Giralo o seleccioná una región desde el panel. La vista muestra el día, el crepúsculo y las luces nocturnas según la posición aproximada del sol. **Ver día y noche** lleva la cámara al límite entre las dos zonas.
+1. **Elegí un destino en el globo.** Giralo o seleccioná una región desde el panel. La vista muestra el día, el crepúsculo y las luces nocturnas según la posición aproximada del sol.
 2. **Abrí el mapa y seleccioná un Pokémon.** Cada región tiene seis marcadores con sprites. Al seleccionar uno, la cámara deja espacio para la ficha y confirma la llegada con un anillo. La ficha consulta PokéAPI en el momento y muestra nombre, tipos, ilustración, estadísticas base y sonido cuando está disponible. Durante la consulta muestra un esqueleto de carga y, si falla, permite reintentar.
 3. **Registrá el avistamiento.** Encontrar tres especies y conocer dos tipos distintos completa el objetivo de una expedición y desbloquea su postal. Podés agregar hasta seis favoritos a tu equipo. El progreso queda guardado en el navegador.
 
@@ -18,7 +18,7 @@ Elegí la idea de un diario de expedición para darle un propósito a cada movim
 
 **Explorar a pie** lleva al punto de entrada de la expedición desde la tarjeta del globo, el marcador del sendero o con doble clic en el marcador del destino. La cámara se acerca y el fundido da paso a una escena panorámica con entre doce y quince Pokémon por región. Tres se descubren al examinar pistas del entorno. Cada avistamiento presenta un dato de la especie antes de abrir su ficha. Podés recorrer la escena con arrastre o teclado y pasar a la siguiente pista después de registrar un hallazgo.
 
-**Safari** se abre desde la misma tarjeta de destino que **Explorar a pie**. Tiene 84 especies propias que rotan en tres zonas por expedición. Cada una de las 21 zonas tiene un panorama esférico distinto. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
+**Safari** se abre desde la misma tarjeta de destino que **Explorar a pie**. Tiene 84 especies propias que rotan en tres zonas por expedición. Cada una de las 21 zonas tiene un panorama esférico distinto. Elegí una zona desde el radar y girá 360° con arrastre o con las flechas. Cada 30 segundos cambian las señales activas. Una señal queda cerca del encuadre de entrada y otras pueden aparecer a los lados o detrás. Los puntos del radar indican hacia dónde girar. La fase del día determina qué especies pueden aparecer y el clima destaca los tipos favorecidos. El radar muestra tu rumbo, el tiempo hasta el próximo cambio y qué especies nuevas detectó en otras zonas. El modo **En vivo** toma la fase de Open-Meteo y usa la hora local como estimación si falla el servicio. Los modos **Día** y **Noche** permiten probar ambas fases.
 
 En celular, la tarjeta compacta deja más espacio para el globo y permite desplegar el clima y los avistamientos cuando hacen falta. En Safari, la cámara abre el encuadre y el radar ocupa menos espacio. La preferencia de movimiento reducido acorta o desactiva las transiciones. Si falla el mapa, podés elegir una expedición y consultar la lista de avistamientos. Si falla WebGL en Safari, el paisaje, el radar y las fichas siguen disponibles en la vista panorámica.
 
@@ -79,7 +79,7 @@ e2e/             Pruebas de navegación en Chromium
 
 [`page.tsx`](src/app/page.tsx) y [`layout.tsx`](src/app/layout.tsx) son Server Components. [`explorer.tsx`](src/components/explorer.tsx) es el límite cliente que coordina la selección y el progreso. Importa MapLibre mediante `next/dynamic` con `ssr: false`, de modo que el mapa se inicializa con acceso a las APIs del navegador. Una instancia conserva la cámara al cambiar de escala o abrir una escena. Al entrar por el mapa, el radar de pantalla completa permanece dos segundos como mínimo y se retira cuando el mapa está listo. La exploración a pie y Safari se cargan al entrar a cada vista. Safari decodifica el panorama de la zona elegida y cambia la textura durante el fundido. La vista 360° proyecta cada panorama equirectangular completo con muestreo continuo en la unión. En pantallas grandes de alta densidad usa texturas de 4096 × 2048; en pantallas pequeñas o con ahorro de datos usa 2560 × 1280. Cada zona se descarga cuando se necesita. Si no hay WebGL, una vista plana conserva el giro horizontal, el radar y las fichas.
 
-El ID de `Encounter` identifica el lugar del hallazgo y el ID de PokéAPI identifica la especie. [`safari.ts`](src/lib/safari.ts) calcula los avistamientos a partir del destino, la fase y el reloj, y ambas vistas de radar comparten el resultado. Los Pokémon que siguen activos conservan su posición al cambiar las señales.
+El ID de `Encounter` identifica el lugar del hallazgo y el ID de PokéAPI identifica la especie. [`safari.ts`](src/lib/safari.ts) calcula los avistamientos a partir del destino, la fase y el reloj, y ambas vistas de radar comparten el resultado. Cada señal tiene un rumbo calculado a partir de la zona, la especie y el inicio de su aparición. La escena y el radar usan ese mismo rumbo y los Pokémon activos mantienen su posición.
 
 Los adaptadores validan los datos externos en tiempo de ejecución. Las consultas de ficha y descripción usan caché por especie y `AbortSignal`. La ficha puede mostrar sus datos principales aunque falle la descripción. El clima se consulta y se cachea por destino.
 
@@ -121,17 +121,18 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 19 pruebas de navegador recorren los 93 avistamientos de campo y verifican la aparición del globo al cargar sus texturas, los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
+Las 59 pruebas unitarias cubren la normalización de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del radar, incluido el límite de 30 segundos. Las 21 pruebas de navegador recorren los 93 avistamientos de campo y verifican la aparición del globo al cargar sus texturas, los límites de zoom, el descenso a una expedición, la selección rápida, las fichas sin WebGL, la rotación del radar y la persistencia del atlas y sus postales.
 
 ## 3. Uso de inteligencia artificial (AI-Native Workflow)
 
-Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. En el Safari reemplacé los fondos reflejados por panoramas esféricos. Corregí la unión de color sin desbordamientos, restauré el detalle con el modelo [Real-ESRGAN General x4v3](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) y verifiqué el giro en el navegador. Las texturas de 4096 píxeles son reescaladas a partir de las fuentes de 1774 píxeles de ancho. Son recreaciones ilustrativas de los biomas.
+Usé Codex para interpretar la consigna, explorar referencias, implementar componentes y escribir pruebas. Elegí la escala global, el diario de expedición y las referencias de Cobblemon, Pokémon GO y Apple Maps. Con ImageGen generé los siete panoramas de campo y los 21 fondos de Safari. Los paisajes se exportaron en WebP y se revisaron dentro de la interfaz para ajustar encuadre y contraste. En el Safari reemplacé los fondos reflejados por panoramas esféricos. Restauré el detalle con el modelo [Real-ESRGAN General x4v3](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) y verifiqué el giro en el navegador. Las texturas de 4096 píxeles son reescaladas a partir de las fuentes de 1774 píxeles de ancho. Son recreaciones ilustrativas de los biomas.
 
 ### Correcciones y comprobaciones durante el trabajo
 
 - **El mapa fallaba en la compilación de producción.** La primera implementación dejaba sin resolver el worker de MapLibre. La lista alternativa seguía funcionando, así que pedí verificar el mapa real en Chromium. El build pasó a copiar el worker de la versión instalada y servirlo desde el mismo origen.
 - **El zoom dejaba ver el globo cartográfico anterior.** Lo encontré al alejar por completo el mapa regional. Pedí separar sus límites de zoom de los del globo y verificamos el recorrido en escritorio y móvil.
 - **El primer Safari era un camino lineal.** Pedí elegir zonas desde un radar siempre visible y poder detectar especies sin registrar en otras zonas. Probé el giro, marqué que era demasiado rápido y definí una renovación cada 30 segundos. Las pruebas comprueban que el radar conserve las señales justo antes del límite y las actualice al alcanzarlo.
+- **La unión de los panoramas mostraba manchas azules.** Las detecté al girar en Iguazú. El ajuste de color podía escribir valores fuera del rango de un canal. Corregimos ese cálculo y comparamos las 21 zonas con los originales en WebKit.
 - **Una consulta de validación devolvió HTTP 403.** La prueba inicial de PokéAPI omitía la barra final. Repetimos la consulta con la ruta canónica y un agente de usuario explícito antes de dar por válidos los datos. Los adaptadores usan las rutas canónicas y comprueban el formato de las respuestas.
 
 ## 4. Próximos pasos
@@ -139,7 +140,7 @@ Usé Codex para interpretar la consigna, explorar referencias, implementar compo
 Con una semana adicional ampliaría el trabajo en estas direcciones.
 
 1. Observar a usuarios que llegan por primera vez. Medir cuánto tardan en encontrar y registrar su primer Pokémon, y ajustar las instrucciones o controles donde se traben.
-2. Medir el tiempo hasta que el mapa se puede usar y los cambios de zona en celulares de gama media. Usar esas mediciones para ajustar el peso de las texturas y el momento de su carga.
+2. Medir el tiempo hasta que el mapa se puede usar y los cambios de zona en celulares de gama media. Separar la coordinación de cámara y paneles para probar esas interacciones de forma aislada.
 3. Validar en CI que los identificadores y las imágenes de cada expedición sigan disponibles. Agregar pruebas de teclado y conexión intermitente antes de ampliar el catálogo.
 4. Diseñar sincronización opcional entre dispositivos y una migración que conserve el diario local existente.
 5. Ampliar el catálogo y definir probabilidades de aparición por zona, con un tratamiento específico para Pokémon variocolor y legendarios.

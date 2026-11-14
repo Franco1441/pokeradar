@@ -502,21 +502,5 @@
     filter: invert(1);
   }
 
-  .map-stage-world:has(.world-preview) .map-toolbar {
-    top: 6px;
-    right: auto;
-    left: 7px;
-  }
-
-  .map-stage-world:has(.world-preview) .map-toolbar .map-back-to-region { display: none; }
-
-  .map-stage-world:has(.world-preview) .map-toolbar button {
-    width: 44px;
-    height: 44px;
-    border-color: #a4b8bd52;
-    border-radius: 7px;
-    color: #f5f2ea;
-    background: #15252fdd;
-    box-shadow: none;
-  }
+  .map-stage-world:has(.world-preview) .map-toolbar { display: none; }
 }

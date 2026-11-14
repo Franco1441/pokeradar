@@ -35,7 +35,6 @@ interface MapViewProps {
   worldView: boolean;
   safariPeriod?: "day" | "night";
   recenterKey?: number;
-  solarFocusKey?: number;
   focusedDestinationId?: string;
   landingSite?: FieldSite;
   landingDuration?: number;
@@ -158,13 +157,10 @@ function globeCamera(
   container: HTMLElement,
   expedition: Expedition,
   centered = false,
-  centerOverride?: [number, number],
 ) {
-  const [longitude, latitude] =
-    centerOverride ??
-    (expedition.id === "nikko" && !centered
-      ? solarBoundaryCenter(104)
-      : expedition.coordinates);
+  const [longitude, latitude] = expedition.id === "nikko" && !centered
+    ? solarBoundaryCenter(104)
+    : expedition.coordinates;
   const center: [number, number] = [longitude, Math.min(latitude, 45)];
   const { padding, available, compact } = globeViewport(container);
   const baseDiameter = 512 / Math.PI / Math.cos((center[1] * Math.PI) / 180);
@@ -341,7 +337,6 @@ export default function MapView(props: MapViewProps) {
   const markers = useRef(new Map<string, Marker>());
   const latest = useRef(props);
   const lastRecenterKey = useRef(props.recenterKey);
-  const lastSolarFocusKey = useRef(props.solarFocusKey);
   const lastConfirmationSequence = useRef<number | undefined>(undefined);
   const previousWorldView = useRef(props.worldView);
   const previousFocusedDestinationId = useRef(props.focusedDestinationId);
@@ -809,20 +804,14 @@ export default function MapView(props: MapViewProps) {
       const destination = EXPEDITIONS.find(
         ({ id }) => id === props.focusedDestinationId,
       );
-      const solarFocusRequested =
-        lastSolarFocusKey.current !== props.solarFocusKey;
-      lastSolarFocusKey.current = props.solarFocusKey;
       // A pin stays under the pointer between both clicks.
-      if (fromMarker && !solarFocusRequested) return;
+      if (fromMarker) return;
       const camera = globeCamera(
         element,
         destination ?? props.expedition,
         Boolean(destination),
-        solarFocusRequested
-          ? solarBoundaryCenter(map.getCenter().lng)
-          : undefined,
       );
-      if (focusingDestination || solarFocusRequested) {
+      if (focusingDestination) {
         map.easeTo({ ...camera, duration: reducedMotion ? 0 : 850 });
       } else {
         map.flyTo({ ...camera, duration: reducedMotion ? 0 : 1450 });
@@ -964,7 +953,6 @@ export default function MapView(props: MapViewProps) {
     props.confirmationRequest,
     props.worldView,
     props.recenterKey,
-    props.solarFocusKey,
     props.focusedDestinationId,
     props.landingSite,
     props.landingDuration,

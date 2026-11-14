@@ -31,6 +31,7 @@ test("reveals the globe after the Earth textures are ready", async ({ page }) =>
   await expect(app).not.toHaveAttribute("inert", "");
   expect(Date.now() - startedAt).toBeGreaterThanOrEqual(2_000);
   await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ver día y noche", exact: true })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Navegación principal" }).getByRole("button", { name: "Safari" })).toHaveCount(0);
   const modes = page.locator(".world-preview-actions");
   await expect(modes.getByRole("button", { name: "Explorar a pie" })).toBeVisible();
@@ -142,4 +143,8 @@ test("keeps the selected destination, weather, and Pokémon detail in one globe 
   await detail.getByRole("button", { name: "Volver al destino" }).click();
   await expect(preview).toBeFocused();
   await expect(panel.getByText(/27 °C · Lluvia/)).toBeVisible();
+
+  await page.goto("/?region=iguazu&view=world&encounter=iguazu-aipom");
+  await detail.getByRole("button", { name: "Volver al destino" }).click();
+  await expect(panel.getByRole("button", { name: "Ver detalles del destino" })).toBeFocused();
 });

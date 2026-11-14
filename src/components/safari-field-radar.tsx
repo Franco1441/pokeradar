@@ -2,7 +2,6 @@ import { ArrowUpRight, LocateFixed, Radar } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
 import type { SafariZoneSnapshot } from "@/lib/safari";
 import type { Expedition } from "@/lib/types";
-import { getSafariSignalBearing } from "./safari-world";
 import "./safari-field-radar.css";
 
 interface SafariFieldRadarProps {
@@ -97,22 +96,19 @@ export default function SafariFieldRadar({
               <span className="safari-field-radar-node-label">{index + 1}</span>
               {current && <span className="safari-field-radar-heading" />}
               <div className="safari-field-radar-blips" data-local={current}>
-                {zone.signals.map(({ encounter, slot }) => {
-                  const bearing = getSafariSignalBearing(index, slot);
-                  return (
-                    <span
-                      key={encounter.id}
-                      className="safari-field-radar-blip"
-                      data-unregistered={!registered.has(encounter.pokemonId)}
-                      data-fresh={zone.newSignalIds.includes(encounter.id)}
-                      title={encounter.name}
-                      style={{
-                        "--blip-x": Math.sin(bearing),
-                        "--blip-y": -Math.cos(bearing),
-                      } as CSSProperties}
-                    />
-                  );
-                })}
+                {zone.signals.map(({ encounter, bearing }) => (
+                  <span
+                    key={encounter.id}
+                    className="safari-field-radar-blip"
+                    data-unregistered={!registered.has(encounter.pokemonId)}
+                    data-fresh={zone.newSignalIds.includes(encounter.id)}
+                    title={encounter.name}
+                    style={{
+                      "--blip-x": Math.sin(bearing),
+                      "--blip-y": -Math.cos(bearing),
+                    } as CSSProperties}
+                  />
+                ))}
               </div>
             </div>
           ))}

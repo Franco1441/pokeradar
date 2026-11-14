@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { EXPEDITIONS } from "../src/lib/expeditions";
 import { getSafariEncounters } from "../src/lib/safari-roster";
-import { getSafariSnapshot, SAFARI_RESPAWN_MS } from "../src/lib/safari";
+import { getSafariSnapshot, SAFARI_ENTRY_HEADING, SAFARI_RESPAWN_MS } from "../src/lib/safari";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -135,4 +135,50 @@ test("tracks Safari signals in other zones and updates the radar after registeri
   await expect(
     page.getByRole("complementary", { name: "Radar Safari" }),
   ).toBeVisible();
+});
+
+
+test("the field radar points to a Pokémon behind the Safari camera", async ({ page }) => {
+  const start = Array.from({ length: 12 }, (_, index) => daytime + index * SAFARI_RESPAWN_MS)
+    .map((now) => ({
+      now,
+      rear: getSafariSnapshot(iguazu, { mode: "day", now }).zones[0].signals
+        .find(({ bearing }) => Math.cos(bearing - SAFARI_ENTRY_HEADING) < -0.5),
+    }))
+    .find(({ rear }) => rear);
+  if (!start?.rear) throw new Error("No rear sighting in the test period");
+  const { encounter, bearing } = start.rear;
+  await page.clock.setFixedTime(start.now);
+  await page.goto("/?region=iguazu&view=safari");
+  const walk = page.getByRole("main", { name: "Safari en primera persona" });
+  await walk.getByRole("button", { name: "Día", exact: true }).click();
+  const blip = walk.locator(".safari-field-radar-node[data-current=true]").getByTitle(encounter.name, { exact: true });
+  await expect(blip).toHaveCount(1);
+  const point = await blip.evaluate((el) => [
+    Number(el.style.getPropertyValue("--blip-x")),
+    Number(el.style.getPropertyValue("--blip-y")),
+  ]);
+  expect(point[0]).toBeCloseTo(Math.sin(bearing));
+  expect(point[1]).toBeCloseTo(-Math.cos(bearing));
+
+  const viewport = walk.locator(".safari-walk-viewport");
+  const pokémon = viewport.getByRole("button", { name: `Observar a ${encounter.name}` });
+  await expect(pokémon).toBeHidden();
+  await viewport.focus();
+  const angle = Math.atan2(Math.sin(bearing - SAFARI_ENTRY_HEADING), Math.cos(bearing - SAFARI_ENTRY_HEADING));
+  const direction = angle > 0 ? "ArrowRight" : "ArrowLeft";
+  for (let step = 0; step < Math.round(Math.abs(angle) / 0.12); step++) {
+    await page.keyboard.press(direction);
+  }
+  await expect(pokémon).toBeVisible();
+});
+
+test("a failed Safari panorama leaves a usable radar and explains the missing scene", async ({ page }) => {
+  await page.route(/\/(safari|expeditions)\/.+\.webp$/, (route) => route.abort());
+  await page.goto("/?region=iguazu&view=safari");
+  const walk = page.getByRole("main", { name: "Safari en primera persona" });
+  await expect(walk.getByText(/No se pudo cargar el paisaje/)).toBeVisible();
+  await walk.getByRole("button", { name: /^Claro de los helechos,/ }).click();
+  await expect(walk.getByRole("heading", { name: "Claro de los helechos" })).toBeVisible();
+  await expect(walk.getByRole("button", { name: /^Ver ficha de / }).first()).toBeVisible();
 });

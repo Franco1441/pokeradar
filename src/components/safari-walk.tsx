@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { FieldSite } from "@/lib/field-sites";
 import { artworkUrl, spriteUrl } from "@/lib/pokemon";
-import type { SafariMode, SafariSignal, SafariSnapshot } from "@/lib/safari";
+import { SAFARI_ENTRY_HEADING, type SafariMode, type SafariSignal, type SafariSnapshot } from "@/lib/safari";
 import { getSafariPanoramaSource } from "@/lib/safari-zones";
 import type { Expedition } from "@/lib/types";
 import SafariFieldRadar from "./safari-field-radar";
@@ -56,7 +56,6 @@ const MODES = [
 const TURN_PER_VIEWPORT = Math.PI * 0.68;
 const TOUCH_TURN_PER_VIEWPORT = Math.PI * 0.4;
 const KEY_TURN = 0.12;
-const INITIAL_HEADING = -0.16;
 const COVER_MS = 240;
 const REVEAL_MS = 300;
 
@@ -128,6 +127,7 @@ export default function SafariWalk({
   detailOpen,
 }: SafariWalkProps) {
   const [zoneIndex, setZoneIndex] = useState(0);
+  const [panoramaFailed, setPanoramaFailed] = useState(false);
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
   const zone = snapshot.zones[zoneIndex];
   const exit = useRef<HTMLButtonElement>(null);
@@ -162,7 +162,7 @@ export default function SafariWalk({
     let requestedZone: number | undefined;
     let request = 0;
     let disposed = false;
-    let turn = INITIAL_HEADING;
+    let turn = SAFARI_ENTRY_HEADING;
     let targetTurn = turn;
     let lastFrame = 0;
     let width = 1;
@@ -213,9 +213,16 @@ export default function SafariWalk({
         backdrop.src = image.src;
         stage.dataset.spherical = String(isSafariPanorama(image.src));
         stage.style.setProperty("--walk-panorama", `url(${JSON.stringify(image.src)})`);
-        world.setPanorama(image);
+      } else {
+        backdrop.removeAttribute("src");
+        delete stage.dataset.spherical;
+        stage.style.removeProperty("--walk-panorama");
       }
-      flushSync(() => setZoneIndex(nextZone));
+      world.setPanorama(image);
+      flushSync(() => {
+        setZoneIndex(nextZone);
+        setPanoramaFailed(!image);
+      });
     }
 
     function travelTo(nextZone: number) {
@@ -300,10 +307,10 @@ export default function SafariWalk({
       stage.style.setProperty("--walk-panorama-width", `${background.size}px`);
       stage.style.setProperty("--walk-panorama-left", `${background.left}px`);
       stage.style.setProperty("--walk-veil", String(veil));
-      for (const { encounter, slot } of zones[current]?.signals ?? []) {
-        const marker = markers.get(encounter.id);
+      for (const signal of zones[current]?.signals ?? []) {
+        const marker = markers.get(signal.encounter.id);
         if (!marker) continue;
-        const location = world.locate(encounter, current, slot, current);
+        const location = world.locate(signal, current);
         marker.style.visibility = location ? "visible" : "hidden";
         if (!location) continue;
         marker.style.setProperty("--sighting-x", `${location.x}px`);
@@ -502,6 +509,12 @@ export default function SafariWalk({
           ))}
         </div>
       </header>
+
+      {panoramaFailed && (
+        <p className="safari-walk-panorama-notice" role="status">
+          No se pudo cargar el paisaje. Podés seguir explorando con el radar.
+        </p>
+      )}
 
       <div className="safari-walk-footer">
         <section className="safari-walk-local" aria-label="Avistamientos de la zona actual">

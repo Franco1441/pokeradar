@@ -1,7 +1,7 @@
 import { getSafariEncounters } from "./safari-roster";
 import { describe, expect, it } from "vitest";
 import { EXPEDITIONS } from "./expeditions";
-import { getSafariSnapshot, SAFARI_FRESH_MS, SAFARI_RESPAWN_MS } from "./safari";
+import { getSafariSnapshot, SAFARI_ENTRY_HEADING, SAFARI_FRESH_MS, SAFARI_RESPAWN_MS } from "./safari";
 import type {
   Encounter,
   Expedition,
@@ -61,7 +61,7 @@ const biome: Expedition = {
 };
 
 describe("safari radar", () => {
-  it("keeps two front sightings and rotates in every eligible species", () => {
+  it("keeps a nearby sighting, populates the rear and rotates in every eligible species", () => {
     for (const expedition of EXPEDITIONS) {
       const safari = getSafariEncounters(expedition);
       const walking = new Set(expedition.encounters.map(({ pokemonId }) => pokemonId));
@@ -73,6 +73,7 @@ describe("safari radar", () => {
         );
         const seen = new Set<string>();
         const zonesWithBonus = new Set<string>();
+        const rearBearings = new Map<string, Set<number>>();
         let snapshot = getSafariSnapshot(expedition, { mode, now, weather });
 
         for (let tick = 0; tick < eligible.length * 3; tick++) {
@@ -82,6 +83,11 @@ describe("safari radar", () => {
           for (const { id, signals } of zones) {
             expect(signals.slice(0, 2).map(({ slot }) => slot), id).toEqual([0, 1]);
             if (signals.length > 2) zonesWithBonus.add(id);
+            expect(Math.abs(signals[0].bearing - SAFARI_ENTRY_HEADING)).toBeLessThan(0.23);
+            const rear = rearBearings.get(id) ?? new Set<number>();
+            const roamingBearing = signals[1].bearing;
+            if (Math.cos(roamingBearing - SAFARI_ENTRY_HEADING) < 0) rear.add(roamingBearing);
+            rearBearings.set(id, rear);
             for (const { encounter } of signals) seen.add(encounter.id);
           }
           snapshot = getSafariSnapshot(expedition, { mode, now: snapshot.nextRefreshAt, weather });
@@ -89,6 +95,9 @@ describe("safari radar", () => {
 
         expect(seen, `${expedition.id} ${mode}`).toEqual(new Set(eligible.map(({ id }) => id)));
         expect(zonesWithBonus.size, `${expedition.id} ${mode}`).toBe(3);
+        for (const [zone, bearings] of rearBearings) {
+          expect(bearings.size, `${expedition.id} ${mode} ${zone}`).toBeGreaterThan(1);
+        }
       }
     }
   });

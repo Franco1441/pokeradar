@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { Encounter } from "@/lib/types";
+import type { SafariSignal } from "@/lib/safari";
 
 const FULL_TURN = Math.PI * 2;
 const MAX_RENDER_PIXELS = 4_200_000;
@@ -11,32 +11,24 @@ const STATIONS = [
   {
     x: -7,
     z: 4,
-    yaw: 0.16,
     pitch: -0.066,
     elevation: 1.56,
   },
   {
     x: 0,
     z: -3,
-    yaw: 0.02,
     pitch: -0.074,
     elevation: 1.62,
   },
   {
     x: 7,
     z: -4,
-    yaw: -0.33,
     pitch: -0.053,
     elevation: 1.53,
   },
 ] as const;
 
-const SIGHTING_POSITIONS = [
-  { bearing: -0.196, distance: 7.3 },
-  { bearing: 0.184, distance: 8.4 },
-  { bearing: -0.99, distance: 8.1 },
-  { bearing: 2.23, distance: 9.2 },
-] as const;
+const SIGHTING_DISTANCES = [7.3, 8.4, 8.1, 9.2] as const;
 
 function stationFrames(position: number) {
   const step = THREE.MathUtils.clamp(position, 0, STATIONS.length - 1);
@@ -56,11 +48,6 @@ export function safariFallbackPanorama(heading: number, width: number, height: n
 
 export function isSafariPanorama(source: string) {
   return /-360-(?:2560|4096)\.webp(?:[?#]|$)/i.test(source);
-}
-
-export function getSafariSignalBearing(zoneIndex: number, slotIndex: number) {
-  const station = STATIONS[zoneIndex] ?? STATIONS[0];
-  return -station.yaw + (SIGHTING_POSITIONS[slotIndex]?.bearing ?? 0);
 }
 
 const panoramaVertex = `
@@ -198,11 +185,11 @@ export function createSafariWorld(
       return heading;
     },
     preparePanorama,
-    setPanorama(image: HTMLImageElement) {
+    setPanorama(image: HTMLImageElement | null) {
       if (!renderer || panoramaTexture?.image === image) return;
-      preparePanorama(image);
+      if (image) preparePanorama(image);
       panoramaTexture?.dispose();
-      panoramaTexture = preparedTexture?.image === image ? preparedTexture : null;
+      panoramaTexture = image && preparedTexture?.image === image ? preparedTexture : null;
       if (!panoramaTexture) preparedTexture?.dispose();
       preparedTexture = null;
       skyMaterial.uniforms.photo.value = panoramaTexture;
@@ -255,23 +242,19 @@ export function createSafariWorld(
       if (canRender) renderer?.render(scene, camera);
     },
     locate(
-      encounter: Encounter,
+      { encounter, bearing, slot }: SafariSignal,
       zoneIndex: number,
-      slotIndex: number,
-      activeZone: number,
     ) {
-      if (zoneIndex !== activeZone) return null;
       const station = STATIONS[zoneIndex];
-      const placement = SIGHTING_POSITIONS[slotIndex];
-      const arrival = Math.abs(cameraPosition - activeZone);
-      if (!station || !placement || arrival >= 0.52) return null;
-      const bearing = getSafariSignalBearing(zoneIndex, slotIndex);
+      const distance = SIGHTING_DISTANCES[slot];
+      const arrival = Math.abs(cameraPosition - zoneIndex);
+      if (!station || !distance || arrival >= 0.52) return null;
       const suspended =
         destination === "heron" || encounter.types.includes("flying");
       projected.set(
-        station.x + Math.sin(bearing) * placement.distance,
+        station.x + Math.sin(bearing) * distance,
         suspended ? 0.58 : 0.19,
-        station.z - Math.cos(bearing) * placement.distance,
+        station.z - Math.cos(bearing) * distance,
       );
       cameraSpace.copy(projected).applyMatrix4(camera.matrixWorldInverse);
       const depth = -cameraSpace.z;
@@ -280,7 +263,7 @@ export function createSafariWorld(
       if (Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.08)
         return null;
       const portrait = camera.aspect < 0.75;
-      const maxFraction = slotIndex < 2 ? 0.265 : 0.175;
+      const maxFraction = slot < 2 ? 0.265 : 0.175;
       const widthLimit = Math.min(
         width * maxFraction * (portrait ? 0.8 : 1),
         width < 600 ? 126 : 176,

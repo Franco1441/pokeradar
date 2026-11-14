@@ -8,6 +8,7 @@ export const SAFARI_INTERVAL_MS = 60_000;
 export const SAFARI_CLOCK_MS = 1000;
 export const SAFARI_RESPAWN_MS = 30_000;
 export const SAFARI_FRESH_MS = 8000;
+export const SAFARI_ENTRY_HEADING = -0.16;
 const MAX_SIGNALS = 4;
 const VISIT_STEPS = 3;
 
@@ -16,6 +17,7 @@ export interface SafariSignal {
   reason: string;
   boosted: boolean;
   slot: number;
+  bearing: number;
   appearedAt: number;
   expiresAt: number | null;
 }
@@ -55,14 +57,36 @@ function safariSeed(value: string) {
   );
 }
 
+function spawnSpread(zoneId: string, encounterId: string, appearedAt: number) {
+  // Mix the time and the encounter into a stable fraction. Recalculating the
+  // snapshot during a visit must not move a Pokémon or its radar blip.
+  const seed = safariSeed(`${zoneId}:${encounterId}:${appearedAt}`);
+  const mixed = Math.imul(seed ^ (seed >>> 16), 0x45d9f3b);
+  return ((mixed ^ (mixed >>> 16)) >>> 0) / 0x1_0000_0000;
+}
+
+function regularBearing(zoneId: string, encounter: Encounter, slot: number, appearedAt: number) {
+  const spread = spawnSpread(zoneId, encounter.id, appearedAt);
+  // Keep one encounter in the entry frame. The other spans the sides and rear.
+  return SAFARI_ENTRY_HEADING + (slot === 0
+    ? (spread - 0.5) * 0.44
+    : 1.05 + spread * (Math.PI * 2 - 2.1));
+}
+
+type ZoneSighting = Pick<SafariSignal, "encounter" | "slot" | "bearing" | "appearedAt" | "expiresAt">;
+
 function getZoneSightings(
   encounters: Encounter[],
   tick: number,
   offset: number,
+  zoneId: string,
 ) {
   if (encounters.length <= 2) {
     return {
-      signals: encounters.map((encounter, slot) => ({ encounter, slot, appearedAt: 0, expiresAt: null })),
+      signals: encounters.map((encounter, slot) => ({
+        encounter, slot, bearing: regularBearing(zoneId, encounter, slot, 0),
+        appearedAt: 0, expiresAt: null,
+      })),
       nextRefreshAt: null,
     };
   }
@@ -75,29 +99,37 @@ function getZoneSightings(
   const endsAt = startedAt + visitDuration;
   const current = ((visit % encounters.length) + encounters.length) % encounters.length;
   const prior = (current + encounters.length - 1) % encounters.length;
-  // Alternate the front slot by visit, so the other creature stays in place.
+  // Alternate the two regular slots so the ongoing sighting stays in place.
   const currentSlot = Math.abs(visit % 2);
-  const signals = [
+  const signals: ZoneSighting[] = [
     {
       encounter: encounters[prior],
       slot: 1 - currentSlot,
+      bearing: regularBearing(zoneId, encounters[prior], 1 - currentSlot, startedAt - visitDuration),
       appearedAt: startedAt - visitDuration,
       expiresAt: endsAt,
     },
     {
       encounter: encounters[current],
       slot: currentSlot,
+      bearing: regularBearing(zoneId, encounters[current], currentSlot, startedAt),
       appearedAt: startedAt,
       expiresAt: endsAt + visitDuration,
     },
   ];
-  // Swap one front sighting, then allow a visitor for one tick before it leaves.
+  // A brief visitor appears on the opposite side from the roaming sighting.
   if (phase === 1) {
     const bonusIndex = (current + (encounters.length === 3 ? 1 : 2)) % encounters.length;
+    const visitor = encounters[bonusIndex];
+    const appearedAt = startedAt + SAFARI_RESPAWN_MS;
+    const roaming = signals[currentSlot === 1 ? 1 : 0];
+    const otherSide = Math.sin(roaming.bearing - SAFARI_ENTRY_HEADING) >= 0 ? -1 : 1;
+    const spread = spawnSpread(zoneId, visitor.id, appearedAt);
     signals.push({
-      encounter: encounters[bonusIndex],
+      encounter: visitor,
       slot: 2 + currentSlot,
-      appearedAt: startedAt + SAFARI_RESPAWN_MS,
+      bearing: SAFARI_ENTRY_HEADING + otherSide * (0.78 + spread * 1.26),
+      appearedAt,
       expiresAt: startedAt + 2 * SAFARI_RESPAWN_MS,
     });
   }
@@ -162,15 +194,17 @@ export function getSafariSnapshot(
       ...remaining.filter((encounter) => encounter !== weatherSignal),
     ].slice(0, MAX_SIGNALS);
 
-    return selected.map((encounter, slot) => toSignal(encounter, slot, 0, null));
+    return selected.map((encounter, slot) => toSignal({
+      encounter,
+      slot,
+      bearing: regularBearing(expedition.id, encounter, slot, 0),
+      appearedAt: 0,
+      expiresAt: null,
+    }));
   }
 
-  function toSignal(
-    encounter: Encounter,
-    slot: number,
-    appearedAt: number,
-    expiresAt: number | null,
-  ): SafariSignal {
+  function toSignal(sighting: ZoneSighting): SafariSignal {
+    const { encounter } = sighting;
     const boosted = favors(encounter);
     const activity = encounter.activity === "day"
       ? "Actividad diurna"
@@ -178,12 +212,9 @@ export function getSafariSnapshot(
         ? "Actividad nocturna"
         : "Presencia en el bioma";
     return {
-      encounter,
+      ...sighting,
       boosted,
       reason: boosted ? `${activity} · clima favorable` : activity,
-      slot,
-      appearedAt,
-      expiresAt,
     };
   }
 
@@ -200,13 +231,12 @@ export function getSafariSnapshot(
           rotate(encounters, seed),
           tick,
           index,
+          `${expedition.id}:${zone.id}`,
         );
         return {
           ...zone,
           nextRefreshAt,
-          signals: signals.map(({ encounter, slot, appearedAt, expiresAt }) =>
-            toSignal(encounter, slot, appearedAt, expiresAt),
-          ),
+          signals: signals.map(toSignal),
           newSignalIds: signals.filter(({ expiresAt, appearedAt }) =>
             expiresAt !== null && now - appearedAt < SAFARI_FRESH_MS,
           ).map(({ encounter }) => encounter.id),

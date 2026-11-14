@@ -412,7 +412,7 @@ export default function PokemonDetailPanel({
         <p className="detail-source">
           Avistamiento simulado ·{" "}
           <a
-            href={`https://pokeapi.co/api/v2/pokemon/${encounter.pokemonId}`}
+            href={`https://pokeapi.co/api/v2/pokemon/${encounter.pokemonId}/`}
             target="_blank"
             rel="noreferrer"
           >
