@@ -452,8 +452,15 @@
 }
 
 @media (max-width: 630px) {
-  .is-globe .map-canvas .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
-    margin: 0 7px 7px 0;
+  .map-stage-world:has(.world-preview) .map-canvas .maplibregl-ctrl-bottom-right {
+    top: 56px;
+    right: 7px;
+    bottom: auto;
+  }
+
+  .map-stage-world:has(.world-preview) .map-canvas .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+    max-width: calc(100vw - 14px);
+    margin: 0;
   }
 
   .is-globe .map-canvas .maplibregl-ctrl-attrib-button {
