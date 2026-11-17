@@ -31,8 +31,8 @@ import {
   ArrowUpRight,
   Binoculars,
   BookOpen,
-  Check,
   CheckCircle2,
+  ChartNoAxesColumnIncreasing,
   Compass,
   Globe2,
   Leaf,
@@ -40,9 +40,7 @@ import {
   MapPin,
   Radar,
   Search,
-  SlidersHorizontal,
   Sprout,
-  Stamp,
   Users,
   X,
   CloudSun,
@@ -77,7 +75,10 @@ import WeatherPanel from "./weather-panel";
 import SafariPanel from "./safari-panel";
 import WorldDirectory from "./world-directory";
 import MapLoading from "./map-loading";
+import AtlasPanel from "./atlas-panel";
 import "./journey.css";
+
+const ExpeditionAnalysis = dynamic(() => import("./expedition-analysis"));
 
 const MapView = dynamic(() => import("./map-view"), {
   ssr: false,
@@ -136,7 +137,8 @@ const veilMotion: Variants = {
   }),
 };
 
-type Tab = "explore" | "atlas" | "radar";
+type MapTab = "explore" | "atlas";
+type Tab = MapTab | "analysis" | "radar";
 
 function getClockWindow() {
   return Math.floor(Date.now() / SAFARI_INTERVAL_MS) * SAFARI_INTERVAL_MS;
@@ -160,6 +162,7 @@ const CATALOG_SIZE = EXPEDITIONS.reduce(
 const NAV = [
   { id: "explore" as const, label: "Mapa", icon: Compass },
   { id: "atlas" as const, label: "Mi atlas", icon: BookOpen },
+  { id: "analysis" as const, label: "Análisis", icon: ChartNoAxesColumnIncreasing },
 ];
 
 function PokemonSprite({
@@ -193,9 +196,9 @@ function ExpeditionApp() {
     getExpeditionCatalog(expedition).find((item) => item.id === params.get("encounter")) ??
     null;
   const { progress, update, storageError } = useResearch();
-  const [activeTab, setTab] = useState<Exclude<Tab, "radar">>("explore");
+  const [activeTab, setTab] = useState<MapTab>("explore");
   const view = params.get("view");
-  const tab = view === "radar" ? "radar" : activeTab;
+  const tab: Tab = view === "analysis" || view === "radar" ? view : activeTab;
   const terrainView = view === "field" || view === "safari" ? view : undefined;
   const safariOpen = terrainView === "safari";
   const [entryElapsed, setEntryElapsed] = useState(false);
@@ -204,7 +207,7 @@ function ExpeditionApp() {
     const timer = window.setTimeout(() => setEntryElapsed(true), 2000);
     return () => window.clearTimeout(timer);
   }, []);
-  const entryActive = !terrainView && (!entryElapsed || !initialMapReady);
+  const entryActive = tab !== "analysis" && !terrainView && (!entryElapsed || !initialMapReady);
   const [safariMode, setSafariMode] = useState<SafariMode>("live");
   const [search, setSearch] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
@@ -217,7 +220,7 @@ function ExpeditionApp() {
   const weatherOpener = useRef<HTMLButtonElement>(null);
   const worldView =
     view === "world" ||
-    (!terrainView && view !== "radar" && !params.has("region"));
+    (!terrainView && view !== "radar" && view !== "analysis" && !params.has("region"));
   useEffect(() => {
     if (!worldView) return;
     preload("/map/earth-day.webp", { as: "image", fetchPriority: "high" });
@@ -345,6 +348,7 @@ function ExpeditionApp() {
 
   const weather = useQuery({
     queryKey: ["weather", expedition.id],
+    enabled: tab !== "analysis",
     queryFn: ({ signal }) => fetchWeather(expedition, signal),
     staleTime: 15 * 60 * 1000,
     refetchInterval:
@@ -423,17 +427,30 @@ function ExpeditionApp() {
     noticeTimer.current = setTimeout(() => setNotice(""), 4500);
   }
   function changeTab(next: Exclude<Tab, "radar">) {
-    if (selected || tab === "radar")
-      navigate(
-        expedition.id,
-        undefined,
-        Boolean(selected),
-        worldView ? "world" : undefined,
-      );
-    setTab(next);
+    if (next === "analysis") {
+      if (tab !== "analysis") {
+        setTab("explore");
+        navigate(expedition.id, undefined, false, "analysis");
+      }
+    } else {
+      if (selected || tab === "radar" || tab === "analysis") {
+        navigate(
+          expedition.id,
+          undefined,
+          tab !== "analysis" && Boolean(selected),
+          worldView || tab === "analysis" ? "world" : undefined,
+        );
+      }
+      setTab(next);
+    }
     setSearch("");
     setType("");
     setExpanded(false);
+  }
+
+  function openMapFromAnalysis(id: string) {
+    setTab("explore");
+    navigate(id, undefined, false, "world");
   }
   function openRadar() {
     setLanding(null);
@@ -706,6 +723,18 @@ function ExpeditionApp() {
           </div>
         </header>
 
+        {tab === "analysis" && (
+          <ExpeditionAnalysis
+            progress={progress}
+            regionId={expedition.id}
+            onSelectRegion={(id) => {
+              if (id !== expedition.id) navigate(id, undefined, true, "analysis");
+            }}
+            onOpenMap={openMapFromAnalysis}
+            onOpenSafari={(id) => navigate(id, undefined, false, "safari")}
+          />
+        )}
+        {tab !== "analysis" && (
         <main
           className={`map-stage ${worldView ? "map-stage-world" : ""}`}
           style={
@@ -1047,165 +1076,26 @@ function ExpeditionApp() {
               </>
             )}
             {tab === "atlas" && (
-              <div className="panel-body atlas-panel">
-                <h1>Atlas de campo</h1>
-                <div className="atlas-total">
-                  <BookOpen size={24} />
-                  <strong>
-                    {progress.records.length}
-                    <small>/ {CATALOG_SIZE}</small>
-                  </strong>
-                  <span>
-                    especies
-                    <br />
-                    registradas
-                  </span>
-                </div>
-                <div className="atlas-stamps">
-                  {EXPEDITIONS.map((region) => {
-                    const regionProgress = expeditionProgress(region, progress);
-                    return (
-                      <button
-                        key={region.id}
-                        onClick={() =>
-                          setAtlasRegion(
-                            atlasRegion === region.id ? "all" : region.id,
-                          )
-                        }
-                        className={`${regionProgress.complete ? "earned" : ""} ${atlasRegion === region.id ? "chosen" : ""}`}
-                        title={region.name}
-                        aria-label={`Filtrar atlas por ${region.name}. ${regionProgress.registered} de ${getExpeditionCatalog(region).length} registradas`}
-                        aria-pressed={atlasRegion === region.id}
-                        style={
-                          { "--stamp-color": region.color } as CSSProperties
-                        }
-                      >
-                        <Leaf size={18} />
-                        <span>{region.country}</span>
-                        <small>
-                          {regionProgress.registered}/{getExpeditionCatalog(region).length}
-                        </small>
-                        {regionProgress.complete && <Check size={12} />}
-                      </button>
-                    );
-                  })}
-                </div>
-                {postcards.length > 0 && (
-                  <section
-                    className="atlas-postcards"
-                    aria-labelledby="atlas-postcards-title"
-                  >
-                    <h2 id="atlas-postcards-title">Postales</h2>
-                    {postcards.map(({ expedition: region, localDate }) => (
-                      <button
-                        key={region.id}
-                        type="button"
-                        aria-label={`Ver postal de ${region.name}`}
-                        onClick={(event) => {
-                          postcardOpener.current = event.currentTarget;
-                          setOpenPostcard({
-                            expeditionId: region.id,
-                            celebrate: false,
-                          });
-                        }}
-                      >
-                        <Stamp size={17} aria-hidden="true" />
-                        <span>
-                          <strong>{region.name}</strong>
-                          <small>{localDate}</small>
-                        </span>
-                        <ArrowUpRight size={15} aria-hidden="true" />
-                      </button>
-                    ))}
-                  </section>
-                )}
-                <div className="search-field">
-                  <Search size={16} />
-                  <input
-                    aria-label="Buscar en el atlas"
-                    placeholder="Encontrar una especie…"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-                </div>
-                <div className="atlas-filters">
-                  <label>
-                    <SlidersHorizontal size={14} />
-                    <select
-                      aria-label="Tipo de Pokémon en el atlas"
-                      value={type}
-                      onChange={(event) =>
-                        setType(event.target.value as PokemonType | "")
-                      }
-                    >
-                      <option value="">Todos los tipos</option>
-                      {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={atlasOnlyRegistered}
-                      onChange={(event) =>
-                        setAtlasOnlyRegistered(event.target.checked)
-                      }
-                    />
-                    Registrados
-                  </label>
-                </div>
-                <div className="atlas-grid">
-                  {atlasEntries.map(({ encounter, region }) => {
-                    const record = progress.records.find(
-                      (item) => item.pokemonId === encounter.pokemonId,
-                    );
-                    return (
-                      <button
-                        className={`atlas-entry ${registeredIds.includes(encounter.pokemonId) ? "registered" : ""}`}
-                        key={encounter.id}
-                        onClick={() => selectEncounter(encounter, region)}
-                      >
-                        <span className="atlas-number">
-                          #{String(encounter.pokemonId).padStart(3, "0")}
-                          {registeredIds.includes(encounter.pokemonId) && (
-                            <CheckCircle2 size={12} />
-                          )}
-                        </span>
-                        <PokemonSprite
-                          id={encounter.pokemonId}
-                          name={encounter.name}
-                        />
-                        <strong>{encounter.name}</strong>
-                        <span>
-                          {registeredIds.includes(encounter.pokemonId)
-                            ? `Registrado · ${record ? new Date(record.registeredAt).toLocaleDateString("es-AR", { day: "numeric", month: "short" }) : ""}`
-                            : region.country}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {!atlasEntries.length && (
-                  <div className="empty-state">
-                    <Sprout />
-                    <h3>Tu próximo descubrimiento te espera</h3>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setAtlasOnlyRegistered(false);
-                        setAtlasRegion("all");
-                        setType("");
-                        setSearch("");
-                      }}
-                    >
-                      Explorar el atlas completo
-                    </button>
-                  </div>
-                )}
-              </div>
+              <AtlasPanel
+                progress={progress}
+                catalogSize={CATALOG_SIZE}
+                entries={atlasEntries}
+                postcards={postcards}
+                search={search}
+                type={type}
+                regionFilter={atlasRegion}
+                onlyRegistered={atlasOnlyRegistered}
+                onSearchChange={setSearch}
+                onTypeChange={setType}
+                onRegionChange={setAtlasRegion}
+                onOnlyRegisteredChange={setAtlasOnlyRegistered}
+                onOpenPostcard={(id, opener) => {
+                  postcardOpener.current = opener;
+                  setOpenPostcard({ expeditionId: id, celebrate: false });
+                }}
+                onSelectEncounter={selectEncounter}
+                renderSprite={(id, name) => <PokemonSprite id={id} name={name} />}
+              />
             )}
             {tab === "radar" && (
               <SafariPanel
@@ -1220,6 +1110,7 @@ function ExpeditionApp() {
             )}
           </aside>
         </main>
+        )}
         <footer className="app-footer">
           <span>
             <span className="status-dot" />
@@ -1234,14 +1125,14 @@ function ExpeditionApp() {
           </span>
         </footer>
         <Dialog.Root
-          open={!!selected && !worldDetail}
+          open={tab !== "analysis" && !!selected && !worldDetail}
           onOpenChange={(open) => {
             if (!open) closeDetail();
           }}
           modal={false}
         >
           <Dialog.Portal>
-            {selected && !worldDetail && (
+            {tab !== "analysis" && selected && !worldDetail && (
               <Dialog.Content
                 className={`detail-dialog ${fieldOpen ? "detail-dialog-field" : ""}`}
                 aria-describedby={undefined}

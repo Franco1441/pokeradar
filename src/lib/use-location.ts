@@ -21,7 +21,7 @@ export function useLocation() {
     region: string | null,
     encounter?: string,
     replace = false,
-    view?: "field" | "world" | "safari" | "radar",
+    view?: "field" | "world" | "safari" | "radar" | "analysis",
   ) {
     const params = new URLSearchParams();
     if (region) params.set("region", region);

@@ -2,13 +2,14 @@
 
 Explorá siete hábitats del mundo, descubrí Pokémon y registrá tus hallazgos en un diario de campo. Proyecto para el desafío técnico Frontend Engineer Junior de DataInt.
 
-[Abrir PokéRadar](https://pokeradar-lyart.vercel.app/) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA y correcciones](#3-uso-de-inteligencia-artificial-ai-native-workflow)
+[Abrir PokéRadar](https://pokeradar-lyart.vercel.app/) · [Comparar expediciones](https://pokeradar-lyart.vercel.app/?region=iguazu&view=analysis) · [Cómo ejecutar el proyecto](#ejecutar-localmente) · [Uso de IA y correcciones](#3-uso-de-inteligencia-artificial-ai-native-workflow)
 
 ### Recorrido rápido para la evaluación
 
 1. **Globo y mapa regional.** En el globo, elegí Nikkō, tocá **Ver mapa** y seleccioná a Pikachu para probar el movimiento de cámara y la carga de la ficha. [Abrir el globo](https://pokeradar-lyart.vercel.app/?region=nikko&view=world)
 2. **Safari.** Elegí otra zona desde el radar y girá para seguir una señal. El contador marca cuándo cambia la actividad. Podés probar **Día** y **Noche** sin esperar a que cambie la hora local. [Entrar al Safari de Iguazú](https://pokeradar-lyart.vercel.app/?region=iguazu&view=safari)
 3. **Registro y persistencia.** Registrá un Pokémon desde su ficha, abrí **Mi atlas** y recargá la página para comprobar que el hallazgo queda guardado en ese navegador. [Abrir la ficha de Pikachu](https://pokeradar-lyart.vercel.app/?region=nikko&encounter=nikko-pikachu)
+4. **Análisis.** Cambiá la métrica del gráfico, seleccioná un destino y consultá sus condiciones. Abrí esa expedición desde **Ver en el mapa** o **Abrir Safari**. [Comparar las siete expediciones](https://pokeradar-lyart.vercel.app/?region=iguazu&view=analysis)
 
 ## 1. Concepto y narrativa
 
@@ -37,6 +38,20 @@ En celular, la tarjeta compacta deja más espacio para el globo y permite desple
 | Heron | Jardín de coral | Squirtle, Corsola y Horsea |
 | Iguazú | Sendero de las cataratas | Aipom, Lotad y Tropius |
 | Everglades | Canal de los cipreses | Totodile, Croagunk y Ducklett |
+
+### Comparar expediciones
+
+El panel de **Análisis** se incorporó después de la entrega original para conectar los datos de la exploración con la elección del siguiente destino.
+
+- **Tipos activos** compara la variedad de tipos entre las señales actuales del Safari.
+- **Cobertura del atlas** muestra las especies registradas sobre el catálogo de cada región.
+- **Señales sin registrar** compara cuántos encuentros activos todavía podés sumar a tu diario.
+
+El gráfico ordena los siete destinos por la métrica elegida y permite seleccionar cada uno con mouse, teclado o tacto. La ficha de selección muestra el bioma, los tipos activos, el clima y la hora local, con accesos al mapa y al Safari. Sin registros previos, la primera comparación muestra tipos activos. Con registros guardados, abre la cobertura del atlas.
+
+La sugerencia prioriza las regiones con más señales sin registrar y desempata por especies pendientes. Las señales se recalculan en intervalos de 30 segundos. Open-Meteo aporta las condiciones observadas; si falla, el panel marca la fase del día como estimada a partir de la hora local. El progreso proviene del atlas guardado en ese navegador y las apariciones son simuladas.
+
+En celular, **Ver detalle** lleva del gráfico a la ficha del destino. La URL conserva la selección, por ejemplo `/?region=iguazu&view=analysis`.
 
 ### Datos reales y simulación
 
@@ -73,8 +88,8 @@ El catálogo local contiene 177 especies distribuidas por hábitat: 93 de explor
 ```text
 src/
   app/           Página, layout, metadatos y estilos globales
-  components/    Explorador, mapa, fichas, escenas, radar y atlas
-  lib/           Catálogo, reglas de Safari, adaptadores de API y progreso
+  components/    Explorador, mapa, fichas, escenas, radar, atlas y análisis
+  lib/           Catálogo, métricas, reglas de Safari, adaptadores y progreso
 public/
   destinations/  Fotografías de portada
   expeditions/   Panoramas de la exploración a pie
@@ -86,6 +101,8 @@ e2e/             Pruebas de navegación en Chromium
 [`page.tsx`](src/app/page.tsx) y [`layout.tsx`](src/app/layout.tsx) son Server Components. [`explorer.tsx`](src/components/explorer.tsx) es el límite cliente que coordina la selección y el progreso. Importa MapLibre mediante `next/dynamic` con `ssr: false`, de modo que el mapa se inicializa con acceso a las APIs del navegador. Una instancia conserva la cámara al cambiar de escala o abrir una escena. Al entrar por el mapa, el radar de pantalla completa permanece dos segundos como mínimo y se retira cuando el mapa está listo. La exploración a pie y Safari se cargan al entrar a cada vista. Safari decodifica el panorama de la zona elegida y cambia la textura durante el fundido. La vista 360° proyecta cada panorama equirectangular completo con muestreo continuo en la unión. En pantallas grandes de alta densidad usa texturas de 4096 × 2048; en pantallas pequeñas o con ahorro de datos usa 2560 × 1280. Cada zona se descarga cuando se necesita. Si no hay WebGL, una vista plana conserva el giro horizontal, el radar y las fichas.
 
 El ID de `Encounter` identifica el lugar del hallazgo y el ID de PokéAPI identifica la especie. [`safari.ts`](src/lib/safari.ts) calcula los avistamientos a partir del destino, la fase y el reloj, y ambas vistas de radar comparten el resultado. Cada señal tiene un rumbo calculado a partir de la zona, la especie y el inicio de su aparición. La escena y el radar usan ese mismo rumbo y los Pokémon activos mantienen su posición.
+
+El [modelo de análisis](src/lib/expedition-analysis.ts) es una función pura que recibe el catálogo, el progreso, la hora y las condiciones disponibles. Calcula métricas y recomendaciones sin depender de React. El [panel de análisis](src/components/expedition-analysis.tsx) comparte la caché meteorológica con el mapa mediante TanStack Query y actualiza las métricas al cambiar el intervalo del Safari. La [vista del atlas](src/components/atlas-panel.tsx) se extrajo de Explorer y recibe los datos y acciones por props.
 
 Los adaptadores validan los datos externos en tiempo de ejecución. Las consultas de ficha y descripción usan caché por especie y `AbortSignal`. La ficha puede mostrar sus datos principales aunque falle la descripción. El clima se consulta y se cachea por destino.
 
@@ -127,7 +144,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las 59 pruebas unitarias cubren la validación de respuestas de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del Safari. La suite de 21 pruebas de navegador comprueba los 93 avistamientos de exploración a pie y cubre situaciones concretas: que una respuesta lenta no reemplace la ficha seleccionada después, que el radar siga disponible si falla un panorama y que se pueda encontrar un Pokémon detrás de la cámara. [Pruebas de navegador](e2e)
+Las 65 pruebas unitarias cubren la validación de respuestas de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del Safari. La suite de 23 pruebas de navegador comprueba los 93 avistamientos de exploración a pie y cubre situaciones concretas: que una respuesta lenta no reemplace la ficha seleccionada después, que el radar siga disponible si falla un panorama y que se pueda encontrar un Pokémon detrás de la cámara. [Pruebas de navegador](e2e)
+
+El análisis tiene pruebas de cálculo y navegación. Comprueban que los registros cambien la cobertura y las señales pendientes, que la recomendación aplique el orden previsto y que falle un pronóstico sin impedir la comparación. También verifican la selección de región, el cambio de métrica y el acceso al mapa desde el panel móvil. [Modelo y pruebas](src/lib/expedition-analysis.test.ts) · [Recorrido del panel](e2e/analysis.spec.ts)
 
 Con Codex también hice una comprobación en producción: el recorrido del globo a la ficha de Pikachu funcionó en Chromium de escritorio y WebKit con tamaño de pantalla móvil, con respuestas reales de PokéAPI y Open-Meteo. Para revisar el giro usé WebKit en los panoramas y probé el arrastre del globo con gestos táctiles simulados en Chromium.
 
