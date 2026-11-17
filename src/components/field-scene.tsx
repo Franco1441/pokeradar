@@ -20,7 +20,7 @@ import {
   ScanLine,
   X,
 } from "lucide-react";
-import { artworkUrl, spriteUrl } from "@/lib/pokemon";
+import PokemonSprite from "./pokemon-sprite";
 import { getPokemonPreview } from "@/lib/pokemon-previews";
 import type { FieldSite } from "@/lib/field-sites";
 import type { Expedition } from "@/lib/types";
@@ -37,27 +37,8 @@ interface FieldSceneProps {
   onPanoramaReady?: () => void;
 }
 
-function FieldPokemon({ pokemonId }: { pokemonId: number }) {
-  const [source, setSource] = useState(() => artworkUrl(pokemonId));
-  if (!source) return null;
-
-  // The official artwork and its sprite fallback are already optimized PNGs.
-  /* eslint-disable @next/next/no-img-element */
-  return (
-    <img
-      className="field-pokemon"
-      src={source}
-      alt=""
-      width={160}
-      height={160}
-      draggable={false}
-      decoding="async"
-      onError={() =>
-        setSource(source === spriteUrl(pokemonId) ? "" : spriteUrl(pokemonId))
-      }
-    />
-  );
-  /* eslint-enable @next/next/no-img-element */
+function FieldPokemon({ pokemonId, name }: { pokemonId: number; name: string }) {
+  return <PokemonSprite className="field-pokemon" id={pokemonId} name={name} width={160} height={160} />;
 }
 
 function clamp(value: number, max: number) {
@@ -356,7 +337,7 @@ export default function FieldScene({
                     onFocus={focusSpot}
                     onClick={() => examine(index)}
                   >
-                    <FieldPokemon pokemonId={spot.pokemonId} />
+                    <FieldPokemon pokemonId={spot.pokemonId} name={spot.name} />
                     <span>{registered && <Check size={13} aria-hidden="true" />}{spot.name}</span>
                   </button>
                 </div>
@@ -373,7 +354,7 @@ export default function FieldScene({
                 }
                 style={position}
               >
-                <FieldPokemon pokemonId={spot.pokemonId} />
+                <FieldPokemon pokemonId={spot.pokemonId} name={spot.name} />
                 <button
                   className="field-clue"
                   type="button"

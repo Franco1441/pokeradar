@@ -1,14 +1,14 @@
 .safari-walk {
-  --walk-border: #e1ece64d;
-  --walk-glass: #14292aef;
-  --walk-accent: #f3ca89;
+  --walk-border: #172b4d;
+  --walk-glass: #11284af2;
+  --walk-accent: #ffcc01;
   position: relative;
   isolation: isolate;
   width: 100%;
   height: 100%;
   overflow: hidden;
   color: #fffaf0;
-  background: #172b28;
+  background: #0b1b34;
 }
 
 .safari-walk-viewport,
@@ -70,7 +70,7 @@
   max-width: min(360px, calc(100% - 24px));
   margin-inline: auto;
   padding: 9px 12px;
-  border: 1px solid var(--walk-border);
+  border: 2px solid var(--walk-border);
   border-radius: 7px;
   background: var(--walk-glass);
   font-size: 12px;
@@ -89,7 +89,7 @@
 
 .safari-walk-travel-veil {
   pointer-events: none;
-  background: #101e1e;
+  background: #0b1b34;
   opacity: var(--walk-veil, 0);
 }
 
@@ -98,12 +98,12 @@
   background:
     linear-gradient(
       180deg,
-      #112222d4,
+      #102246d4,
       transparent 34%,
       transparent 61%,
-      #111f20e8
+      #0b1b34e8
     ),
-    radial-gradient(ellipse at 50% 45%, transparent 38%, #10262662);
+    radial-gradient(ellipse at 50% 45%, transparent 38%, #10224662);
 }
 
 .safari-walk[data-night="true"] :is(.safari-walk-panorama, .safari-walk-flat) {
@@ -155,6 +155,7 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: contain;
+  image-rendering: pixelated;
   filter: drop-shadow(0 5px 3px #03100b80);
 }
 
@@ -166,11 +167,13 @@
   max-width: 100%;
   padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid #ebf0db44;
-  background: #122525e8;
+  border: 2px solid #172b4d;
+  background: #fffefa;
   font-size: 11px;
   line-height: 1.15;
-  font-weight: 650;
+  font-weight: 800;
+  color: #172b4d;
+  box-shadow: 0 2px 0 #172b4d;
   overflow-wrap: anywhere;
 }
 
@@ -193,10 +196,11 @@
 
 .safari-walk-glass,
 .safari-walk-modes {
-  border: 1px solid var(--walk-border);
+  border: 2px solid var(--walk-border);
   border-radius: 8px;
   background: var(--walk-glass);
-  color: #fffaf0;
+  color: #fffefa;
+  box-shadow: 0 3px 0 #172b4d;
 }
 
 .safari-walk-glass {
@@ -213,19 +217,21 @@
 
 .safari-walk-glass:hover,
 .safari-walk-modes button:hover {
-  background: #31504be8;
+  background: #254c7f;
 }
 
 
 .safari-walk-location {
   text-align: center;
-  text-shadow: 0 2px 14px #0b1b1f;
+  text-shadow: 0 2px 14px #081a34;
 }
 
 .safari-walk-location h2 {
   margin: 6px 0 4px;
   font-size: clamp(32px, 5vw, 57px);
-  font-weight: 650;
+  font-weight: 850;
+  color: #ffcc01;
+  text-shadow: -2px -2px 0 #172b4d, 2px -2px 0 #172b4d, -2px 2px 0 #172b4d, 2px 2px 0 #172b4d, 0 4px 0 #172b4d;
   line-height: 0.98;
   letter-spacing: -0.04em;
 }
@@ -237,7 +243,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: #edf2e6;
+  color: #f2f7ff;
   font-size: 12px;
 }
 
@@ -276,8 +282,9 @@
 }
 
 .safari-walk-modes button[aria-pressed="true"] {
-  background: #f0ead7;
-  color: #203b36;
+  background: #ffcc01;
+  color: #172b4d;
+  box-shadow: 0 2px 0 #14233c;
 }
 
 .safari-walk-footer {
@@ -328,21 +335,22 @@
   gap: 7px;
   min-height: 44px;
   padding: 0 11px;
-  border: 1px solid var(--walk-border);
+  border: 2px solid var(--walk-border);
   border-radius: 8px;
   background: var(--walk-glass);
-  color: #fffaf0;
-  font: 650 12px/1 var(--font-body, Helvetica, Arial, sans-serif);
+  color: #fffefa;
+  box-shadow: 0 3px 0 #172b4d;
+  font: 750 12px/1 var(--font-body, Helvetica, Arial, sans-serif);
   pointer-events: auto;
   cursor: pointer;
 }
 
 .safari-walk-observe:hover {
-  background: #31504b;
+  background: #254c7f;
 }
 
 .safari-walk-observe > svg {
-  color: #d8e4d9;
+  color: #91dfff;
 }
 
 .safari-walk-instructions {
@@ -352,17 +360,17 @@
 }
 
 .safari-field-radar {
-  --radar-line: #aacdc344;
-  --radar-quiet: #aaccc2;
-  --radar-new: #ffda96;
+  --radar-line: #87cfff55;
+  --radar-quiet: #80dcff;
+  --radar-new: #ffcc01;
   display: grid;
   gap: 9px;
   min-width: 0;
   padding: 11px 13px 12px;
-  border: 1px solid var(--walk-border);
-  border-radius: 12px;
-  background: #101f21ef;
-  box-shadow: 0 12px 36px #0004;
+  border: 2px solid var(--walk-border);
+  border-radius: 10px;
+  background: #ca293e;
+  box-shadow: 0 4px 0 #172b4d, inset 0 1px 0 #ff9297;
   pointer-events: auto;
 }
 
@@ -396,13 +404,14 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: #cedfd7;
+  color: #fffefa;
   cursor: pointer;
 }
 
 .safari-field-radar-header button:hover,
 .safari-field-radar-zones button:hover {
-  background: #294644;
+  background: #244f83;
+  color: #fffefa;
 }
 
 .safari-field-radar-content {
@@ -418,13 +427,13 @@
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #a5e7d25c;
+  border: 2px solid #93e0ff;
   border-radius: 50%;
   background:
-    linear-gradient(transparent calc(50% - .5px), #a0ddc828 50%, transparent calc(50% + .5px)),
-    linear-gradient(90deg, transparent calc(50% - .5px), #a0ddc828 50%, transparent calc(50% + .5px)),
-    repeating-radial-gradient(circle, transparent 0 calc(20% - 1px), #b2eed22e 20%, transparent calc(20% + .5px) 21%),
-    radial-gradient(circle, #22483d, #17312d 54%, #102524 100%);
+    linear-gradient(transparent calc(50% - .5px), #53dfff38 50%, transparent calc(50% + .5px)),
+    linear-gradient(90deg, transparent calc(50% - .5px), #53dfff38 50%, transparent calc(50% + .5px)),
+    repeating-radial-gradient(circle, transparent 0 calc(20% - 1px), #86e9ff55 20%, transparent calc(20% + .5px) 21%),
+    radial-gradient(circle, #144b79, #102e50 54%, #081a34 100%);
 }
 
 .safari-field-radar-north {
@@ -432,7 +441,7 @@
   z-index: 2;
   top: 4px;
   left: 50%;
-  color: #c9e5d9;
+  color: #d6f6ff;
   font-size: 9px;
   font-weight: 700;
   transform: translateX(-50%);
@@ -442,7 +451,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 76%, #6ab8a126 91%, #a9e5c868 99%, transparent 100%);
+  background: conic-gradient(from 0deg, transparent 0 76%, #46d9ff26 91%, #90f0ff78 99%, transparent 100%);
   animation: safari-field-scan 10s linear infinite;
   pointer-events: none;
 }
@@ -471,19 +480,19 @@
   width: 17px;
   height: 17px;
   place-items: center;
-  border: 1px solid #a7c8bf92;
+  border: 1px solid #a0e1ff;
   border-radius: 50%;
-  background: #17332e;
-  color: #d3e7df;
+  background: #102e50;
+  color: #e8faff;
   font-size: 9px;
   font-weight: 700;
 }
 
 .safari-field-radar-node[data-current="true"] .safari-field-radar-node-label {
-  border-color: #e7fcf0;
-  background: #b5e7cf;
-  color: #112b26;
-  box-shadow: 0 0 0 2px #a9eed543;
+  border-color: #fffefa;
+  background: #ffcc01;
+  color: #172b4d;
+  box-shadow: 0 0 0 2px #93e0ff80;
 }
 
 .safari-field-radar-blips {
@@ -499,7 +508,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #a9c1b8;
+  background: #8ad6ff;
   flex: 0 0 auto;
 }
 
@@ -510,13 +519,13 @@
 }
 
 .safari-field-radar-blip[data-unregistered="true"] {
-  box-shadow: 0 0 6px #ffda9680;
+  box-shadow: 0 0 6px #ffcc0180;
   animation: safari-field-detection 1.1s ease-out;
 }
 
 .safari-field-radar-blip[data-unregistered="true"][data-fresh="true"],
 .safari-field-radar-count[data-fresh="true"] {
-  box-shadow: 0 0 0 1px #ffda9675, 0 0 8px #ffda964f;
+  box-shadow: 0 0 0 1px #ffcc0175, 0 0 8px #ffcc014f;
 }
 
 @keyframes safari-field-detection {
@@ -539,18 +548,19 @@
   width: 100%;
   min-height: 44px;
   padding: 4px 6px;
-  border: 1px solid transparent;
+  border: 2px solid #172b4d;
   border-radius: 6px;
-  background: transparent;
-  color: #eff7ef;
+  background: #11284a;
+  color: #fffefa;
   text-align: left;
   font: 650 11.5px/1.15 var(--font-body, Helvetica, Arial, sans-serif);
   cursor: pointer;
 }
 
 .safari-field-radar-zones button[data-current="true"] {
-  border-color: #a1d5c270;
-  background: #254842;
+  border-color: #172b4d;
+  background: #ffcc01;
+  color: #172b4d;
 }
 
 .safari-field-radar-index {
@@ -560,7 +570,7 @@
   place-items: center;
   border: 1px solid var(--radar-line);
   border-radius: 50%;
-  color: #cde0d9;
+  color: inherit;
   font-size: 9px;
 }
 
@@ -568,15 +578,15 @@
   min-width: 19px;
   padding: 3px 4px;
   border-radius: 4px;
-  background: #b8d6cb18;
-  color: #c1d6cd;
+  background: #e2eeff;
+  color: #172b4d;
   text-align: center;
   font-size: 10px;
 }
 
 .safari-field-radar-count[data-unregistered="true"] {
-  background: #ffda9627;
-  color: var(--radar-new);
+  background: #ffcc01;
+  color: #172b4d;
 }
 
 .safari-field-radar-summary {
@@ -586,7 +596,7 @@
   margin: 0;
   padding-top: 8px;
   border-top: 1px solid var(--radar-line);
-  color: #f0e4ca;
+  color: #fffefa;
   font-size: 11px;
   line-height: 1.2;
 }
@@ -661,7 +671,7 @@
   }
 
   .safari-walk-vignette {
-    background: linear-gradient(180deg, #112222d4, transparent 19%, transparent 65%, #111f20e8);
+    background: linear-gradient(180deg, #102246d4, transparent 19%, transparent 65%, #0b1b34e8);
   }
 
   .safari-walk[data-night="true"] .safari-walk-vignette {

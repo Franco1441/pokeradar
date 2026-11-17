@@ -6,6 +6,8 @@
 .safari-field-radar .safari-field-radar-header h3 {
   flex: 1 1 auto;
   font-size: clamp(12px, 3.8vw, 15px);
+  color: #fffefa;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -15,7 +17,7 @@
   align-items: center;
   gap: 4px;
   min-width: 40px;
-  color: #a9ead2;
+  color: #d5fbff;
   font: 600 11px/1 var(--font-body, Helvetica, Arial, sans-serif);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -25,14 +27,14 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #9aefc1;
-  box-shadow: 0 0 6px #82e1ab8f;
+  background: #5fe7ff;
+  box-shadow: 0 0 6px #5fe7ff8f;
   content: "";
 }
 
 .safari-field-radar-countdown span {
   min-width: 20px;
-  color: #d4dedb;
+  color: #f1fbff;
   text-align: right;
 }
 
@@ -48,7 +50,7 @@
 }
 
 .safari-field-radar-heading {
-  color: #b5e7cf;
+  color: #80e5ff;
   transform: rotate(var(--safari-heading, 0rad));
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Small remote pixel sprites need unmodified rendering. */
 import {
   useEffect,
   useMemo,
@@ -53,7 +52,7 @@ import { buildExpeditionPostcard } from "@/lib/expedition-postcard";
 import { getFieldSite } from "@/lib/field-sites";
 import { getSafariPanoramaSource, SAFARI_ZONES } from "@/lib/safari-zones";
 import { getExpeditionCatalog } from "@/lib/safari-roster";
-import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
+import { TYPE_LABELS } from "@/lib/pokemon";
 import { fetchWeather, weatherInfo } from "@/lib/weather";
 import {
   getSafariSnapshot,
@@ -70,6 +69,7 @@ import { useResearch } from "@/lib/use-research";
 import { useLocation } from "@/lib/use-location";
 import type { Encounter, PokemonType } from "@/lib/types";
 import PokemonDetailPanel from "./pokemon-detail";
+import PokemonSprite from "./pokemon-sprite";
 import ExpeditionPostcard from "./expedition-postcard";
 import WeatherPanel from "./weather-panel";
 import SafariPanel from "./safari-panel";
@@ -164,28 +164,6 @@ const NAV = [
   { id: "atlas" as const, label: "Mi atlas", icon: BookOpen },
   { id: "analysis" as const, label: "Análisis", icon: ChartNoAxesColumnIncreasing },
 ];
-
-function PokemonSprite({
-  id,
-  name,
-  className = "",
-}: {
-  id: number;
-  name: string;
-  className?: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  return failed ? (
-    <span className={`sprite-fallback ${className}`}>{name.slice(0, 2)}</span>
-  ) : (
-    <img
-      className={className}
-      src={spriteUrl(id)}
-      alt=""
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 function ExpeditionApp() {
   const { params, navigate } = useLocation();
@@ -685,12 +663,12 @@ function ExpeditionApp() {
         </a>
         <header className="app-header">
           <Link href="/" className="brand" aria-label="PokéRadar, inicio">
-            <span className="brand-mark">
-              <Radar size={25} strokeWidth={1.6} />
+            <span className="brand-mark" aria-hidden="true">
+              <span className="brand-ball" />
             </span>
             <span className="brand-word">
               poké<span>radar</span>
-              <small>DIARIO DE EXPEDICIÓN</small>
+              <small>POKÉDEX DE CAMPO</small>
             </span>
           </Link>
           <nav className="main-nav" aria-label="Navegación principal">

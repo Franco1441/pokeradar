@@ -13,7 +13,7 @@ import {
 } from "maplibre-gl";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite, type FieldSite } from "@/lib/field-sites";
-import { spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
+import { animatedSpriteUrl, spriteUrl, TYPE_COLORS } from "@/lib/pokemon";
 import type { Encounter, Expedition, PokemonType } from "@/lib/types";
 import { mountGlobeLighting, solarBoundaryCenter } from "./map-lighting";
 import MapLoading from "./map-loading";
@@ -263,21 +263,28 @@ function createPokemonElement(encounter: Encounter, select: () => void) {
   inner.className = "marker-inner";
   const image = document.createElement("img");
   image.className = "marker-sprite";
-  image.src = spriteUrl(encounter.pokemonId);
+  const picture = document.createElement("picture");
+  picture.style.display = "contents";
+  const reducedMotion = document.createElement("source");
+  reducedMotion.media = "(prefers-reduced-motion: reduce)";
+  reducedMotion.srcset = spriteUrl(encounter.pokemonId);
+  picture.append(reducedMotion, image);
+  image.src = animatedSpriteUrl(encounter.pokemonId);
   image.alt = "";
   image.width = 80;
   image.height = 80;
   image.draggable = false;
-  image.addEventListener(
-    "error",
-    () => {
-      const fallback = document.createElement("span");
-      fallback.className = "marker-fallback";
-      fallback.textContent = encounter.name.slice(0, 2);
-      image.replaceWith(fallback);
-    },
-    { once: true },
-  );
+  image.addEventListener("error", () => {
+    const still = spriteUrl(encounter.pokemonId);
+    if ((image.currentSrc || image.src) !== still) {
+      image.src = still;
+      return;
+    }
+    const fallback = document.createElement("span");
+    fallback.className = "marker-fallback";
+    fallback.textContent = encounter.name.slice(0, 2);
+    picture.replaceWith(fallback);
+  });
 
   const dot = document.createElement("span");
   dot.className = "marker-type-dot";
@@ -290,7 +297,7 @@ function createPokemonElement(encounter: Encounter, select: () => void) {
   activity.className = "marker-activity";
   activity.setAttribute("aria-hidden", "true");
   activity.textContent = "+";
-  inner.append(image, dot, status, activity);
+  inner.append(picture, dot, status, activity);
 
   const label = document.createElement("span");
   label.className = "marker-label";

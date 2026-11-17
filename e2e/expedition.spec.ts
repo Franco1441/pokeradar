@@ -102,7 +102,7 @@ test("opens regional sightings from the globe without WebGL", async ({
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const globe = page.getByRole("region", { name: "El mundo por explorar." });
+  const globe = page.getByRole("region", { name: "El mundo Pokémon te espera." });
   await expect(
     globe.getByRole("button", { name: "Ver avistamientos" }),
   ).toBeVisible();

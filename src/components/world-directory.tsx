@@ -14,9 +14,10 @@ import {
 } from "lucide-react";
 import { EXPEDITIONS } from "@/lib/expeditions";
 import { getFieldSite } from "@/lib/field-sites";
-import { spriteUrl, TYPE_LABELS } from "@/lib/pokemon";
+import { TYPE_LABELS } from "@/lib/pokemon";
 import { weatherInfo } from "@/lib/weather";
 import type { Encounter, WeatherSnapshot } from "@/lib/types";
+import PokemonSprite from "./pokemon-sprite";
 import "./world-directory.css";
 
 const coordinateFormat = new Intl.NumberFormat("es-AR", {
@@ -51,8 +52,6 @@ function PreviewSpecies({
   encounter: Encounter;
   onSelect: (encounter: Encounter) => void;
 }) {
-  const [spriteFailed, setSpriteFailed] = useState(false);
-
   return (
     <button
       type="button"
@@ -62,19 +61,12 @@ function PreviewSpecies({
       onClick={() => onSelect(encounter)}
     >
       <span className="world-species-sprite" aria-hidden="true">
-        {spriteFailed ? (
-          <span>{encounter.name.slice(0, 2)}</span>
-        ) : (
-          // These small Pokémon sprites retain their original pixel dimensions.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={spriteUrl(encounter.pokemonId)}
-            alt=""
-            width={48}
-            height={48}
-            onError={() => setSpriteFailed(true)}
-          />
-        )}
+        <PokemonSprite
+          id={encounter.pokemonId}
+          name={encounter.name}
+          width={48}
+          height={48}
+        />
       </span>
       <span className="world-species-name">
         <strong>{encounter.name}</strong>
@@ -138,7 +130,7 @@ export default function WorldDirectory({
   return (
     <section className="world-directory" aria-labelledby="world-title">
       <div className="world-directory-heading">
-        <h1 id="world-title">El mundo por explorar.</h1>
+        <h1 id="world-title">El mundo Pokémon te espera.</h1>
         {mapUnavailable ? (
           <p role="status">
             Elegí un destino para seguir sus pistas o ver sus avistamientos.

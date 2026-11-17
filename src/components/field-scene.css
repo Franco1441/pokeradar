@@ -4,11 +4,11 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  color: #faf8f2;
-  background: #101c22;
-  --field-border: #c4d6d552;
-  --field-glass: #101c22ee;
-  --field-action: #e7bd7f;
+  color: #fffefa;
+  background: #0b1b34;
+  --field-border: #172b4d;
+  --field-glass: #11284af2;
+  --field-action: #ffcc01;
   --field-control-inset: clamp(16px, 4.5vw, 60px);
   --field-control-bottom: max(
     clamp(16px, 4vw, 42px),
@@ -191,20 +191,21 @@
 }
 
 .field-heading h2 {
-  font: 400 clamp(2.15rem, 5.75vw, 5.5rem)/0.96
+  font: 850 clamp(2.15rem, 5.75vw, 4.7rem)/0.96
     var(--font-heading, Helvetica, Arial, sans-serif);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.035em;
   text-wrap: balance;
-  text-shadow: 0 3px 26px #101c22dc;
+  color: #fffefa;
+  text-shadow: -1px -1px 0 #172b4d, 1px -1px 0 #172b4d, -1px 1px 0 #172b4d, 1px 1px 0 #172b4d, 0 3px 0 #172b4d;
 }
 
 .field-exit,
 .field-navigation,
 .field-progress,
 .field-failure {
-  border: 1px solid var(--field-border);
+  border: 2px solid var(--field-border);
   background: var(--field-glass);
-  box-shadow: 0 6px 20px #101c224d;
+  box-shadow: 0 3px 0 #172b4d, 0 6px 20px #101c224d;
   backdrop-filter: blur(8px);
 }
 
@@ -223,7 +224,7 @@
 
 .field-exit:hover,
 .field-navigation button:hover {
-  background: #29424a;
+  background: #2457a6;
 }
 
 .field-clue-point {
@@ -287,12 +288,14 @@
   align-items: center;
   gap: 4px;
   padding: 3px 7px;
-  border: 1px solid #e1e7de55;
+  border: 2px solid #172b4d;
   border-radius: 4px;
-  background: #101c22eb;
-  color: #faf8f2;
+  background: #fffefa;
+  color: #fffefa;
   font-size: 0.75rem;
-  font-weight: 750;
+  color: #172b4d;
+  box-shadow: 0 2px 0 #172b4d;
+  font-weight: 800;
   line-height: 1.15;
 }
 
@@ -301,7 +304,7 @@
 .field-wild-pokemon:focus-visible span {
   border-color: var(--field-action);
   background: var(--field-action);
-  color: #202d30;
+  color: #182a4a;
 }
 
 .field-scene[data-panorama="ready"]
@@ -401,17 +404,17 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  border: 1px solid currentColor;
+  border: 2px solid currentColor;
   border-radius: 50%;
   color: var(--field-action);
-  background: #101c2299;
+  background: #11284ae8;
   box-shadow: 0 1px 4px #101c2290;
   transition: background-color 0.18s ease, color 0.18s ease;
   pointer-events: none;
 }
 
 .field-clue-point[data-found="true"] .field-clue-icon {
-  color: #c7ddd6;
+  color: #81ddff;
 }
 
 .field-scene[data-panorama="ready"] [data-habitat="table-coral"] .field-clue {
@@ -421,13 +424,13 @@
 
 .field-clue:hover .field-clue-icon,
 .field-clue-point[data-focused="true"] .field-clue-icon {
-  color: #202d30;
+  color: #182a4a;
   background: var(--field-action);
 }
 .field-clue-point[data-found="true"] .field-clue:hover .field-clue-icon,
 .field-clue-point[data-found="true"][data-focused="true"] .field-clue-icon {
-  color: #202d30;
-  background: #c7ddd6;
+  color: #182a4a;
+  background: #81ddff;
 }
 
 .field-scene button:focus-visible {
@@ -480,12 +483,12 @@
   min-width: 0;
   padding: 6px 12px;
   background: var(--field-action);
-  color: #202d30;
+  color: #182a4a;
   text-align: left;
 }
 
 .field-navigation .field-observe:hover {
-  background: #f3cf99;
+  background: #ffe15c;
 }
 
 .field-observe svg {
@@ -517,7 +520,7 @@
   font-size: 0.8rem;
   font-weight: 650;
   white-space: nowrap;
-  color: #eef2ed;
+  color: #f4f8ff;
 }
 
 .field-progress-segments {
@@ -529,11 +532,11 @@
   flex: 1;
   height: 3px;
   border-radius: 1px;
-  background: #597078;
+  background: #536c91;
 }
 
 .field-progress-segments span[data-registered="true"] {
-  background: #b4d5cc;
+  background: #ffcc01;
 }
 
 .field-status {
@@ -543,7 +546,7 @@
 }
 
 .field-hint {
-  color: #eef2ed;
+  color: #f4f8ff;
   font-size: 0.78rem;
   text-shadow: 0 2px 9px #101c22;
 }
@@ -557,24 +560,24 @@
   gap: 12px;
   width: min(328px, calc(100% - 2 * var(--field-control-inset)));
   padding: 18px;
-  border: 1px solid #dedbd0;
-  border-top: 3px solid var(--field-action);
-  border-radius: 5px;
-  background: #faf8f2;
-  color: #202d30;
+  border: 2px solid #172b4d;
+  border-top: 5px solid #e43840;
+  border-radius: 8px;
+  background: #fffefa;
+  color: #182a4a;
   box-shadow: 0 12px 32px #101c2259;
   animation: field-discovery-in 0.25s ease-out;
 }
 
 .field-discovery h3 {
   padding-right: 32px;
-  font: 650 2.2rem/0.98 var(--font-heading, Helvetica, Arial, sans-serif);
+  font: 800 2.2rem/0.98 var(--font-heading, Helvetica, Arial, sans-serif);
   letter-spacing: -0.015em;
 }
 
 .field-discovery p {
   margin-top: 8px;
-  color: #59666a;
+  color: #536580;
   font-size: 0.85rem;
   line-height: 1.4;
 }
@@ -584,7 +587,7 @@
   gap: 6px;
   align-items: center;
   margin: 0 30px 6px 0;
-  color: #24535a;
+  color: #2457a6;
   font-size: 0.76rem;
   font-weight: 750;
 }
@@ -598,16 +601,16 @@
   height: 44px;
   place-items: center;
   border-radius: 3px;
-  color: #24535a;
+  color: #2457a6;
 }
 
 .field-dismiss:hover,
 .field-reopen-button:hover {
-  background: #e6eeea;
+  background: #e2eeff;
 }
 
 .field-scene .field-discovery button:focus-visible {
-  outline-color: #24535a;
+  outline-color: #2457a6;
 }
 
 .field-discovery-actions {
@@ -623,15 +626,17 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 12px;
-  color: #faf8f2;
-  background: #24535a;
-  border-radius: 4px;
-  font-weight: 750;
+  background: #ffcc01;
+  border: 2px solid #172b4d;
+  border-radius: 6px;
+  box-shadow: 0 3px 0 #172b4d;
+  color: #172b4d;
+  font-weight: 800;
   font-size: 0.84rem;
 }
 
 .field-detail-button:hover {
-  background: #193d44;
+  background: #ffe15c;
 }
 
 .field-reopen-button {
@@ -641,8 +646,8 @@
   justify-content: center;
   gap: 4px;
   padding-inline: 8px;
-  color: #24535a;
-  border: 1px solid #b5c3be;
+  color: #2457a6;
+  border: 2px solid #172b4d;
   border-radius: 4px;
   font-size: 0.82rem;
   font-weight: 650;
@@ -791,3 +796,5 @@
     animation: none;
   }
 }
+
+.field-pokemon { image-rendering: pixelated; }

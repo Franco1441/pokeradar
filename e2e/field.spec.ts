@@ -42,7 +42,7 @@ test("discovers a Pokémon on foot and keeps it in the atlas", async ({
 
   await page.goto("/");
   const directory = page.getByRole("region", {
-    name: "El mundo por explorar.",
+    name: "El mundo Pokémon te espera.",
   });
   await directory
     .getByRole("button", { name: /^Ver (mapa|avistamientos)$/ })
@@ -113,7 +113,7 @@ for (const destination of EXPEDITIONS) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page
-      .getByRole("region", { name: "El mundo por explorar." })
+      .getByRole("region", { name: "El mundo Pokémon te espera." })
       .getByRole("button", { name: new RegExp(destination.name) })
       .click();
     await page
@@ -203,7 +203,7 @@ test("lands from the globe with a continuous transition and returns to the corre
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   const directory = page.getByRole("region", {
-    name: "El mundo por explorar.",
+    name: "El mundo Pokémon te espera.",
   });
   await directory
     .getByRole("button", { name: "Enfocar Arrecife de Heron, Australia" })

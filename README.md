@@ -18,7 +18,7 @@ Elegí la idea de un diario de expedición para darle un propósito a cada movim
 ### Cómo explorar
 
 1. **Elegí un destino en el globo.** Giralo o seleccioná una región desde el panel. La vista muestra el día, el crepúsculo y las luces nocturnas según la posición aproximada del sol.
-2. **Abrí el mapa y seleccioná un Pokémon.** Cada región tiene seis marcadores con sprites. Al seleccionar uno, la cámara deja espacio para la ficha y confirma la llegada con un anillo. La ficha consulta PokéAPI en el momento y muestra nombre, tipos, ilustración, estadísticas base y sonido cuando está disponible. Durante la consulta muestra un esqueleto de carga y, si falla, permite reintentar.
+2. **Abrí el mapa y seleccioná un Pokémon.** Cada región tiene seis marcadores con sprites animados cuando están disponibles. Al seleccionar uno, la cámara deja espacio para la ficha y confirma la llegada con un anillo. La ficha consulta PokéAPI en el momento y muestra nombre, tipos, ilustración, estadísticas base y sonido cuando está disponible. Durante la consulta muestra un esqueleto de carga y, si falla, permite reintentar.
 3. **Registrá el avistamiento.** Encontrar tres especies y conocer dos tipos distintos completa el objetivo de una expedición y desbloquea su postal. Podés agregar hasta seis favoritos a tu equipo. El progreso queda guardado en el navegador.
 
 ### Dos formas de explorar el terreno
@@ -67,6 +67,14 @@ El catálogo local contiene 177 especies distribuidas por hábitat: 93 de explor
 - Alba aportó una referencia de exploración tranquila, observación de fauna y descubrimiento. [Proceso de diseño](https://ustwogames.co.uk/news/the-environment-art-of-alba-a-wildlife-adventure/)
 - Redline inspiró la secuencia de globo, descenso y paisaje. PokéRadar aplica ese recorrido a un mapa navegable. [MotionSites](https://motionsites.ai/?prompt=redline-mars-hero)
 - Merlin sirvió como referencia para organizar una guía de especies y una colección personal. [Merlin Bird ID](https://www.merlinbirds.org/)
+
+### Identidad Pokémon
+
+La revisión visual posterior a la entrega toma como referencia la [Pokédex oficial](https://www.pokemon.com/pokedex/): rojo de carcasa, amarillo en las acciones principales, azul oscuro en los contornos y paneles claros para consultar datos. La Poké Ball identifica la aplicación, y las fichas destacan el número, los tipos y las estadísticas de cada especie. El globo y los paisajes siguen siendo el centro de la exploración.
+
+Los sprites animados del directorio `other/showdown` de [PokeAPI/sprites](https://github.com/PokeAPI/sprites) aparecen en el mapa, la lista, el atlas, la exploración a pie y el Safari. La ficha conserva la ilustración y suma un sprite animado. Cuando una animación falla, se intenta el sprite estático; si tampoco carga, aparecen las iniciales. Con `prefers-reduced-motion: reduce`, el navegador elige directamente la versión estática. Dos pruebas de navegador verifican estos comportamientos.
+
+Helvetica sigue siendo la fuente de lectura. Los títulos usan Barlow Condensed, servida localmente, para distinguir la jerarquía de la Pokédex. La revisión también separa el título y los controles de las portadas y reduce las etiquetas simultáneas del mapa en celular, conservando los nombres accesibles de los marcadores.
 
 ## 2. Arquitectura y stack
 
@@ -144,7 +152,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Las 65 pruebas unitarias cubren la validación de respuestas de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del Safari. La suite de 23 pruebas de navegador comprueba los 93 avistamientos de exploración a pie y cubre situaciones concretas: que una respuesta lenta no reemplace la ficha seleccionada después, que el radar siga disponible si falla un panorama y que se pueda encontrar un Pokémon detrás de la cámara. [Pruebas de navegador](e2e)
+Las 65 pruebas unitarias cubren la validación de respuestas de las APIs, la recuperación de datos guardados, el límite del equipo y las reglas del Safari. La suite de 25 pruebas de navegador comprueba los 93 avistamientos de exploración a pie y cubre situaciones concretas: que una respuesta lenta no reemplace la ficha seleccionada después, que el radar siga disponible si falla un panorama y que se pueda encontrar un Pokémon detrás de la cámara. [Pruebas de navegador](e2e)
 
 El análisis tiene pruebas de cálculo y navegación. Comprueban que los registros cambien la cobertura y las señales pendientes, que la recomendación aplique el orden previsto y que falle un pronóstico sin impedir la comparación. También verifican la selección de región, el cambio de métrica y el acceso al mapa desde el panel móvil. [Modelo y pruebas](src/lib/expedition-analysis.test.ts) · [Recorrido del panel](e2e/analysis.spec.ts)
 
@@ -182,4 +190,4 @@ Con una semana adicional ampliaría el trabajo en estas direcciones.
 - Pokémon y los nombres de sus personajes pertenecen a sus respectivos titulares. Este proyecto es una demostración técnica de exploración geoespacial.
 - Fotografías de portada de Unsplash. [Bosque](https://images.unsplash.com/photo-1448375240586-882707db888b) · [Islandia](https://images.unsplash.com/photo-1476610182048-b716b8518aae) · [Namib](https://unsplash.com/photos/nt66_G8DCBM) · [Zermatt, Manuel Hodel](https://unsplash.com/photos/HVB2Mwj_txQ) · [Gran Barrera de Coral, GeoNadir](https://unsplash.com/photos/b78E12dTxlo)
 - Paisajes ilustrativos generados con ImageGen. [Exploración a pie](public/expeditions) · [Safari](public/safari)
-- Tipografía de sistema Helvetica Neue, con Helvetica y Arial como alternativas según el dispositivo.
+- Tipografía de lectura Helvetica Neue, con Helvetica y Arial como alternativas según el dispositivo. Títulos con [Barlow Condensed](https://github.com/google/fonts/tree/main/ofl/barlowcondensed), distribuida bajo [SIL Open Font License 1.1](public/fonts/OFL-BarlowCondensed.txt).

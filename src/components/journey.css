@@ -104,18 +104,20 @@
   width: 100%;
   margin-bottom: 12px;
   padding: 8px 11px 8px 8px;
-  border: 1px solid var(--green);
+  border: 2px solid var(--navy);
   border-radius: 7px;
-  color: #fffdf4;
-  background: var(--green);
+  box-shadow: 0 3px 0 var(--navy);
+  color: var(--navy);
+  background: var(--brass);
   text-align: left;
   transition: background-color 160ms, border-color 160ms;
 }
 .field-enter:hover {
-  border-color: #6b8b8d;
+  background: #ffe462;
+  border-color: var(--navy);
 }
 .field-enter strong { display: block; font: 730 17px/1.12 var(--font-heading); }
-.field-enter small { display: block; margin-top: 4px; color: #d7e4df; font-size: 11px; line-height: 1.25; }
+.field-enter small { display: block; margin-top: 4px; color: #314362; font-size: 11px; line-height: 1.25; }
 .field-enter > svg { justify-self: end; margin-right: 3px; transition: translate 160ms; }
 .field-enter:hover > svg { translate: 2px 0; }
 .field-route { position: fixed; inset: 0; z-index: 25; color: #f8f8eb; background: #101c22; }
@@ -180,10 +182,10 @@
   width: max-content;
   max-width: calc(100% - 24px);
   padding: 11px 17px;
-  border: 1px solid #e7f3e543;
+  border: 2px solid #ffcc01;
   border-radius: 999px;
   color: #f5f9ec;
-  background: #142f28e8;
+  background: #172b4df2;
   font-size: 14px;
   font-weight: 700;
 }

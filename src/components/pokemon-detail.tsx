@@ -27,6 +27,7 @@ import type {
   PokemonDetail,
   PokemonType,
 } from "@/lib/types";
+import PokemonSprite from "./pokemon-sprite";
 import "./detail.css";
 
 interface PokemonDetailPanelProps {
@@ -270,6 +271,11 @@ export default function PokemonDetailPanel({
             />
           )}
         </motion.div>
+        {pokemon && (
+          <span className="detail-animated-sprite">
+            <PokemonSprite id={pokemon.id} name={pokemon.name} width={64} height={64} />
+          </span>
+        )}
         <span className="detail-stage-place">
           <MapPin size={12} />
           {expedition.biome}

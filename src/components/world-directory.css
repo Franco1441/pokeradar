@@ -16,8 +16,8 @@
 }
 
 .world-directory {
-  --world-ink: #f9f4e9;
-  --world-muted: #bbc9ca;
+  --world-ink: #fffefa;
+  --world-muted: #d1e1f4;
   padding: 3px;
   color: var(--world-ink);
 }
@@ -25,7 +25,7 @@
 .world-directory-detail {
   overflow: hidden;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 2px solid var(--navy);
   border-radius: 10px;
   color: var(--ink);
   background: var(--surface);
@@ -38,8 +38,8 @@
 
 .world-directory-heading::before {
   display: block;
-  width: 29px;
-  height: 2px;
+  width: 38px;
+  height: 5px;
   margin-bottom: 11px;
   background: var(--brass);
   content: "";
@@ -47,8 +47,8 @@
 
 .world-directory-heading h1 {
   margin: 0;
-  font: 650 clamp(42px, 4vw, 57px)/.96 var(--font-heading);
-  letter-spacing: -.045em;
+  font: 700 clamp(44px, 4vw, 58px)/.98 var(--font-heading);
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
@@ -66,11 +66,12 @@
 
 .world-preview {
   overflow: hidden;
-  border: 1px solid #c0c7bf85;
-  border-radius: 9px;
+  border: 2px solid var(--navy);
+  border-top: 6px solid var(--red);
+  border-radius: 11px;
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 6px 20px #0c151a30;
+  box-shadow: 0 4px 0 #0c173a80, 0 12px 30px #03081766;
   animation: world-preview-in 220ms ease-out both;
 }
 
@@ -133,8 +134,9 @@
 
 .world-preview-caption h2 {
   margin: 0;
-  font: 650 30px/.98 var(--font-heading);
-  letter-spacing: -.035em;
+  font: 700 32px/1 var(--font-heading);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .world-preview-caption > span {
@@ -267,10 +269,11 @@
   justify-content: center;
   gap: 6px;
   padding: 0 9px;
-  border: 1px solid var(--line);
+  border: 2px solid var(--navy);
   border-radius: 5px;
-  color: var(--green);
-  font: 680 12px/1.2 var(--font-body);
+  color: var(--navy);
+  background: #edf4ff;
+  font: 750 12px/1.2 var(--font-body);
   transition: background-color 160ms;
 }
 
@@ -283,13 +286,14 @@
 }
 
 .world-preview-actions > .world-preview-land {
-  border-color: var(--green);
-  background: var(--green);
-  color: #fffdf7;
+  border-color: var(--navy);
+  background: var(--brass);
+  color: var(--navy);
+  box-shadow: 0 2px 0 var(--navy);
 }
 
 .world-preview-actions > .world-preview-land:hover {
-  background: #193f46;
+  background: #ffe35b;
 }
 
 @media (max-width: 450px) {

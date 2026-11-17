@@ -8,6 +8,7 @@
 
 .analysis-shell {
   max-width: 1120px;
+  margin-inline: auto;
   padding: clamp(16px, 3vw, 36px);
 }
 
@@ -18,25 +19,29 @@
   gap: 18px;
   padding: clamp(19px, 4vw, 38px);
   border-radius: 12px;
-  background: #183538;
+  border: 2px solid var(--navy);
+  border-top: 7px solid var(--red);
+  box-shadow: 0 4px 0 #172b4d33;
+  background: #172b4d;
   color: #f8f5ea;
 }
 
 .analysis-intro h1 {
   margin-bottom: 9px;
-  font-size: clamp(29px, 5vw, 51px);
+  font: 700 clamp(32px, 5vw, 54px)/1 var(--font-heading);
+  color: #ffdc28;
   font-weight: 750;
   line-height: 1;
-  letter-spacing: -.045em;
+  letter-spacing: 0;
 }
 
-.analysis-intro p { color: #d0e4de; font-size: 14px; line-height: 1.4; }
+.analysis-intro p { color: #d6e6fb; font-size: 14px; line-height: 1.4; }
 .analysis-intro > svg { flex: none; color: var(--brass); }
 .analysis-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .analysis-kpis > div, .analysis-card, .analysis-recommendation {
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 2px solid #a5bddd;
+  border-radius: 8px;
   background: var(--surface);
 }
 
@@ -50,7 +55,7 @@
 .analysis-card { overflow: hidden; }
 .analysis-comparison { padding: clamp(11px, 2vw, 18px); }
 .analysis-card-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin-bottom: 10px; }
-.analysis-card-title h2 { font-size: 21px; font-weight: 720; letter-spacing: -.035em; }
+.analysis-card-title h2 { font: 700 27px/1.1 var(--font-heading); letter-spacing: 0; }
 .analysis-metrics { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 6px; background: var(--wash); }
 .analysis-metrics button { min-height: 44px; padding: 0 9px; border-radius: 4px; color: var(--green); font-size: 12px; font-weight: 650; }
 .analysis-metrics button[aria-pressed="true"] { background: var(--green); color: #fff; }
@@ -68,12 +73,12 @@
   text-align: left;
 }
 .analysis-bars button:hover { background: var(--wash); }
-.analysis-bars button[aria-pressed="true"] { border-color: #a1bbb3; background: var(--highlight); }
+.analysis-bars button[aria-pressed="true"] { border-color: var(--green); background: var(--highlight); }
 .analysis-bar-name { display: grid; line-height: 1.17; }
 .analysis-bar-name strong { font-size: 13px; }
 .analysis-bar-name small { margin-top: 3px; color: var(--muted); font-size: 11px; }
-.analysis-bar-track { display: block; height: 8px; overflow: hidden; border-radius: 2px; background: #dce3de; }
-.analysis-bar-track > span { display: block; height: 100%; background: #38716a; transition: width 200ms ease; }
+.analysis-bar-track { display: block; height: 8px; overflow: hidden; border-radius: 2px; background: #dce6f3; }
+.analysis-bar-track > span { display: block; height: 100%; background: #287bc3; transition: width 200ms ease; }
 .analysis-bar-value { color: var(--green); text-align: right; font-size: 13px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .analysis-footnote { margin-top: 11px; color: var(--muted); font-size: 12px; line-height: 1.35; }
 
@@ -94,8 +99,8 @@
 .analysis-weather svg { flex: none; }
 .analysis-weather small { color: var(--muted); font-size: 11px; }
 .analysis-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.analysis-actions button, .analysis-recommendation button { display: inline-flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px; padding: 5px 8px; border: 1px solid #acc2b9; border-radius: 6px; color: var(--green); font-size: 12px; font-weight: 700; }
-.analysis-actions button:last-child { background: var(--green); color: white; border-color: var(--green); }
+.analysis-actions button, .analysis-recommendation button { display: inline-flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px; padding: 5px 8px; border: 2px solid var(--navy); border-radius: 6px; color: var(--green); font-size: 12px; font-weight: 700; }
+.analysis-actions button:last-child { background: var(--brass); color: var(--navy); border-color: var(--navy); box-shadow: 0 2px 0 var(--navy); }
 .analysis-actions button:hover, .analysis-recommendation button:hover { background: var(--highlight); color: var(--green); }
 .analysis-recommendation { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 12px; padding: 14px; background: var(--highlight); color: var(--green); }
 .analysis-recommendation h2 { font-size: 16px; font-weight: 720; }

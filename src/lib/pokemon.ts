@@ -27,6 +27,10 @@ export function spriteUrl(id: number): string {
   return `${SPRITE_BASE}/${id}.png`;
 }
 
+export function animatedSpriteUrl(id: number): string {
+  return `${SPRITE_BASE}/other/showdown/${id}.gif`;
+}
+
 export function artworkUrl(id: number): string {
   return `${SPRITE_BASE}/other/official-artwork/${id}.png`;
 }

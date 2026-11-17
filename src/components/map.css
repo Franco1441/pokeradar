@@ -5,13 +5,13 @@
 }
 
 .map-surface {
-  --map-paper: #faf8f2;
-  --map-ink: #101c22;
-  --map-slate: #36484d;
-  --map-edge: #d0cec2;
-  --map-brass: #e7bd7f;
-  --map-shadow: 0 2px 8px #101c221c;
-  background: #e7e3d8;
+  --map-paper: #fffefa;
+  --map-ink: #172b4d;
+  --map-slate: #2457a6;
+  --map-edge: #172b4d;
+  --map-brass: #ffcc01;
+  --map-shadow: 0 3px 0 #172b4d35, 0 4px 12px #10244724;
+  background: #e6eef5;
   isolation: isolate;
 }
 
@@ -89,12 +89,12 @@
   background-color: var(--map-paper);
 }
 
-.map-canvas .maplibregl-ctrl-group button:hover { background-color: #eee9df; }
+.map-canvas .maplibregl-ctrl-group button:hover { background-color: #e2eeff; }
 .map-canvas .maplibregl-ctrl-group button:focus-visible {
   outline: 2px solid var(--map-slate);
   outline-offset: -3px;
 }
-.map-canvas .maplibregl-ctrl-group button + button { border-top-color: #e1dcd1; }
+.map-canvas .maplibregl-ctrl-group button + button { border-top-color: #bdcee0; }
 
 .map-canvas .maplibregl-ctrl-attrib {
   background: #faf8f2e8;
@@ -124,7 +124,7 @@
   width: 62px;
   height: 62px;
   place-items: center;
-  border: 1px solid #b7b6a9;
+  border: 2px solid var(--map-ink);
   border-radius: 50%;
   background: var(--map-paper);
   box-shadow: var(--map-shadow);
@@ -173,7 +173,7 @@
   font: 700 11px sans-serif;
 }
 
-.pokemon-marker .marker-registration { left: 0; color: white; background: #3c5b50; }
+.pokemon-marker .marker-registration { left: 0; color: white; background: #23835c; }
 .pokemon-marker .marker-activity { right: 0; color: #473414; background: var(--map-brass); }
 .pokemon-marker.is-registered .marker-registration,
 .pokemon-marker.is-boosted .marker-activity { display: grid; }
@@ -192,7 +192,7 @@
 
 .pokemon-marker.is-selected { z-index: 3; }
 .pokemon-marker.is-selected .marker-inner {
-  border-color: #88643c;
+  border-color: var(--map-ink);
   box-shadow: 0 0 0 3px var(--map-brass), var(--map-shadow);
   transform: translateY(-3px);
 }
@@ -503,4 +503,14 @@
   }
 
   .map-stage-world:has(.world-preview) .map-toolbar { display: none; }
+}
+
+/* Keep the map readable when touch targets share a small viewport. */
+@media (max-width: 630px) {
+  .pokemon-marker .marker-label { display: none; }
+  .pokemon-marker:is(.is-selected, :focus-visible) .marker-label { display: block; }
+  .trailhead-marker { width: 44px; height: 44px; padding: 7px; justify-content: center; border: 2px solid var(--map-ink); background: var(--map-brass); }
+  .trailhead-marker > span { display: none; }
+  .trailhead-marker svg { background: transparent; width: 27px; height: 27px; padding: 1px; }
+  .trailhead-marker:is(:hover, :focus-visible) { background: #ffe477; }
 }

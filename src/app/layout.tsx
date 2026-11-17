@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
+
+const pokedexHeading = localFont({
+  src: "../../public/fonts/BarlowCondensed-Bold.ttf",
+  variable: "--font-pokedex",
+  display: "swap",
+  weight: "700",
+});
 
 export const metadata: Metadata = {
   title: "PokéRadar · Diario de expedición",
@@ -12,7 +20,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
+    <html lang="es" className={pokedexHeading.variable}>
       <body>{children}</body>
     </html>
   );

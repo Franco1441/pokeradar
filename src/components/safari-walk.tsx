@@ -19,7 +19,8 @@ import {
   Radio,
 } from "lucide-react";
 import type { FieldSite } from "@/lib/field-sites";
-import { artworkUrl, spriteUrl } from "@/lib/pokemon";
+import { animatedSpriteUrl, spriteUrl } from "@/lib/pokemon";
+import PokemonSprite from "./pokemon-sprite";
 import { SAFARI_ENTRY_HEADING, type SafariMode, type SafariSignal, type SafariSnapshot } from "@/lib/safari";
 import { getSafariPanoramaSource } from "@/lib/safari-zones";
 import type { Expedition } from "@/lib/types";
@@ -95,18 +96,7 @@ function SafariSighting({
       onClick={() => onObserve(encounter.id)}
     >
       <span className="safari-walk-sighting-content">
-        {/* eslint-disable-next-line @next/next/no-img-element -- Preserve transparent artwork and its sprite fallback. */}
-        <img
-          src={artworkUrl(encounter.pokemonId)}
-          alt=""
-          draggable={false}
-          onError={(event) => {
-            const image = event.currentTarget;
-            const fallback = spriteUrl(encounter.pokemonId);
-            if (image.src !== fallback) image.src = fallback;
-            else image.hidden = true;
-          }}
-        />
+        <PokemonSprite id={encounter.pokemonId} name={encounter.name} />
         <span className="safari-walk-sighting-label">{encounter.name}</span>
       </span>
     </motion.button>
@@ -235,7 +225,7 @@ export default function SafariWalk({
 
       for (const { encounter } of next.signals) {
         const artwork = new Image();
-        artwork.src = artworkUrl(encounter.pokemonId);
+        artwork.src = motion.matches ? spriteUrl(encounter.pokemonId) : animatedSpriteUrl(encounter.pokemonId);
       }
       const preferredSource = getSafariPanoramaSource(next.image);
       const preferred = getPanorama(preferredSource);
